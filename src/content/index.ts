@@ -6,6 +6,8 @@ import { spawns } from "./spawns";
 import type { MapObject } from "./types";
 
 export { eggs, gyms, raids, spawns, stops };
+export { bag } from "./bag";
+export type { BagItem } from "./bag";
 export { medals } from "./medals";
 export { mapCenter, places, signposts } from "./places";
 export { skills } from "./skills";
