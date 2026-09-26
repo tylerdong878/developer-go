@@ -1,26 +1,82 @@
 @import "tailwindcss";
 
+/*
+ * Day palette by default. The map switches to night after dark by setting
+ * data-time="night" on <html>, which swaps every map color at once.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --sky: #eaf6ff;
+  --ground: #f3ecd8;
+  --grass: #7bc96f;
+  --grass-shade: #5fa855;
+  --water: #5ac8e0;
+  --water-edge: #2e93ae;
+  --road: #f1f1f1;
+  --building: #edeaf5;
+  --building-shade: #c9c4dc;
+  --glow: #ffd37a;
+
+  --surface: #ffffff;
+  --ink: #0a2a4a;
+  --ink-soft: #3d5a75;
+}
+
+:root[data-time="night"] {
+  --sky: #0b1b36;
+  --ground: #26314a;
+  --grass: #2f5a3b;
+  --grass-shade: #24472e;
+  --water: #14243f;
+  --water-edge: #3f6e93;
+  --road: #6b7690;
+  --building: #232c42;
+  --building-shade: #1a2133;
+  --glow: #ffd37a;
+
+  --surface: #13233f;
+  --ink: #eafbff;
+  --ink-soft: #a9c3d9;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-sky: var(--sky);
+  --color-ground: var(--ground);
+  --color-grass: var(--grass);
+  --color-grass-shade: var(--grass-shade);
+  --color-water: var(--water);
+  --color-water-edge: var(--water-edge);
+  --color-road: var(--road);
+  --color-building: var(--building);
+  --color-building-shade: var(--building-shade);
+  --color-glow: var(--glow);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+
+  --font-display: var(--font-fredoka);
+  --font-sans: var(--font-nunito-sans);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme {
+  /* Team Mystic, plus GO's neutral teal for XP and progress bars */
+  --color-mystic-50: #eafbff;
+  --color-mystic-300: #5fd0f2;
+  --color-mystic-400: #1ab6e8;
+  --color-mystic-500: #0b84d6;
+  --color-mystic-700: #0a5a98;
+  --color-mystic-900: #0a2a4a;
+  --color-teal: #2fd3c6;
+  --color-valor: #e43127;
+  --color-instinct: #ffcc00;
+
+  /* Medal tiers */
+  --color-bronze: #a9662a;
+  --color-silver: #c9cdd3;
+  --color-gold: #f6c453;
+  --color-platinum: #dceffb;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--sky);
+  color: var(--ink);
 }
