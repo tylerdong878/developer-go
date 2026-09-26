@@ -1,0 +1,111 @@
+import { near, places } from "./places";
+import type { Spawn } from "./types";
+
+export const spawns: Spawn[] = [
+  {
+    kind: "spawn",
+    slug: "snorlax",
+    pokemon: { name: "Snorlax", dex: 143 },
+    title: "Favorite Pokémon",
+    body: "My favorite Pokémon. It's asleep across the road home, like in the old games. Wake it up to learn about me.",
+    opensAbout: true,
+    // On the road between Boston and Westwood. Snapped to a road on the map.
+    where: { lat: 42.283, lon: -71.16 },
+  },
+  {
+    kind: "spawn",
+    slug: "hitmonlee",
+    pokemon: { name: "Hitmonlee", dex: 106 },
+    title: "Soccer",
+    body: "I played soccer from age 5 to 17.",
+    where: near(places.westwood, 1800, -700),
+  },
+  {
+    kind: "spawn",
+    slug: "sirfetchd",
+    pokemon: { name: "Sirfetch'd", dex: 865 },
+    title: "Tennis captain",
+    body: "I captained my high school's varsity tennis team, voted in by my teammates. Now I play intramural tennis and pickleball.",
+    where: near(places.westwood, -600, 500),
+  },
+  {
+    kind: "spawn",
+    slug: "onix",
+    pokemon: { name: "Onix", dex: 95 },
+    title: "Climbing",
+    body: "I climb at Rock Spot.",
+    where: places.rockSpotSouthBoston,
+  },
+  {
+    kind: "spawn",
+    slug: "porygon",
+    pokemon: { name: "Porygon", dex: 137 },
+    title: "Tetris",
+    body: "I play competitive Tetris on TETR.IO.",
+    where: { lat: 42.36242, lon: -71.08572 }, // Kendall Square
+  },
+  {
+    kind: "spawn",
+    slug: "rotom",
+    pokemon: { name: "Rotom", dex: 479 },
+    title: "Montages",
+    body: "I edit gaming montages, and I'm into video editing and graphic design.",
+    where: { lat: 42.35413, lon: -71.06991 }, // Public Garden
+  },
+  {
+    kind: "spawn",
+    slug: "torchic",
+    pokemon: { name: "Torchic", dex: 255 },
+    title: "Cooking",
+    body: "I cook Asian food. Bibimbap lately. Still perfecting my eggs.",
+    where: near(places.westwood, 250, 350),
+  },
+  {
+    kind: "spawn",
+    slug: "mankey",
+    pokemon: { name: "Mankey", dex: 56 },
+    title: "Bloons",
+    body: "Bloons TD 6 and Bloons Monkey City are two of my favorite games.",
+    where: places.franklinParkZoo,
+  },
+  {
+    kind: "spawn",
+    slug: "eevee",
+    pokemon: { name: "Eevee", dex: 133 },
+    title: "Pokémon Conquest",
+    body: "Pokémon Conquest on the DS, where Eevee is your partner the whole game.",
+    where: places.esplanade,
+  },
+  {
+    kind: "spawn",
+    slug: "voltorb",
+    pokemon: { name: "Voltorb", dex: 100 },
+    title: "Rocket League",
+    body: "Rocket League. Soccer, but with cars.",
+    where: places.fenway,
+  },
+  {
+    kind: "spawn",
+    slug: "alcremie",
+    pokemon: { name: "Alcremie", dex: 869 },
+    title: "Overcooked",
+    body: "Overcooked, the chaotic co-op cooking game.",
+    where: places.quincyMarket,
+  },
+  {
+    kind: "spawn",
+    slug: "ditto",
+    pokemon: { name: "Ditto", dex: 132 },
+    title: "More games I love",
+    body: "Clash of Clans, Clash Royale, Fortnite, Valorant, and Mario & Luigi: Bowser's Inside Story.",
+    where: places.bostonCommon,
+  },
+  {
+    kind: "spawn",
+    slug: "magnemite",
+    pokemon: { name: "Magnemite", dex: 81 },
+    title: "Combat robotics",
+    body: "I'm on Northeastern Combat Robotics: I design and 3D-print battlebot parts in OnShape and SolidWorks, wire and solder the electronics, and compete with 1-lb robots.",
+    where: near(places.northeastern, 130, 250),
+  },
+];
