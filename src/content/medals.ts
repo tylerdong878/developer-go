@@ -1,0 +1,141 @@
+import type { Medal } from "./types";
+
+export const medals: Medal[] = [
+  // Real Pokémon GO medals and ranks
+  {
+    slug: "jogger",
+    title: "Jogger",
+    detail: "13,650 km walked",
+    tier: "platinum",
+    group: "go",
+  },
+  {
+    slug: "collector",
+    title: "Collector",
+    detail: "184,565 Pokémon caught",
+    tier: "platinum",
+    group: "go",
+  },
+  {
+    slug: "backpacker",
+    title: "Backpacker",
+    detail: "66,471 PokéStops visited",
+    tier: "platinum",
+    group: "go",
+  },
+  {
+    slug: "gbl-top-103",
+    title: "GO Battle League",
+    detail: "Top 103 in the world, Season 9",
+    tier: "platinum",
+    group: "go",
+  },
+  {
+    slug: "gbl-legend",
+    title: "GO Battle League: Legend",
+    detail: "Legend rank in Season 8, about 0.1% of players",
+    tier: "gold",
+    group: "go",
+  },
+
+  // Competitions and hackathons
+  {
+    slug: "jane-street-puzzles",
+    title: "Jane Street puzzles x3",
+    detail:
+      "Solved Robot Javelin (Dec 2025), Regional Artwork (Jun 2026), and Andy's Afternoon Amble (Aug 2026).",
+    tier: "gold",
+    group: "award",
+  },
+  {
+    slug: "bostonhacks-2024",
+    title: "BostonHacks 2024",
+    detail: "1st of 49 in the Interstellar Intelligence (AI/ML) track",
+    tier: "gold",
+    group: "award",
+    date: "Nov 2024",
+    link: { label: "Devpost", href: "https://devpost.com/software/jtr" },
+  },
+  {
+    slug: "civic-tech-2025",
+    title: "Civic Tech Hackathon 2025",
+    detail: "Best Design of 40",
+    tier: "gold",
+    group: "award",
+    date: "Feb 2025",
+    link: { label: "Devpost", href: "https://devpost.com/software/animago" },
+  },
+  {
+    slug: "hackillinois-2025",
+    title: "HackIllinois 2025",
+    detail: "HackOlympian Finalist, top 5 of 105",
+    tier: "silver",
+    group: "award",
+    date: "Mar 2025",
+    link: { label: "Devpost", href: "https://devpost.com/software/spendshield" },
+  },
+  {
+    slug: "imc-prosperity-4",
+    title: "IMC Prosperity 4",
+    detail: "1,757th of 18,803 teams (top ~9.3%)",
+    tier: "silver",
+    group: "award",
+    date: "Apr 2026",
+  },
+  {
+    slug: "sthacks-2025",
+    title: "STHacks 2025",
+    detail: "4th place",
+    tier: "bronze",
+    group: "award",
+    date: "Mar 2025",
+    link: { label: "Devpost", href: "https://devpost.com/software/manimtired" },
+  },
+
+  // Honors
+  {
+    slug: "tau-beta-pi",
+    title: "Tau Beta Pi",
+    detail: "Engineering honor society",
+    tier: "gold",
+    group: "honor",
+  },
+  {
+    slug: "eta-kappa-nu",
+    title: "Eta Kappa Nu",
+    detail: "IEEE honor society for electrical and computer engineering",
+    tier: "gold",
+    group: "honor",
+  },
+  {
+    slug: "ibm-watson-scholarship",
+    title: "IBM Thomas J. Watson Memorial Scholarship",
+    detail: "Scholarship recipient",
+    tier: "gold",
+    group: "honor",
+    date: "Apr 2024",
+  },
+  {
+    slug: "deans-list",
+    title: "Dean's List",
+    detail: "Every semester at Northeastern",
+    tier: "silver",
+    group: "honor",
+  },
+  {
+    slug: "ap-scholar",
+    title: "AP Scholar with Distinction",
+    detail: "College Board",
+    tier: "bronze",
+    group: "honor",
+    date: "Jul 2024",
+  },
+  {
+    slug: "codepath",
+    title: "CodePath",
+    detail: "Intermediate Technical Interview Prep (Advanced)",
+    tier: "bronze",
+    group: "honor",
+    date: "Aug 2025",
+  },
+];
