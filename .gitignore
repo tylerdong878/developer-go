@@ -44,3 +44,6 @@ next-env.d.ts
 /notes/
 AGENTS.md
 CLAUDE.md
+
+# downloaded map data (npm run map:fetch)
+/.cache/
