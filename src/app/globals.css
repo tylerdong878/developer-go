@@ -111,7 +111,7 @@ body {
   stroke: color-mix(in oklab, var(--road), var(--glow) 60%);
   stroke-width: calc(2.6px + 0.7px * var(--zoom));
 }
-.world-map[data-detail="far"] .street { display: none; }
+[data-detail="far"] .world-map .street { display: none; }
 
 .world-map .label {
   font-family: var(--font-fredoka);
@@ -132,10 +132,177 @@ body {
   text-transform: uppercase;
 }
 .world-map .label.tier-2 { display: none; }
-.world-map[data-detail="high"] .label.tier-2 { display: inline; }
+[data-detail="mid"] .world-map .label.tier-2,
+[data-detail="high"] .world-map .label.tier-2 { display: inline; }
 .world-map .water-label {
   fill: var(--water-edge);
   stroke: var(--water);
   font-style: italic;
   text-transform: none;
+}
+
+/* Map markers. They're HTML buttons over the map, placed entirely in CSS:
+   --x/--y is the marker's map position, --k/--tx/--ty the camera, and --s
+   turns map units into pixels at zoom 1. So they're in the right spot on the
+   first server-rendered paint, and panning moves them with no JS per marker. */
+.map-stage {
+  container-type: size;
+  --k: 1;
+  --tx: 0;
+  --ty: 0;
+  --s: calc(min(100cqw, 100cqh) / var(--view));
+}
+
+.marker {
+  position: absolute;
+  left: 0;
+  top: 0;
+  translate:
+    calc(50cqw + (var(--k) * var(--x) + var(--tx) - var(--cx)) * var(--s))
+    calc(50cqh + (var(--k) * var(--y) + var(--ty) - var(--cy)) * var(--s));
+  /* anchor the icon's feet on the spot */
+  transform: translate(-50%, -100%);
+  transform-origin: 50% 100%;
+  pointer-events: auto;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: scale 150ms ease;
+}
+.marker:hover { z-index: 5; }
+.marker[data-selected] { z-index: 10; scale: 1.15; }
+.marker:focus-visible { outline: none; }
+.marker:focus-visible .marker-art {
+  outline: 3px solid var(--color-mystic-400);
+  outline-offset: 3px;
+  border-radius: 12px;
+}
+.marker-art { display: block; }
+
+.marker-label {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 50%;
+  translate: -50% 0;
+  display: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--surface) 92%, transparent);
+  color: var(--ink);
+  font: 600 12px/1.35 var(--font-nunito-sans), sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgb(10 42 74 / 0.2);
+}
+.marker:hover .marker-label,
+.marker:focus-visible .marker-label,
+.marker[data-selected] .marker-label,
+[data-detail="high"] .marker .marker-label { display: block; }
+
+.raid-stars {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  translate: -50% 0;
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: -1px;
+  color: #f6c453;
+  text-shadow: 0 1px 1px rgb(10 42 74 / 0.6);
+}
+
+/* Only show what fits the zoom, like the game only showing what's nearby. */
+[data-detail="far"] .marker[data-tier="2"],
+[data-detail="far"] .marker[data-tier="3"],
+[data-detail="low"] .marker[data-tier="3"] { display: none; }
+[data-detail="far"] .marker { scale: 0.8; }
+[data-detail="far"] .marker[data-selected] { scale: 0.95; }
+
+/* Selected: a ring pulses out from the marker's feet. */
+.marker[data-selected]::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 46px;
+  height: 14px;
+  translate: -50% 0;
+  border: 2px solid var(--color-mystic-400);
+  border-radius: 50%;
+  animation: ring 1.4s ease-out infinite;
+}
+
+.spawn { position: relative; width: 60px; height: 66px; }
+.spawn-sprite {
+  position: absolute;
+  bottom: 5px;
+  left: 0;
+  width: 60px;
+  height: 60px;
+  filter: drop-shadow(0 1px 1px rgb(10 42 74 / 0.25));
+  animation: bob 1.8s ease-in-out infinite;
+}
+.spawn-shadow {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 34px;
+  height: 9px;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: rgb(10 42 74 / 0.22);
+  animation: squash 1.8s ease-in-out infinite;
+}
+
+.lure {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  animation: orbit 6s linear infinite;
+}
+.lure i {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px;
+  border-radius: 50% 0;
+  background: #f9a8d4;
+  box-shadow: 0 0 5px #f472b6;
+  transform: rotate(calc(var(--i) * 60deg)) translateY(-19px) rotate(45deg);
+}
+
+.signpost { transform: translate(-50%, -50%); }
+.signpost-board {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgb(10 42 74 / 0.22);
+}
+
+@keyframes bob {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -5px; }
+}
+@keyframes squash {
+  0%, 100% { scale: 1; }
+  50% { scale: 0.82; }
+}
+@keyframes orbit {
+  to { rotate: 360deg; }
+}
+@keyframes ring {
+  from { scale: 0.6; opacity: 1; }
+  to { scale: 1.7; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spawn-sprite,
+  .spawn-shadow,
+  .lure,
+  .marker[data-selected]::before { animation: none; }
+  .marker { transition: none; }
 }
