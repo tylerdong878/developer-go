@@ -6,12 +6,12 @@
  */
 :root {
   --sky: #eaf6ff;
-  --ground: #f3ecd8;
+  --ground: #efe6cf;
   --grass: #7bc96f;
   --grass-shade: #5fa855;
   --water: #5ac8e0;
   --water-edge: #2e93ae;
-  --road: #f1f1f1;
+  --road: #ffffff;
   --building: #edeaf5;
   --building-shade: #c9c4dc;
   --glow: #ffd37a;
@@ -79,4 +79,60 @@
 body {
   background: var(--sky);
   color: var(--ink);
+}
+
+/* The map. --unit is map units per screen pixel and --zoom the camera zoom;
+   the map sets both on every camera move. */
+.world-map {
+  --unit: 4;
+  --zoom: 1;
+}
+
+.world-map .water {
+  stroke: var(--water-edge);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+
+.world-map .road {
+  fill: none;
+  stroke: var(--road);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.world-map .street { stroke-width: calc(0.8px + 0.3px * var(--zoom)); }
+.world-map .minor { stroke-width: calc(1.3px + 0.45px * var(--zoom)); }
+.world-map .major { stroke-width: calc(2px + 0.6px * var(--zoom)); }
+.world-map .highway {
+  stroke: color-mix(in oklab, var(--road), var(--glow) 60%);
+  stroke-width: calc(2.6px + 0.7px * var(--zoom));
+}
+.world-map[data-detail="far"] .street { display: none; }
+
+.world-map .label {
+  font-family: var(--font-fredoka);
+  font-weight: 600;
+  font-size: calc(13px * var(--unit));
+  letter-spacing: 0.04em;
+  fill: var(--ink-soft);
+  stroke: var(--ground);
+  stroke-width: calc(3px * var(--unit));
+  stroke-linejoin: round;
+  paint-order: stroke;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+.world-map .label.tier-1 {
+  font-size: calc(14px * var(--unit));
+  text-transform: uppercase;
+}
+.world-map .label.tier-2 { display: none; }
+.world-map[data-detail="high"] .label.tier-2 { display: inline; }
+.world-map .water-label {
+  fill: var(--water-edge);
+  stroke: var(--water);
+  font-style: italic;
+  text-transform: none;
 }
