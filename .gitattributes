@@ -7,3 +7,6 @@
 *.webp binary
 *.ico binary
 *.woff2 binary
+
+# Built by npm run map:build
+src/map/data/** linguist-generated=true
