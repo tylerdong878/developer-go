@@ -1,3 +1,4 @@
+import { TimeToggle } from "@/components/TimeToggle";
 import { WorldMap } from "@/map/WorldMap";
 
 export default function Home() {
@@ -8,6 +9,9 @@ export default function Home() {
       <header className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-4">
         <div className="pointer-events-auto rounded-full bg-surface/85 px-4 py-2 shadow-md backdrop-blur">
           <h1 className="font-display text-lg font-semibold text-ink">Tyler Dong</h1>
+        </div>
+        <div className="pointer-events-auto">
+          <TimeToggle />
         </div>
       </header>
 

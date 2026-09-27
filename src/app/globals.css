@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* night:hidden and friends, driven by data-time on <html> */
+@custom-variant night (&:where([data-time="night"], [data-time="night"] *));
+
 /*
  * Day palette by default. The map switches to night after dark by setting
  * data-time="night" on <html>, which swaps every map color at once.
