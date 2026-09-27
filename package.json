@@ -10,7 +10,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "map:fetch": "tsx scripts/map/fetch.ts",
-    "map:build": "tsx scripts/map/build.ts"
+    "map:build": "tsx scripts/map/build.ts",
+    "sprites:fetch": "tsx scripts/sprites/fetch.ts"
   },
   "dependencies": {
     "d3-selection": "^3.0.0",
@@ -28,6 +29,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
+    "sharp": "^0.35.4",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5",
