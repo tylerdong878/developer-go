@@ -3,6 +3,8 @@ import {
   type Box,
   type Coord,
   clipLine,
+  clipRing,
+  densify,
   landPolygons,
   signedArea,
   simplify,
@@ -93,6 +95,32 @@ describe("landPolygons", () => {
     const rings = landPolygons([northBay, southBay], box);
     expect(rings).toHaveLength(1);
     expect(Math.abs(signedArea(rings[0]))).toBeCloseTo(3.5);
+  });
+});
+
+describe("clipRing", () => {
+  it("cuts a ring down to the box", () => {
+    const square: Coord[] = [[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]];
+    const clipped = clipRing(square, box);
+    expect(Math.abs(signedArea(clipped))).toBeCloseTo(1);
+    expect(clipped[0]).toEqual(clipped[clipped.length - 1]);
+  });
+
+  it("drops rings entirely outside the box", () => {
+    expect(clipRing([[5, 5], [6, 5], [6, 6], [5, 5]], box)).toEqual([]);
+  });
+});
+
+describe("densify", () => {
+  it("splits long segments evenly and keeps short ones", () => {
+    expect(densify([[0, 0], [1, 0], [1, 0.1]], 0.25)).toEqual([
+      [0, 0],
+      [0.25, 0],
+      [0.5, 0],
+      [0.75, 0],
+      [1, 0],
+      [1, 0.1],
+    ]);
   });
 });
 

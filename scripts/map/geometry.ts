@@ -219,6 +219,53 @@ export function landPolygons(coastlines: Coord[][], box: Box): Coord[][] {
   return rings;
 }
 
+/**
+ * Sutherland-Hodgman: the part of a ring inside the box, still closed.
+ * Returns an empty array if nothing is left.
+ */
+export function clipRing(ring: Coord[], box: Box): Coord[] {
+  const edges: [(c: Coord) => boolean, (a: Coord, b: Coord) => Coord][] = [
+    [(c) => c[0] >= box.west, (a, b) => lerp(a, b, (box.west - a[0]) / (b[0] - a[0]))],
+    [(c) => c[0] <= box.east, (a, b) => lerp(a, b, (box.east - a[0]) / (b[0] - a[0]))],
+    [(c) => c[1] >= box.south, (a, b) => lerp(a, b, (box.south - a[1]) / (b[1] - a[1]))],
+    [(c) => c[1] <= box.north, (a, b) => lerp(a, b, (box.north - a[1]) / (b[1] - a[1]))],
+  ];
+  let points = isClosed(ring) ? ring.slice(0, -1) : ring.slice();
+  for (const [keep, cross] of edges) {
+    const input = points;
+    points = [];
+    for (let i = 0; i < input.length; i++) {
+      const a = input[(i + input.length - 1) % input.length];
+      const b = input[i];
+      if (keep(b)) {
+        if (!keep(a)) points.push(cross(a, b));
+        points.push(b);
+      } else if (keep(a)) {
+        points.push(cross(a, b));
+      }
+    }
+    if (points.length === 0) return [];
+  }
+  return points.concat([points[0]]);
+}
+
+/**
+ * Adds points so no segment is longer than `step`. Needed before a curved
+ * projection: a long straight edge (like the edge of the data box) should
+ * bend on the map, and it can only bend at points.
+ */
+export function densify(line: Coord[], step: number): Coord[] {
+  const out: Coord[] = [line[0]];
+  for (let i = 1; i < line.length; i++) {
+    const a = line[i - 1];
+    const b = line[i];
+    const n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / step);
+    for (let k = 1; k < n; k++) out.push(lerp(a, b, k / n));
+    out.push(b);
+  }
+  return out;
+}
+
 /** Douglas-Peucker simplification. Keeps the endpoints. */
 export function simplify(points: Coord[], tolerance: number): Coord[] {
   if (points.length < 3) return points.slice();
