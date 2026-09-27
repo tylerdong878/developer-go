@@ -66,7 +66,7 @@ export const gyms: Gym[] = [
       },
     ],
     stack: ["typescript", "convex", "flutter", "dart", "react-native"],
-    where: near(places.westwood, -1000, 1100),
+    where: near(places.westwood, -1500, 1650),
   },
   {
     kind: "gym",
@@ -112,7 +112,7 @@ export const gyms: Gym[] = [
       },
     ],
     stack: ["python", "llamaindex"],
-    where: near(places.westwood, -2000, 2200),
+    where: near(places.westwood, -3100, 3500),
   },
   {
     kind: "gym",
@@ -150,6 +150,6 @@ export const gyms: Gym[] = [
       },
     ],
     stack: [],
-    where: near(places.westwood, 1000, -1100),
+    where: near(places.westwood, 1500, -1650),
   },
 ];

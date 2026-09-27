@@ -31,7 +31,7 @@ export const stops: Stop[] = [
     ],
     stack: ["python", "playwright", "pandas", "github-actions", "pytest"],
     links: [],
-    where: near(places.financialDistrict, 90, -70),
+    where: near(places.financialDistrict, 380, -250),
   },
   {
     kind: "stop",
@@ -56,7 +56,7 @@ export const stops: Stop[] = [
     ],
     stack: ["cpp", "python", "arrow", "aws", "pandas", "statsmodels"],
     links: [gh("ofi-regime-study")],
-    where: near(places.financialDistrict, -70, 90),
+    where: near(places.financialDistrict, 150, 330),
   },
   {
     kind: "stop",
@@ -80,7 +80,7 @@ export const stops: Stop[] = [
     ],
     stack: ["java", "gradle", "junit", "docker", "github-actions"],
     links: [gh("matching-engine")],
-    where: near(places.financialDistrict, -160, -60),
+    where: near(places.financialDistrict, -330, 60),
   },
   {
     kind: "stop",
@@ -104,7 +104,7 @@ export const stops: Stop[] = [
     ],
     stack: ["python", "numpy", "pandas"],
     links: [],
-    where: near(places.financialDistrict, 60, 130),
+    where: near(places.financialDistrict, -60, -420),
   },
   {
     kind: "stop",
@@ -133,7 +133,7 @@ export const stops: Stop[] = [
         href: "https://apps.apple.com/us/app/bluffs/id6760742352",
       },
     ],
-    where: near(places.westwood, -1500, 1700),
+    where: near(places.westwood, -2300, 2600),
   },
 
   // More projects
@@ -158,7 +158,7 @@ export const stops: Stop[] = [
     stack: ["python", "pytorch", "stable-baselines3", "gymnasium"],
     links: [gh("SnakeRL")],
     // Next to the 2021 Snake game at home base.
-    where: near(places.westwood, 2300, -2400),
+    where: near(places.westwood, 3400, -3700),
   },
   {
     kind: "stop",
@@ -310,7 +310,7 @@ export const stops: Stop[] = [
         href: "https://github.com/tylerdong878/basic-monte-carlo-simulation",
       },
     ],
-    where: near(places.financialDistrict, -230, -170),
+    where: near(places.financialDistrict, -420, 380),
   },
   {
     kind: "stop",
@@ -327,6 +327,6 @@ export const stops: Stop[] = [
       gh("Snake"),
       { label: "Pac-Man", href: "https://github.com/tylerdong878/Pac-Man" },
     ],
-    where: near(places.westwood, 2000, -2200),
+    where: near(places.westwood, 2900, -3200),
   },
 ];
