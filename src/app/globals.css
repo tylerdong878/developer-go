@@ -307,17 +307,20 @@ body {
   .marker { transition: none; }
 }
 
-/* The trainer, placed like the markers and always drawn on top of them. */
-.trainer {
+/* The trainer and Teddy, placed like the markers and drawn on top of them. */
+.trainer,
+.buddy {
   position: absolute;
   left: 0;
   top: 0;
   translate:
     calc(50cqw + (var(--k) * var(--x) + var(--tx) - var(--cx)) * var(--s))
     calc(50cqh + (var(--k) * var(--y) + var(--ty) - var(--cy)) * var(--s));
+  pointer-events: none;
+}
+.trainer {
   transform: translate(-50%, -100%);
   z-index: 20;
-  pointer-events: none;
 }
 .trainer-figure {
   position: relative;
@@ -363,4 +366,42 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .ring-ping { animation: none; opacity: 0.6; }
+}
+
+/* Teddy stands just in front of the trainer, off to his side. */
+.buddy {
+  transform: translate(calc(-50% + 30px), calc(-100% + 2px));
+  z-index: 21;
+}
+.buddy-figure {
+  display: block;
+  filter: drop-shadow(0 1px 1px rgb(10 42 74 / 0.25));
+}
+.buddy[data-facing="left"] .buddy-figure { scale: -1 1; }
+
+/* A wag every few seconds, and a blink. */
+.teddy-tail {
+  transform-box: view-box;
+  transform-origin: 10.5px 16px;
+  animation: wag 3.2s ease-in-out infinite;
+}
+.teddy-eyes {
+  transform-box: view-box;
+  transform-origin: 30px 11.3px;
+  animation: blink 4.6s infinite;
+}
+
+@keyframes wag {
+  0%, 32%, 100% { rotate: 0deg; }
+  6%, 18% { rotate: 16deg; }
+  12%, 24% { rotate: -6deg; }
+}
+@keyframes blink {
+  0%, 94%, 100% { scale: 1 1; }
+  97% { scale: 1 0.1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .teddy-tail,
+  .teddy-eyes { animation: none; }
 }

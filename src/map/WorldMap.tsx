@@ -4,6 +4,7 @@ import { select } from "d3-selection";
 import { zoom, zoomIdentity, type ZoomTransform } from "d3-zoom";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { near as offset, places } from "@/content/places";
+import { Buddy } from "./Buddy";
 import near from "./data/near.json";
 import { labels } from "./labels";
 import { ObjectLayer } from "./ObjectLayer";
@@ -187,6 +188,7 @@ export function WorldMap() {
         onSelect={setSelected}
       />
       <Trainer x={TRAINER_START.x} y={TRAINER_START.y} />
+      <Buddy x={TRAINER_START.x} y={TRAINER_START.y} />
     </div>
   );
 }
