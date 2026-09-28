@@ -3,9 +3,9 @@
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import { Vector3 } from "three";
-import { walkable } from "../base";
+import { slots, walkable } from "../base";
 import { MOVE_KEYS } from "../controls";
-import { game, WALK_SPEED, ZOOM } from "../state";
+import { DASH_SPEED, game, WALK_SPEED, ZOOM } from "../state";
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 /** Frame-rate independent easing: how far to close a gap this frame. */
@@ -19,12 +19,14 @@ function turn(from: number, to: number) {
 }
 
 /**
- * Runs first every frame: walks the trainer (keys or a tap target), brings
- * Teddy along, and flies the camera behind them the way GO does: close in it
- * sits low and shows the horizon, zoomed out it looks down from above.
+ * Runs first every frame: walks the trainer (keys, a tap target, or a Nearby
+ * dash), brings Teddy along, and flies the camera behind them the way GO
+ * does: close in it sits low and shows the horizon, zoomed out it looks down
+ * from above. Arriving at a map object turns him to face it and tells the HUD.
  */
 export function Controller() {
   const focus = useRef<Vector3>(null);
+  const facing = useRef<number | null>(null);
 
   useFrame(({ camera }, frame) => {
     const dt = Math.min(frame, 0.05); // no leaps after a background tab wakes up
@@ -40,6 +42,7 @@ export function Controller() {
     let mx = 0;
     let mz = 0;
     let want = 0;
+    let left = Infinity;
     for (const code of input.keys) {
       const [forward, right] = MOVE_KEYS[code] ?? [0, 0];
       mx += fx * forward - fz * right;
@@ -53,25 +56,43 @@ export function Controller() {
     } else if (input.target) {
       const dx = input.target.x - trainer.position.x;
       const dz = input.target.z - trainer.position.z;
-      const d = Math.hypot(dx, dz);
-      if (d < 0.3) input.target = null;
-      else {
-        mx = dx / d;
-        mz = dz / d;
-        want = Math.min(WALK_SPEED, 1.5 + d * 4); // ease into the stop
+      left = Math.hypot(dx, dz);
+      if (left < 0.3) {
+        input.target = null;
+        input.dash = false;
+        const goal = input.goal;
+        input.goal = null;
+        if (goal && slots[goal]) {
+          const [gx, gz] = slots[goal];
+          facing.current = Math.atan2(gx - trainer.position.x, gz - trainer.position.z);
+          game.onArrive?.(goal);
+        }
+      } else {
+        mx = dx / left;
+        mz = dz / left;
+        want = Math.min(input.dash ? DASH_SPEED : WALK_SPEED, 1.5 + left * (input.dash ? 7 : 4)); // ease into the stop
       }
     }
-    trainer.speed = lerp(trainer.speed, want, ease(12, dt));
+    trainer.speed = lerp(trainer.speed, want, ease(input.dash ? 5 : 12, dt));
 
     if (want > 0) {
-      const step = trainer.speed * dt;
+      facing.current = null;
+      const step = Math.min(trainer.speed * dt, left);
       const { x, z } = trainer.position;
+      if (input.dash) {
+        // A dash skims over everything straight to the spot.
+        trainer.position.set(x + mx * step, 0, z + mz * step);
+      } else if (walkable([x + mx * step, z + mz * step])) trainer.position.set(x + mx * step, 0, z + mz * step);
       // Slide along the water's edge and the rim of the base instead of sticking.
-      if (walkable([x + mx * step, z + mz * step])) trainer.position.set(x + mx * step, 0, z + mz * step);
       else if (walkable([x + mx * step, z])) trainer.position.x += mx * step;
       else if (walkable([x, z + mz * step])) trainer.position.z += mz * step;
-      else input.target = null;
+      else {
+        input.target = null;
+        input.goal = null;
+      }
       trainer.heading += turn(trainer.heading, Math.atan2(mx, mz)) * ease(14, dt);
+    } else if (facing.current !== null) {
+      trainer.heading += turn(trainer.heading, facing.current) * ease(8, dt);
     }
 
     // Teddy trots to a spot just behind Tyler, off his right shoulder.
@@ -80,12 +101,13 @@ export function Controller() {
     const bx = trainer.position.x - hx * 1.5 - hz * 1.1 - buddy.position.x;
     const bz = trainer.position.z - hz * 1.5 + hx * 1.1 - buddy.position.z;
     const gap = Math.hypot(bx, bz);
-    buddy.speed = lerp(buddy.speed, gap > 0.25 ? Math.min(WALK_SPEED * 1.3, gap * 3.2) : 0, ease(8, dt));
+    const buddyTop = input.dash ? DASH_SPEED * 1.1 : WALK_SPEED * 1.3;
+    buddy.speed = lerp(buddy.speed, gap > 0.25 ? Math.min(buddyTop, gap * 3.2) : 0, ease(8, dt));
     if (gap > 0.05 && buddy.speed > 0.05) {
       const step = Math.min(buddy.speed * dt, gap);
       const nx = buddy.position.x + (bx / gap) * step;
       const nz = buddy.position.z + (bz / gap) * step;
-      if (walkable([nx, nz])) buddy.position.set(nx, 0, nz);
+      if (input.dash || walkable([nx, nz])) buddy.position.set(nx, 0, nz);
       buddy.heading += turn(buddy.heading, Math.atan2(bx, bz)) * ease(10, dt);
     } else {
       buddy.heading += turn(buddy.heading, trainer.heading) * ease(3, dt);

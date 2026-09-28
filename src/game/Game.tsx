@@ -3,6 +3,7 @@
 import { Canvas } from "@react-three/fiber";
 import { useRef } from "react";
 import { useControls } from "./controls";
+import { Hud } from "./hud/Hud";
 import { palettes } from "./palette";
 import { Controller } from "./scene/Controller";
 import { Objects } from "./scene/objects/Objects";
@@ -22,21 +23,24 @@ export default function Game() {
   useControls(stage);
 
   return (
-    <div
-      ref={stage}
-      className="absolute inset-0 touch-none select-none"
-      role="img"
-      aria-label="Tyler's home base, a 3D map in the style of Pokémon GO. Walk with WASD or the arrow keys."
-    >
-      <Canvas flat dpr={[1, 2]} camera={{ fov: 56, near: 0.3, far: 2500, position: [0, 6.5, 17] }}>
-        <Controller />
-        <World palette={palettes[time]} night={time === "night"} />
-        <TapTarget />
-        <Objects grass={palettes[time].leaves[1]} />
-        <Rings mover={game.player.trainer} still={still} />
-        <Trainer3D mover={game.player.trainer} />
-        <Teddy3D mover={game.player.buddy} />
-      </Canvas>
-    </div>
+    <>
+      <div
+        ref={stage}
+        className="absolute inset-0 touch-none select-none"
+        role="img"
+        aria-label="Tyler's home base, a 3D map in the style of Pokémon GO. Walk with WASD or the arrow keys."
+      >
+        <Canvas flat dpr={[1, 2]} camera={{ fov: 56, near: 0.3, far: 2500, position: [0, 6.5, 17] }}>
+          <Controller />
+          <World palette={palettes[time]} night={time === "night"} />
+          <TapTarget />
+          <Objects grass={palettes[time].leaves[1]} />
+          <Rings mover={game.player.trainer} still={still} />
+          <Trainer3D mover={game.player.trainer} />
+          <Teddy3D mover={game.player.buddy} />
+        </Canvas>
+      </div>
+      <Hud />
+    </>
   );
 }

@@ -1,24 +1,14 @@
 "use client";
 
 import type { ThreeEvent } from "@react-three/fiber";
-import { Vector3 } from "three";
-import { walkable } from "../../base";
-import { game } from "../../state";
+import { goTo } from "../../travel";
 
-/**
- * Tapping a map object walks the trainer up to it and stops just in front,
- * facing it. Drags don't count.
- */
-export function walkTo(x: number, z: number, stopShort = 3) {
+/** Tapping a map object walks the trainer up to it. Drags don't count. */
+export function tapObject(slug: string) {
   return (e: ThreeEvent<MouseEvent>) => {
     if (e.delta > 6) return;
     e.stopPropagation();
-    const { position } = game.player.trainer;
-    const dx = position.x - x;
-    const dz = position.z - z;
-    const d = Math.hypot(dx, dz) || 1;
-    const spot = new Vector3(x + (dx / d) * stopShort, 0, z + (dz / d) * stopShort);
-    game.input.target = walkable([spot.x, spot.z]) ? spot : new Vector3(x, 0, z);
+    goTo(slug);
   };
 }
 

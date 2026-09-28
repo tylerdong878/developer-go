@@ -4,15 +4,10 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import type { Group } from "three";
 import type { Gym as GymContent, Raid as RaidContent } from "@/content";
+import { MYSTIC, MYSTIC_LIGHT, RAID_EGG as EGG } from "../../colors";
 import { Shadow } from "../Shadow";
 import { Nameplate } from "./Nameplate";
-import { hover, walkTo } from "./tap";
-
-const MYSTIC = "#0b84d6";
-const MYSTIC_LIGHT = "#1ab6e8";
-
-/** GO's raid egg colors: pink for 1 star, yellow for 3, dark legendary purple for 5. */
-const EGG = { 1: "#f472b6", 3: "#f6c453", 5: "#4a3a7a" } as const;
+import { hover, tapObject } from "./tap";
 
 /** Short names for the map, so nameplates stay small. */
 const SHORT: Record<string, string> = {
@@ -32,6 +27,7 @@ export function Gym(props: Props) {
   const crown = useRef<Group>(null);
   const egg = useRef<Group>(null);
   const raid = "raid" in props ? props.raid : null;
+  const slug = "raid" in props ? props.raid.slug : props.gym.slug;
   const team = raid ? "#9aa5b4" : MYSTIC;
   const accent = raid ? "#c4ccd6" : MYSTIC_LIGHT;
 
@@ -50,7 +46,7 @@ export function Gym(props: Props) {
 
   return (
     <group position={[x, 0, z]}>
-      <group onClick={walkTo(x, z, 5)} {...hover} scale={1.4}>
+      <group onClick={tapObject(slug)} {...hover} scale={1.4}>
         <Shadow size={4.2} />
         <mesh position-y={0.18}>
           <cylinderGeometry args={[1.55, 1.7, 0.36, 8]} />

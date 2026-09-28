@@ -4,12 +4,10 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import type { Group } from "three";
 import type { Egg as EggContent } from "@/content";
+import { EGG_SPOTS as SPOTS } from "../../colors";
 import { Shadow } from "../Shadow";
 import { Nameplate } from "./Nameplate";
-import { hover, walkTo } from "./tap";
-
-/** GO's egg spots: green 2 km, orange 5 km, yellow 7 km, purple 10 km, red 12 km. */
-const SPOTS: Record<EggContent["km"], string> = { 2: "#5fc15a", 5: "#f5a142", 7: "#f2d04a", 10: "#a868e0", 12: "#d9344a" };
+import { hover, tapObject } from "./tap";
 
 /** Where the spots sit on the shell, as directions from its center. */
 const SPOT_AT: [number, number, number][] = [
@@ -39,7 +37,7 @@ export function Egg({ egg, x, z }: { egg: EggContent; x: number; z: number }) {
 
   return (
     <group position={[x, 0, z]}>
-      <group onClick={walkTo(x, z, 2.6)} {...hover}>
+      <group onClick={tapObject(egg.slug)} {...hover}>
         <Shadow size={1.9} />
         <mesh position-y={0.14}>
           <cylinderGeometry args={[0.66, 0.74, 0.28, 24]} />

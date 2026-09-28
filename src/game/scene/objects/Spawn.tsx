@@ -7,7 +7,7 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import type { Spawn as SpawnContent } from "@/content";
 import { Shadow } from "../Shadow";
 import { Nameplate } from "./Nameplate";
-import { hover, walkTo } from "./tap";
+import { hover, tapObject } from "./tap";
 import { useSpriteTexture } from "./useSpriteTexture";
 
 /** Height on the map, by dex number. Big Pokémon are big; floaters hover. */
@@ -61,7 +61,7 @@ export function Spawn({ spawn, x, z, grass }: { spawn: SpawnContent; x: number; 
 
   return (
     <group position={[x, 0, z]}>
-      <group onClick={walkTo(x, z, asleep ? 5 : 3)} {...hover}>
+      <group onClick={tapObject(spawn.slug)} {...hover}>
         <Shadow size={Math.max(1.4, size * 0.75)} opacity={lift ? 0.6 : 1} />
         {lift ? null : (
           <group ref={tuft} scale={asleep ? 1.8 : 1}>

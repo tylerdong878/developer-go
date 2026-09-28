@@ -9,7 +9,7 @@ import { game } from "../../state";
 import { REACH } from "../Rings";
 import { Shadow } from "../Shadow";
 import { Nameplate } from "./Nameplate";
-import { hover, walkTo } from "./tap";
+import { hover, tapObject } from "./tap";
 
 const BLUE = "#1ab6e8";
 
@@ -42,7 +42,7 @@ export function Stop({ stop, x, z }: { stop: StopContent; x: number; z: number }
 
   return (
     <group position={[x, 0, z]}>
-      <group onClick={walkTo(x, z, 3.6)} {...hover} scale={1.3}>
+      <group onClick={tapObject(stop.slug)} {...hover} scale={1.3}>
         <Shadow size={1.6} />
         <mesh position-y={0.05}>
           <cylinderGeometry args={[0.36, 0.42, 0.1, 16]} />
