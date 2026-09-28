@@ -1,7 +1,7 @@
 "use client";
 
 import { select } from "d3-selection";
-import { zoom, zoomTransform, type ZoomTransform } from "d3-zoom";
+import { zoom, zoomIdentity, type ZoomTransform } from "d3-zoom";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { near as offset, places } from "@/content/places";
 import near from "./data/near.json";
@@ -69,46 +69,53 @@ export function WorldMap() {
     const world = worldRef.current;
     if (!stage || !svg || !world) return;
 
-    // Screen pixels per map unit at zoom 1, so labels and roads can stay the
-    // same size on screen at any zoom.
-    let pixelsPerUnit = svg.getScreenCTM()?.a ?? 1;
+    // How the viewBox sits on the stage: stage pixel = scale * map unit + offset.
+    let scale = 1;
+    let ox = 0;
+    let oy = 0;
+    const measure = () => {
+      const ctm = svg.getScreenCTM();
+      const box = stage.getBoundingClientRect();
+      if (!ctm) return;
+      scale = ctm.a;
+      ox = ctm.e - box.left;
+      oy = ctm.f - box.top;
+    };
+
+    // d3-zoom runs on the whole stage in pixels, so wheel, drag, and pinch
+    // work over markers too. This turns its pixel transform into map units:
+    // scale * m' + o = k * (scale * m + o) + t  =>  m' = k * m + (k * o + t - o) / scale
+    let view = { k: 1, x: 0, y: 0 };
     const apply = (t: ZoomTransform) => {
-      world.setAttribute("transform", t.toString());
-      svg.style.setProperty("--unit", String(1 / (pixelsPerUnit * t.k)));
+      const tx = (t.k * ox + t.x - ox) / scale;
+      const ty = (t.k * oy + t.y - oy) / scale;
+      view = { k: t.k, x: tx, y: ty };
+      world.setAttribute("transform", `translate(${tx},${ty}) scale(${t.k})`);
+      svg.style.setProperty("--unit", String(1 / (scale * t.k)));
       svg.style.setProperty("--zoom", String(t.k));
       // Markers position themselves in CSS from these three numbers.
       stage.style.setProperty("--k", String(t.k));
-      stage.style.setProperty("--tx", String(t.x));
-      stage.style.setProperty("--ty", String(t.y));
+      stage.style.setProperty("--tx", String(tx));
+      stage.style.setProperty("--ty", String(ty));
       stage.dataset.detail = detailAt(t.k);
     };
 
-    // The visible area in map units at zoom 1. With "meet" it can be bigger
-    // than the viewBox, and d3-zoom needs the real size to clamp panning.
-    const extent = (): [[number, number], [number, number]] => {
-      const ctm = svg.getScreenCTM();
-      const box = svg.getBoundingClientRect();
-      if (!ctm) return [[0, 0], [box.width, box.height]];
-      const inv = ctm.inverse();
-      const corner = (x: number, y: number) => new DOMPoint(x, y).matrixTransform(inv);
-      const a = corner(box.left, box.top);
-      const b = corner(box.right, box.bottom);
-      return [[a.x, a.y], [b.x, b.y]];
-    };
-
-    const behavior = zoom<SVGSVGElement, unknown>()
-      .extent(extent)
+    const behavior = zoom<HTMLDivElement, unknown>()
       .scaleExtent([START.size / (2.3 * r), MAX_ZOOM])
-      .translateExtent([
-        [-r * 1.1, -r * 1.1],
-        [r * 1.1, r * 1.1],
-      ])
       .on("zoom", (event) => apply(event.transform));
 
-    const selection = select(svg).call(behavior);
+    const selection = select(stage).call(behavior);
     const onResize = () => {
-      pixelsPerUnit = svg.getScreenCTM()?.a ?? 1;
-      apply(zoomTransform(svg));
+      measure();
+      // Keep panning inside the world, in the stage's pixel space.
+      behavior.translateExtent([
+        [scale * -r * 1.1 + ox, scale * -r * 1.1 + oy],
+        [scale * r * 1.1 + ox, scale * r * 1.1 + oy],
+      ]);
+      // Same view in map units, in the new pixels, so the map holds still.
+      const { k, x, y } = view;
+      const t = zoomIdentity.translate(x * scale - (k - 1) * ox, y * scale - (k - 1) * oy);
+      selection.call(behavior.transform, t.scale(k));
     };
     window.addEventListener("resize", onResize);
     onResize();
@@ -128,7 +135,7 @@ export function WorldMap() {
   return (
     <div
       ref={stageRef}
-      className="map-stage relative h-full w-full"
+      className="map-stage relative h-full w-full touch-none select-none"
       data-detail="low"
       style={{ "--view": START.size, "--cx": START.x, "--cy": START.y } as CSSProperties}
     >
@@ -136,7 +143,7 @@ export function WorldMap() {
         ref={svgRef}
         viewBox={`${START.x - START.size / 2} ${START.y - START.size / 2} ${START.size} ${START.size}`}
         preserveAspectRatio="xMidYMid meet"
-        className="world-map h-full w-full touch-none select-none bg-water"
+        className="world-map h-full w-full bg-water"
         role="img"
         aria-label="Map of Greater Boston"
         onClick={() => setSelected(null)}
