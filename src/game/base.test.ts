@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mapObjects } from "@/content";
-import { RADIUS, START, areas, roads, slots, trees, walkable } from "./base";
+import { RADIUS, START, areas, onLand, roads, slots, trees, walkable } from "./base";
 import { distance, pointInPolygon, type Vec2 } from "./geometry";
 
 const kindOf = new Map(mapObjects.map((o) => [o.slug, o.kind]));
@@ -29,7 +29,7 @@ describe("home base", () => {
 
   it("keeps every spot on dry land inside the base", () => {
     for (const [slug, p] of Object.entries(slots)) {
-      expect(walkable(p), slug).toBe(true);
+      expect(onLand(p), slug).toBe(true);
       expect(Math.hypot(...p), slug).toBeLessThan(RADIUS - 20);
     }
   });
@@ -53,6 +53,11 @@ describe("home base", () => {
         expect(distanceToRoad(p), slug).toBeGreaterThan(1.5);
       }
     }
+  });
+
+  it("makes you walk around Snorlax", () => {
+    expect(walkable(slots.snorlax)).toBe(false);
+    expect(walkable([slots.snorlax[0], slots.snorlax[1] + 4])).toBe(true);
   });
 
   it("starts the trainer on open ground at home", () => {

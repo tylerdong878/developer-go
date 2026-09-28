@@ -222,9 +222,17 @@ function nearLine(p: Vec2, points: readonly Vec2[], loop: boolean | undefined, d
   return false;
 }
 
-/** Can the trainer stand here? Inside the base, and not in the water (the pier is fine). */
-export function walkable(p: Vec2) {
+/** Inside the base and not in the water (the pier is fine). */
+export function onLand(p: Vec2) {
   if (Math.hypot(p[0], p[1]) > RADIUS) return false;
   if (pointInPolygon(p, pierWalk) || pointInPolygon(p, pierDeck)) return true;
   return !areas.some((a) => a.kind === "water" && pointInPolygon(p, a.points));
+}
+
+/** Things you have to walk around, like the Snorlax asleep across the road to the park. */
+export const blockers: { at: Vec2; r: number }[] = [{ at: slots.snorlax, r: 2.8 }];
+
+/** Can the trainer stand here? */
+export function walkable(p: Vec2) {
+  return onLand(p) && !blockers.some(({ at, r }) => Math.hypot(p[0] - at[0], p[1] - at[1]) < r);
 }

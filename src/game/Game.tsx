@@ -32,7 +32,7 @@ export default function Game() {
         <Controller />
         <World palette={palettes[time]} night={time === "night"} />
         <TapTarget />
-        <Objects />
+        <Objects grass={palettes[time].leaves[1]} />
         <Rings mover={game.player.trainer} still={still} />
         <Trainer3D mover={game.player.trainer} />
         <Teddy3D mover={game.player.buddy} />
