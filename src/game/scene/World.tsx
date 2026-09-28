@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
-import { DoubleSide, type BufferGeometry } from "three";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef } from "react";
+import { type BufferGeometry, type DirectionalLight, DoubleSide, Object3D } from "three";
 import { areas, roads, type AreaKind, type RoadKind } from "../base";
 import { circle } from "../geometry";
 import type { Palette } from "../palette";
@@ -50,6 +51,19 @@ function groundLayers(): Layer[] {
   ];
 }
 
+/** A light that shines from wherever the camera is, a little above it. */
+function CameraLight({ color, intensity }: { color: string; intensity: number }) {
+  const light = useRef<DirectionalLight>(null);
+  const target = useMemo(() => new Object3D(), []);
+  useFrame(({ camera }) => {
+    if (!light.current) return;
+    light.current.position.copy(camera.position).add({ x: 0, y: 6, z: 0 });
+    camera.getWorldDirection(target.position).multiplyScalar(20).add(camera.position);
+    target.updateMatrixWorld();
+  });
+  return <directionalLight ref={light} color={color} intensity={intensity} target={target} />;
+}
+
 export function World({ palette, night }: { palette: Palette; night: boolean }) {
   const layers = useMemo(() => groundLayers(), []);
   return (
@@ -59,6 +73,7 @@ export function World({ palette, night }: { palette: Palette; night: boolean }) 
       <Sky top={palette.sky.top} horizon={palette.sky.horizon} stars={night} />
       <hemisphereLight args={[palette.hemi.sky, palette.hemi.ground, palette.hemi.intensity]} />
       <directionalLight position={[60, 120, 40]} color={palette.sun.color} intensity={palette.sun.intensity} />
+      <CameraLight color={palette.fill.color} intensity={palette.fill.intensity} />
 
       {layers.map((layer, i) => (
         <mesh key={layer.key} geometry={layer.geometry} renderOrder={-50 + i}>

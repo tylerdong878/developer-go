@@ -15,6 +15,8 @@ export type Palette = {
   leaves: readonly [string, string];
   hemi: { sky: string; ground: string; intensity: number };
   sun: { color: string; intensity: number };
+  /** A soft light from the camera, so faces are never in shadow. */
+  fill: { color: string; intensity: number };
 };
 
 /** GO's look: green ground, white roads, bright water, a soft sky that fogs out the edges. */
@@ -39,8 +41,9 @@ export const palettes: Record<TimeOfDay, Palette> = {
     },
     trunk: "#8a5a3b",
     leaves: ["#3f9a4b", "#52ad56"],
-    hemi: { sky: "#ffffff", ground: "#9ccf88", intensity: 1.7 },
-    sun: { color: "#fff4dc", intensity: 1.9 },
+    hemi: { sky: "#ffffff", ground: "#e6dfcc", intensity: 1.5 },
+    sun: { color: "#fff4dc", intensity: 1.5 },
+    fill: { color: "#ffffff", intensity: 1.2 },
   },
   night: {
     sky: { top: "#081231", horizon: "#27356a" },
@@ -62,7 +65,8 @@ export const palettes: Record<TimeOfDay, Palette> = {
     },
     trunk: "#4a3a32",
     leaves: ["#22534b", "#2b6255"],
-    hemi: { sky: "#8ea3e6", ground: "#2e4166", intensity: 1.1 },
-    sun: { color: "#b9c8ff", intensity: 0.8 },
+    hemi: { sky: "#8ea3e6", ground: "#4a5a86", intensity: 1.1 },
+    sun: { color: "#b9c8ff", intensity: 0.7 },
+    fill: { color: "#c9d4ff", intensity: 0.8 },
   },
 };
