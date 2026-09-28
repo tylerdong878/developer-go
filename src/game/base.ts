@@ -76,14 +76,14 @@ export const areas: Area[] = [
   { kind: "grass", points: blob(-72, 19, 9, 0.25, 14) },
   { kind: "grass", points: blob(-108, -40, 8, 0.25, 15) },
   { kind: "lawn", points: rect(58, 67, 50, 40) },
-  { kind: "plaza", points: circle(0, 0, 10, 40) },
+  { kind: "plaza", points: circle(0, 0, 10, 72) },
   { kind: "plaza", points: rect(60, 0, 26, 26) },
   { kind: "water", points: pond },
   { kind: "water", points: harbor },
   { kind: "deck", points: pierDeck },
 ];
 
-const ring = circle(0, 0, 16, 48);
+const ring = circle(0, 0, 16, 96);
 
 export const roads: Road[] = [
   // the roundabout around home, and the four ways out of it
@@ -104,7 +104,7 @@ export const roads: Road[] = [
   { kind: "street", width: 4.5, points: [[33, 34], [33, 100], [79, 100]] },
   // park paths: in from the west street, then around the pond
   { kind: "path", width: 2.6, points: [[-42, 0], [-61, -1]] },
-  { kind: "path", width: 2.6, points: ellipse(-95, -2, 34, 24, 40), loop: true },
+  { kind: "path", width: 2.6, points: ellipse(-95, -2, 34, 24, 72), loop: true },
   { kind: "path", width: 2.6, points: [[-95, 22], [-92, 34]] },
   { kind: "path", width: 2.6, points: [[-95, -26], [-99, -51]] },
   // campus quad paths, corner to corner
