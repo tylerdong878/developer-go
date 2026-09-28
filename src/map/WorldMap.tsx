@@ -3,11 +3,13 @@
 import { select } from "d3-selection";
 import { zoom, zoomTransform, type ZoomTransform } from "d3-zoom";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { near as offset, places } from "@/content/places";
 import near from "./data/near.json";
 import { labels } from "./labels";
 import { ObjectLayer } from "./ObjectLayer";
 import { placeObjects } from "./objects";
 import { project } from "./projection";
+import { Trainer } from "./Trainer";
 
 /**
  * The first view, in map units: downtown from Cambridge to the Seaport. The
@@ -23,6 +25,9 @@ type Far = Partial<Record<Layer, string>>;
 const r = near.world;
 const placedLabels = labels.map((l) => ({ ...l, ...project(l) }));
 const { onMap, signposts } = placeObjects(r);
+
+/** Where the trainer starts: at school, in the middle of the Northeastern cluster. */
+const TRAINER_START = project(offset(places.northeastern, 250, 480));
 
 /** How much to show at a zoom level: far, low, mid, or high. */
 function detailAt(k: number) {
@@ -174,6 +179,7 @@ export function WorldMap() {
         selected={selected}
         onSelect={setSelected}
       />
+      <Trainer x={TRAINER_START.x} y={TRAINER_START.y} />
     </div>
   );
 }

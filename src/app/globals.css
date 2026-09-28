@@ -306,3 +306,61 @@ body {
   .marker[data-selected]::before { animation: none; }
   .marker { transition: none; }
 }
+
+/* The trainer, placed like the markers and always drawn on top of them. */
+.trainer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  translate:
+    calc(50cqw + (var(--k) * var(--x) + var(--tx) - var(--cx)) * var(--s))
+    calc(50cqh + (var(--k) * var(--y) + var(--ty) - var(--cy)) * var(--s));
+  transform: translate(-50%, -100%);
+  z-index: 20;
+  pointer-events: none;
+}
+.trainer-figure {
+  position: relative;
+  display: block;
+  filter: drop-shadow(0 2px 2px rgb(10 42 74 / 0.3));
+}
+
+/* Rings at the trainer's feet, like the game's: pink reach, white ping. */
+.rings {
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+}
+.rings > span {
+  position: absolute;
+  translate: -50% -50%;
+  border-radius: 50%;
+}
+.ring-reach {
+  width: 150px;
+  height: 150px;
+  border: 2px solid rgb(244 114 182 / 0.55);
+  background: rgb(244 114 182 / 0.07);
+}
+.ring-ping {
+  width: 84px;
+  height: 84px;
+  border: 2px solid rgb(255 255 255 / 0.95);
+  box-shadow: 0 0 6px rgb(10 42 74 / 0.15);
+  animation: ping 2.4s ease-out infinite;
+}
+.ring-feet {
+  width: 30px;
+  height: 30px;
+  background: rgb(255 255 255 / 0.55);
+  border: 2px solid #fff;
+}
+
+@keyframes ping {
+  from { scale: 0.25; opacity: 1; }
+  to { scale: 1; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring-ping { animation: none; opacity: 0.6; }
+}
