@@ -190,10 +190,10 @@ export const trees: Vec2[] = (() => {
   const clear = (p: Vec2, gap: number) =>
     !areas.some((a) => (a.kind === "water" || a.kind === "grass") && pointInPolygon(p, a.points)) &&
     !Object.values(slots).some(([x, z]) => Math.hypot(p[0] - x, p[1] - z) < gap) &&
-    !roads.some((r) => nearLine(p, r.points, r.loop, r.width / 2 + 2.5));
-  for (let i = 0; out.length < 70 && i < 4000; i++) {
+    !roads.some((r) => nearLine(p, r.points, r.loop, r.width / 2 + 3.2));
+  for (let i = 0; out.length < 48 && i < 4000; i++) {
     const p: Vec2 = [-156 + rand() * 116, -52 + rand() * 82];
-    if (pointInPolygon(p, park) && clear(p, 6) && out.every((q) => Math.hypot(p[0] - q[0], p[1] - q[1]) > 6)) {
+    if (pointInPolygon(p, park) && clear(p, 7) && out.every((q) => Math.hypot(p[0] - q[0], p[1] - q[1]) > 7.5)) {
       out.push(p);
     }
   }
