@@ -46,15 +46,13 @@ function useTrainerSpot() {
  * sheet listing everything by kind. Picking one dashes the trainer there,
  * so nobody has to walk across the base to read about a job.
  */
-export function Nearby() {
-  const [open, setOpen] = useState(false);
+export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boolean) => void }) {
   const [tab, setTab] = useState<TabId>("gym");
   const spot = useTrainerSpot();
   const button = useRef<HTMLButtonElement>(null);
   const close = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    game.input.paused = open;
     if (!open) return;
     close.current?.focus();
     const onKey = (e: KeyboardEvent) => {
@@ -62,7 +60,7 @@ export function Nearby() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, setOpen]);
 
   const closest = [...everything].sort((a, b) => distanceFrom(spot, a) - distanceFrom(spot, b)).slice(0, 3);
   const current = TABS.find((t) => t.id === tab)!;
@@ -81,16 +79,17 @@ export function Nearby() {
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        className="flex items-center gap-1.5 rounded-2xl bg-surface/92 px-3 py-2 text-ink shadow-lg backdrop-blur transition hover:scale-[1.03] active:scale-95"
+        aria-label="Nearby"
+        className="flex items-center gap-1.5 rounded-2xl bg-surface/92 px-2.5 py-1.5 text-ink shadow-lg backdrop-blur transition hover:scale-[1.03] active:scale-95 sm:px-3 sm:py-2"
       >
         <span className="flex items-end gap-0.5">
           {closest.map((o) => (
-            <span key={o.slug} className="grid size-9 place-items-center">
-              <ObjectIcon object={o} size={30} />
+            <span key={o.slug} className="grid size-7 place-items-center sm:size-9">
+              <ObjectIcon object={o} size={26} />
             </span>
           ))}
         </span>
-        <span className="font-display text-sm font-semibold">Nearby</span>
+        <span className="hidden font-display text-sm font-semibold sm:inline">Nearby</span>
       </button>
 
       {open ? (

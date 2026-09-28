@@ -17,7 +17,7 @@ const span = (r: Role) => `${month(r.start)} - ${r.end ? month(r.end) : "present
  * a project, a raid for a hackathon, a Pokédex entry for a fun fact, and an
  * egg for work in progress. A sheet on phones, a card on bigger screens.
  */
-export function Card({ object, onClose }: { object: MapObject; onClose: () => void }) {
+export function Card({ object, onClose, onAbout }: { object: MapObject; onClose: () => void; onAbout: () => void }) {
   const close = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export function Card({ object, onClose }: { object: MapObject; onClose: () => vo
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const view = cardFor(object);
+  const view = cardFor(object, onAbout);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
       <button type="button" aria-label="Close" tabIndex={-1} onClick={onClose} className="absolute inset-0 bg-mystic-900/35 backdrop-blur-[2px]" />
@@ -68,7 +68,7 @@ export function Card({ object, onClose }: { object: MapObject; onClose: () => vo
 
 type View = { band: string; art: ReactNode; kicker: string; title: string; subtitle?: string; body: ReactNode };
 
-function cardFor(o: MapObject): View {
+function cardFor(o: MapObject, onAbout: () => void): View {
   switch (o.kind) {
     case "gym":
       return gymCard(o);
@@ -77,7 +77,7 @@ function cardFor(o: MapObject): View {
     case "raid":
       return raidCard(o);
     case "spawn":
-      return spawnCard(o);
+      return spawnCard(o, onAbout);
     case "egg":
       return eggCard(o);
   }
@@ -174,7 +174,7 @@ function raidCard(r: Raid): View {
   };
 }
 
-function spawnCard(s: Spawn): View {
+function spawnCard(s: Spawn, onAbout: () => void): View {
   return {
     band: "linear-gradient(135deg, #5fb85a, #2fd3c6)",
     art: (
@@ -183,7 +183,20 @@ function spawnCard(s: Spawn): View {
     ),
     kicker: `Wild ${s.pokemon.name}, No. ${String(s.pokemon.dex).padStart(4, "0")}`,
     title: s.title,
-    body: <p className="text-base leading-relaxed">{s.body}</p>,
+    body: (
+      <>
+        <p className="text-base leading-relaxed">{s.body}</p>
+        {s.opensAbout ? (
+          <button
+            type="button"
+            onClick={onAbout}
+            className="rounded-full bg-teal px-5 py-2.5 font-display font-semibold text-mystic-900 shadow transition hover:brightness-105 active:scale-95"
+          >
+            Wake it up
+          </button>
+        ) : null}
+      </>
+    ),
   };
 }
 
