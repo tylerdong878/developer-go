@@ -197,8 +197,8 @@ export const trees: Vec2[] = (() => {
       out.push(p);
     }
   }
-  for (let z = -26; z >= -100; z -= 13) {
-    for (const x of [-6.5, 6.5]) if (clear([x, z], 4)) out.push([x, z]);
+  for (let z = -40; z >= -100; z -= 18) {
+    for (const x of [-9.5, 9.5]) if (clear([x, z], 4)) out.push([x, z]);
   }
   for (const x of [38, 50, 66, 78]) {
     for (const z of [50, 84]) if (clear([x, z], 5)) out.push([x, z]);

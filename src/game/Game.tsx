@@ -5,6 +5,7 @@ import { useRef } from "react";
 import { useControls } from "./controls";
 import { palettes } from "./palette";
 import { Controller } from "./scene/Controller";
+import { Objects } from "./scene/objects/Objects";
 import { Rings } from "./scene/Rings";
 import { TapTarget } from "./scene/TapTarget";
 import { Teddy3D } from "./scene/Teddy3D";
@@ -31,6 +32,7 @@ export default function Game() {
         <Controller />
         <World palette={palettes[time]} night={time === "night"} />
         <TapTarget />
+        <Objects />
         <Rings mover={game.player.trainer} still={still} />
         <Trainer3D mover={game.player.trainer} />
         <Teddy3D mover={game.player.buddy} />
