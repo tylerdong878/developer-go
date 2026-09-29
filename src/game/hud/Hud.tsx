@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { bySlug } from "../objects";
 import { game } from "../state";
 import { goTo } from "../travel";
+import { recordCatch } from "../progress";
 import { findWild, removeWild } from "../wild";
 import { Encounter, type Foe } from "./Encounter";
 import { Card } from "./Card";
@@ -75,6 +76,7 @@ export function Hud() {
     if (!foe) return;
     const w = findWild(foe.goal);
     if (w) removeWild(w.id);
+    if (caught) recordCatch(foe.dex);
     setFoe(null);
     if (caught && foe.rare) setCard(foe.goal); // a caught fact Pokémon shows its fact
   };

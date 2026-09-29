@@ -1,6 +1,8 @@
 "use client";
 
-import { bag, medals, type MedalTier, spawns, trainer } from "@/content";
+import { useSyncExternalStore } from "react";
+import { bag, medals, type MedalTier, spawns, trainer, wild } from "@/content";
+import { progressStore } from "../progress";
 import { Portrait } from "./Portrait";
 import { Sheet } from "./Sheet";
 
@@ -79,11 +81,18 @@ export function TrainerPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
-/** Every wild Pokémon on the base, with its fact, like GO's Pokédex. */
+/** GO's Pokédex: the fact Pokémon first, then every wild one, filled in as you catch them. */
 export function PokedexPanel({ onClose, onOpen }: { onClose: () => void; onOpen: (slug: string) => void }) {
+  const { caught } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const total = spawns.length + wild.length;
+  const have = [...spawns.map((s) => s.pokemon.dex), ...wild.map((w) => w.dex)].filter((d) => caught[d]).length;
   return (
     <Sheet title="Pokédex" onClose={onClose}>
-      <p className="mb-3 text-sm text-ink-soft">Every Pokémon on the base is a fact about me. Tap one to read it.</p>
+      <p className="mb-4 text-sm text-ink-soft">
+        You&apos;ve caught <span className="font-bold text-ink">{have}</span> of {total}.
+      </p>
+      <h3 className="mb-2 text-xs font-bold tracking-wider text-ink-soft uppercase">✦ Facts about me</h3>
+      <p className="mb-3 text-sm text-ink-soft">The sparkly ones on the map. Tap any to read it, caught or not.</p>
       <ul className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
         {spawns.map((s) => (
           <li key={s.slug}>
@@ -92,8 +101,7 @@ export function PokedexPanel({ onClose, onOpen }: { onClose: () => void; onOpen:
               onClick={() => onOpen(s.slug)}
               className="flex w-full flex-col items-center rounded-2xl bg-ink/5 px-2 pt-2 pb-2.5 transition hover:bg-ink/10"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element -- tiny local sprite */}
-              <img src={`/sprites/${s.pokemon.dex}.webp`} alt="" width={64} height={64} className="size-16 object-contain" />
+              <Sprite dex={s.pokemon.dex} caught={!!caught[s.pokemon.dex]} />
               <span className="text-[11px] font-semibold text-ink-soft tabular-nums">No. {String(s.pokemon.dex).padStart(4, "0")}</span>
               <span className="text-sm font-semibold">{s.pokemon.name}</span>
               <span className="text-xs text-ink-soft">{s.title}</span>
@@ -101,7 +109,32 @@ export function PokedexPanel({ onClose, onOpen }: { onClose: () => void; onOpen:
           </li>
         ))}
       </ul>
+      <h3 className="mt-6 mb-2 text-xs font-bold tracking-wider text-ink-soft uppercase">Wild</h3>
+      <ul className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+        {[...wild].sort((a, b) => a.dex - b.dex).map((w) => (
+          <li key={w.dex} className="flex flex-col items-center rounded-2xl bg-ink/5 px-1 pt-1.5 pb-2">
+            <Sprite dex={w.dex} caught={!!caught[w.dex]} small />
+            <span className="text-[10px] font-semibold text-ink-soft tabular-nums">No. {String(w.dex).padStart(4, "0")}</span>
+            <span className="text-xs font-semibold">{caught[w.dex] ? w.name : "???"}</span>
+            {caught[w.dex] ? <span className="text-[10px] text-ink-soft">×{caught[w.dex]}</span> : null}
+          </li>
+        ))}
+      </ul>
     </Sheet>
+  );
+}
+
+/** A Pokédex picture: full color once caught, a dark silhouette until then. */
+function Sprite({ dex, caught, small = false }: { dex: number; caught: boolean; small?: boolean }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- tiny local sprite
+    <img
+      src={`/sprites/${dex}.webp`}
+      alt=""
+      width={64}
+      height={64}
+      className={`${small ? "size-12" : "size-16"} object-contain ${caught ? "" : "brightness-0 opacity-35"}`}
+    />
   );
 }
 
