@@ -1,5 +1,5 @@
 /**
- * Downloads a sprite for every fact Pokémon into public/sprites as a small
+ * Downloads a sprite for every fact and wild Pokémon into public/sprites as a small
  * WebP. They're Pokémon HOME renders from the PokeAPI sprites repo, which
  * look closest to Pokémon GO. Saved into the site, never hotlinked.
  *
@@ -9,7 +9,7 @@
 import { existsSync } from "node:fs";
 import { mkdir, stat } from "node:fs/promises";
 import sharp from "sharp";
-import { spawns } from "@/content";
+import { spawns, wild } from "@/content";
 
 const SOURCE = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home";
 const OUT_DIR = "public/sprites";
@@ -18,7 +18,7 @@ const SIZE = 256;
 async function main() {
   const force = process.argv.includes("--force");
   await mkdir(OUT_DIR, { recursive: true });
-  const dexes = [...new Set(spawns.map((s) => s.pokemon.dex))];
+  const dexes = [...new Set([...spawns.map((s) => s.pokemon.dex), ...wild.map((w) => w.dex)])];
 
   for (const dex of dexes) {
     const out = `${OUT_DIR}/${dex}.webp`;
@@ -33,7 +33,7 @@ async function main() {
       .resize(SIZE, SIZE, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
       .webp({ quality: 82, alphaQuality: 90 })
       .toFile(out);
-    const name = spawns.find((s) => s.pokemon.dex === dex)?.pokemon.name;
+    const name = spawns.find((s) => s.pokemon.dex === dex)?.pokemon.name ?? wild.find((w) => w.dex === dex)?.name;
     console.log(`${dex} ${name}: ${((await stat(out)).size / 1024).toFixed(1)} KB`);
   }
 }

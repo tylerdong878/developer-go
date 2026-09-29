@@ -7,6 +7,8 @@ import type { MapObject } from "./types";
 
 export { eggs, gyms, raids, spawns, stops };
 export { bag } from "./bag";
+export { wild } from "./wild";
+export type { WildSpecies } from "./wild";
 export type { BagItem } from "./bag";
 export { medals } from "./medals";
 export { mapCenter, places, signposts } from "./places";
