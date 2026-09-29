@@ -1,10 +1,11 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useSyncExternalStore } from "react";
 import { DoubleSide, type Group, type Mesh } from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import type { Stop as StopContent } from "@/content";
+import { progressStore } from "../../progress";
 import { game } from "../../state";
 import { REACH } from "../Rings";
 import { Shadow } from "../Shadow";
@@ -24,6 +25,9 @@ export function Stop({ stop, x, z }: { stop: StopContent; x: number; z: number }
   const petals = useRef<Group>(null);
   const open = useRef(0);
   const cube = useMemo(() => new RoundedBoxGeometry(0.85, 0.85, 0.85, 3, 0.2), []);
+  // Spun stops turn purple, like GO.
+  const spun = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server).spun.includes(stop.slug);
+  const color = spun ? "#a46bf5" : BLUE;
 
   useFrame(({ clock }, dt) => {
     if (!top.current || !icon.current) return;
@@ -54,7 +58,7 @@ export function Stop({ stop, x, z }: { stop: StopContent; x: number; z: number }
         </mesh>
         <group ref={top} position-y={2.9}>
           <mesh ref={icon} geometry={cube}>
-            <meshStandardMaterial color={BLUE} roughness={0.35} emissive="#0b84d6" emissiveIntensity={0.25} />
+            <meshStandardMaterial color={color} roughness={0.35} emissive={spun ? "#7b3fd6" : "#0b84d6"} emissiveIntensity={0.25} />
           </mesh>
           <mesh rotation-x={Math.PI / 2}>
             <torusGeometry args={[0.68, 0.05, 8, 40]} />

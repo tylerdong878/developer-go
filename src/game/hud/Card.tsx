@@ -4,6 +4,7 @@ import { type ReactNode, useEffect, useRef } from "react";
 import { type Egg, type Gym, type MapObject, type Raid, type Role, skills, type SkillId, type Spawn, type Stop } from "@/content";
 import { EGG_SPOTS, RAID_EGG } from "../colors";
 import { EggIcon, GymIcon, RaidIcon, StopIcon } from "./icons";
+import { SpinDisc } from "./SpinDisc";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const month = (m: string) => {
@@ -121,6 +122,7 @@ function stopCard(s: Stop): View {
     subtitle: `${s.period}, ${s.role}`,
     body: (
       <>
+        <SpinDisc slug={s.slug} name={s.name} lured={s.featured} />
         <p className="text-base leading-relaxed">{s.tagline}</p>
         {s.stats.length ? (
           <ul className="flex flex-wrap gap-2.5" aria-label="Numbers">

@@ -29,7 +29,7 @@ export function XpPops() {
   return (
     <div aria-live="polite" className="pointer-events-none fixed inset-x-0 top-[30%] z-[60] flex flex-col items-center gap-1">
       {pops.map((p) => (
-        <p key={p.id} className="xp-pop font-display text-2xl font-bold text-white drop-shadow-[0_2px_3px_rgba(10,42,74,0.6)]">
+        <p key={p.id} className="xp-pop rounded-full bg-mystic-900/80 px-4 py-1 font-display text-xl font-bold text-white shadow-lg">
           +{p.amount} XP <span className="text-base font-semibold opacity-90">{p.why}</span>
         </p>
       ))}
