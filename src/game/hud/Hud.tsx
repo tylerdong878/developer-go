@@ -4,9 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import { bySlug } from "../objects";
 import { game } from "../state";
 import { goTo } from "../travel";
-import { recordCatch } from "../progress";
+import { gainXp, progressStore, recordCatch, recordVisit } from "../progress";
 import { findWild, removeWild } from "../wild";
-import { Encounter, type Foe } from "./Encounter";
+import { Encounter, type Foe, type Thrown } from "./Encounter";
+import { XpBar, XpPops } from "./Xp";
 import { Card } from "./Card";
 import { MainMenu, MenuBall, type Screen, TrainerBadge } from "./Menu";
 import { Nearby } from "./Nearby";
@@ -33,6 +34,10 @@ export function Hud() {
       const o = bySlug.get(goal);
       if (o?.kind === "spawn") return setFoe({ dex: o.pokemon.dex, name: o.pokemon.name, rare: true, goal });
       setCard(goal);
+      if (o && !progressStore.get().visited.includes(goal)) {
+        recordVisit(goal);
+        gainXp(250, "first visit");
+      }
     };
     const fromLink = decodeURIComponent(window.location.hash.slice(1));
     if (bySlug.has(fromLink)) goTo(fromLink, true);
@@ -72,11 +77,15 @@ export function Hud() {
     else setScreen(s);
   };
   const object = card ? bySlug.get(card) : undefined;
-  const endCatch = (caught: boolean) => {
+  const endCatch = (caught: boolean, best: Thrown) => {
     if (!foe) return;
     const w = findWild(foe.goal);
     if (w) removeWild(w.id);
-    if (caught) recordCatch(foe.dex);
+    if (caught) {
+      recordCatch(foe.dex);
+      const bonus = best === "Excellent" ? 100 : best === "Great" ? 50 : best === "Nice" ? 10 : 0;
+      gainXp((foe.rare ? 500 : 100) + bonus, best ? `${best} throw` : "caught");
+    }
     setFoe(null);
     if (caught && foe.rare) setCard(foe.goal); // a caught fact Pokémon shows its fact
   };
@@ -91,6 +100,11 @@ export function Hud() {
           </div>
         </div>
       ) : null}
+
+      <div className="pointer-events-auto absolute top-[72px] left-1/2 -translate-x-1/2 sm:top-4">
+        <XpBar />
+      </div>
+      <XpPops />
 
       <div className="pointer-events-auto absolute bottom-4 left-4">
         <TrainerBadge onOpen={() => setScreen("trainer")} />

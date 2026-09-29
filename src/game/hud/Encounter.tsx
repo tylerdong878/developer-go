@@ -17,7 +17,9 @@ const HIT_RADIUS = 80; // px around the Pokémon that counts as a hit
  * ring while it's small is a Nice, Great, or Excellent throw and helps the
  * catch. Then the ball wiggles, and either it's caught or it breaks free.
  */
-export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean) => void }) {
+export type Thrown = "Nice" | "Great" | "Excellent" | null;
+
+export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean, best: Thrown) => void }) {
   const field = useRef<HTMLDivElement>(null);
   const ball = useRef<HTMLDivElement>(null);
   const ring = useRef<HTMLDivElement>(null);
@@ -159,7 +161,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean)
   // Keyboard fallback: space throws straight at it.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onDone(false);
+      if (e.key === "Escape") onDone(false, null);
       if ((e.key === " " || e.key === "Enter") && phase === "aim") {
         e.preventDefault();
         const { target, rest } = geometry();
@@ -186,7 +188,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean)
       <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4">
         <button
           type="button"
-          onClick={() => onDone(phase === "caught")}
+          onClick={() => onDone(phase === "caught", label)}
           className="rounded-full bg-white/85 px-4 py-2 font-display font-semibold text-ink shadow"
         >
           {done ? "Back to the map" : "Run"}
@@ -251,7 +253,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean)
         <div className="absolute inset-x-0 bottom-12 flex justify-center">
           <button
             type="button"
-            onClick={() => onDone(phase === "caught")}
+            onClick={() => onDone(phase === "caught", label)}
             className="rounded-full bg-teal px-8 py-3 font-display text-lg font-semibold text-mystic-900 shadow-lg"
           >
             OK

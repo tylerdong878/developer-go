@@ -70,3 +70,34 @@ export function addXp(amount: number) {
   const p = current();
   save({ ...p, xp: p.xp + amount });
 }
+
+/** XP to reach a level: 1,000 for level 2, then each level needs 1,000 more than the last. */
+export const xpForLevel = (level: number) => (1000 * (level - 1) * level) / 2;
+export const levelFor = (xp: number) => Math.floor((1 + Math.sqrt(1 + (8 * xp) / 1000)) / 2);
+
+export type XpPop = { id: number; amount: number; why: string };
+let pops: XpPop[] = [];
+const noPops: XpPop[] = [];
+let nextPop = 1;
+const popListeners = new Set<() => void>();
+
+export const popStore = {
+  subscribe(listener: () => void) {
+    popListeners.add(listener);
+    return () => popListeners.delete(listener);
+  },
+  get: () => pops,
+  server: () => noPops,
+};
+
+/** Adds XP and floats a "+100 XP" up the screen, like GO. */
+export function gainXp(amount: number, why: string) {
+  addXp(amount);
+  const pop = { id: nextPop++, amount, why };
+  pops = [...pops, pop];
+  popListeners.forEach((l) => l());
+  window.setTimeout(() => {
+    pops = pops.filter((p) => p.id !== pop.id);
+    popListeners.forEach((l) => l());
+  }, 1800);
+}

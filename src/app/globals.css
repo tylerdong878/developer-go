@@ -126,3 +126,12 @@ body {
   .foe-hop,
   .ball-wiggle { animation: none; }
 }
+
+.xp-pop { animation: xp-pop 1.8s ease-out forwards; }
+@keyframes xp-pop {
+  0% { opacity: 0; translate: 0 20px; scale: 0.7; }
+  15% { opacity: 1; translate: 0 0; scale: 1.08; }
+  25% { scale: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; translate: 0 -50px; }
+}
