@@ -3,8 +3,17 @@
 import { useLayoutEffect, useMemo, useRef } from "react";
 import { Color, ConeGeometry, type InstancedMesh, Object3D } from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
-import { areas, clearOfRoads, onLand, slots } from "../base";
+import { areas, clearOfRoads, landmarks, onLand, slots } from "../base";
 import { pointInPolygon, random, type Vec2 } from "../geometry";
+
+/** Half sizes of the courts and the rock, so nothing grows on them. */
+const KEEP_CLEAR = { soccer: [24, 16], tennis: [8, 16], hoops: [8.5, 8], rock: [6, 5], pier: [0, 0] } as const;
+const onALandmark = ([x, z]: Vec2) =>
+  landmarks.some((l) => {
+    if (!("at" in l)) return false;
+    const [hx, hz] = KEEP_CLEAR[l.kind];
+    return Math.abs(x - l.at[0]) < hx && Math.abs(z - l.at[1]) < hz;
+  });
 
 const FLOWER_COLORS = ["#ffffff", "#f9a8d4", "#f6c453", "#a78bfa", "#fb7185"];
 
@@ -16,7 +25,7 @@ function scatter(count: number, seed: number, kinds: string[]) {
   for (let i = 0; out.length < count && i < count * 40; i++) {
     const p: Vec2 = [-160 + rand() * 250, -130 + rand() * 250];
     const inGreen = kinds.includes("land") ? onLand(p) : green.some((a) => pointInPolygon(p, a.points));
-    if (!inGreen || !onLand(p) || !clearOfRoads(p, 1)) continue;
+    if (!inGreen || !onLand(p) || !clearOfRoads(p, 1) || onALandmark(p)) continue;
     if (Object.values(slots).some(([x, z]) => Math.hypot(p[0] - x, p[1] - z) < 3)) continue;
     out.push(p);
   }
