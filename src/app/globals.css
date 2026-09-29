@@ -135,3 +135,10 @@ body {
   80% { opacity: 1; }
   100% { opacity: 0; translate: 0 -50px; }
 }
+
+/* The start screen: GO's sky, with the start button breathing. */
+.start-screen { background: linear-gradient(160deg, #0b84d6, #1ab6e8 55%, #5fd0f2); }
+[data-time="night"] .start-screen { background: linear-gradient(160deg, #081231, #27356a 60%, #0a5a98); }
+.start-pulse { animation: start-pulse 1.6s ease-in-out infinite; }
+@keyframes start-pulse { 50% { scale: 1.06; } }
+@media (prefers-reduced-motion: reduce) { .start-pulse { animation: none; } }

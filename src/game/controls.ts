@@ -31,7 +31,7 @@ export function useControls(element: RefObject<HTMLElement | null>) {
     const typing = (e: Event) =>
       e.target instanceof HTMLElement && !!e.target.closest("input, textarea, select, [contenteditable]");
     const keydown = (e: KeyboardEvent) => {
-      if (typing(e) || e.metaKey || e.ctrlKey || e.altKey || input.paused) return;
+      if (typing(e) || e.metaKey || e.ctrlKey || e.altKey || input.paused || input.locked) return;
       if (e.code in MOVE_KEYS) {
         input.keys.add(e.code);
         input.target = null;

@@ -24,6 +24,8 @@ export type Input = {
   dash: boolean;
   goal: string | null;
   paused: boolean;
+  /** Until the start screen is dismissed, nothing moves. */
+  locked: boolean;
 };
 
 export type GameState = {
@@ -38,7 +40,7 @@ export function createGame(): GameState {
   return {
     player: createPlayer(),
     view: { yaw: 0, distance: ZOOM.start, yawTo: 0, distanceTo: ZOOM.start },
-    input: { keys: new Set(), target: null, dash: false, goal: null, paused: false },
+    input: { keys: new Set(), target: null, dash: false, goal: null, paused: false, locked: true },
     onArrive: null,
   };
 }

@@ -5,6 +5,7 @@ import { useRef } from "react";
 import { useControls } from "./controls";
 import { Hud } from "./hud/Hud";
 import { palettes } from "./palette";
+import { markReady } from "./ready";
 import { Controller } from "./scene/Controller";
 import { Objects } from "./scene/objects/Objects";
 import { Rings } from "./scene/Rings";
@@ -30,7 +31,12 @@ export default function Game() {
         role="img"
         aria-label="Tyler's home base, a 3D map in the style of Pokémon GO. Walk with WASD or the arrow keys."
       >
-        <Canvas flat dpr={[1, 2]} camera={{ fov: 56, near: 0.3, far: 2500, position: [0, 6.5, 17] }}>
+        <Canvas
+          flat
+          dpr={[1, 2]}
+          camera={{ fov: 56, near: 0.3, far: 2500, position: [0, 6.5, 17] }}
+          onCreated={() => requestAnimationFrame(() => requestAnimationFrame(markReady))}
+        >
           <Controller />
           <World palette={palettes[time]} night={time === "night"} />
           <TapTarget />
