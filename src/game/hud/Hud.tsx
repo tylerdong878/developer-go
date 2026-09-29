@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { bySlug } from "../objects";
 import { game } from "../state";
 import { goTo } from "../travel";
+import { findWild, removeWild } from "../wild";
+import { Encounter, type Foe } from "./Encounter";
 import { Card } from "./Card";
 import { MainMenu, MenuBall, type Screen, TrainerBadge } from "./Menu";
 import { Nearby } from "./Nearby";
@@ -20,10 +22,16 @@ export function Hud() {
   const [screen, setScreen] = useState<Exclude<Screen, "nearby"> | null>(null);
   const [menu, setMenu] = useState(false);
   const [nearby, setNearby] = useState(false);
+  const [foe, setFoe] = useState<(Foe & { goal: string }) | null>(null);
 
   useEffect(() => {
-    game.onArrive = (slug) => {
-      if (!slug.startsWith("wild:")) setCard(slug);
+    // Walking up to a Pokémon starts a catch; anything else opens its card.
+    game.onArrive = (goal) => {
+      const w = findWild(goal);
+      if (w) return setFoe({ dex: w.species.dex, name: w.species.name, rare: false, goal });
+      const o = bySlug.get(goal);
+      if (o?.kind === "spawn") return setFoe({ dex: o.pokemon.dex, name: o.pokemon.name, rare: true, goal });
+      setCard(goal);
     };
     const fromLink = decodeURIComponent(window.location.hash.slice(1));
     if (bySlug.has(fromLink)) goTo(fromLink, true);
@@ -34,8 +42,8 @@ export function Hud() {
 
   // The keys don't walk the trainer around behind an open screen.
   useEffect(() => {
-    game.input.paused = card !== null || screen !== null || menu || nearby;
-  }, [card, screen, menu, nearby]);
+    game.input.paused = card !== null || screen !== null || menu || nearby || foe !== null;
+  }, [card, screen, menu, nearby, foe]);
 
   useEffect(() => {
     const url = window.location.pathname + window.location.search + (card ? `#${card}` : "");
@@ -63,6 +71,13 @@ export function Hud() {
     else setScreen(s);
   };
   const object = card ? bySlug.get(card) : undefined;
+  const endCatch = (caught: boolean) => {
+    if (!foe) return;
+    const w = findWild(foe.goal);
+    if (w) removeWild(w.id);
+    setFoe(null);
+    if (caught && foe.rare) setCard(foe.goal); // a caught fact Pokémon shows its fact
+  };
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20">
@@ -99,6 +114,7 @@ export function Hud() {
         ) : null}
         {screen === "bag" ? <BagPanel onClose={closeScreen} /> : null}
         {screen === "medals" ? <MedalsPanel onClose={closeScreen} /> : null}
+        {foe ? <Encounter key={foe.goal} foe={foe} onDone={endCatch} /> : null}
       </div>
     </div>
   );
