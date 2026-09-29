@@ -3,9 +3,10 @@
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import { Vector3 } from "three";
-import { slots, walkable } from "../base";
+import { walkable } from "../base";
 import { MOVE_KEYS } from "../controls";
 import { DASH_SPEED, game, WALK_SPEED, ZOOM } from "../state";
+import { goalPosition } from "../travel";
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 /** Frame-rate independent easing: how far to close a gap this frame. */
@@ -62,8 +63,9 @@ export function Controller() {
         input.dash = false;
         const goal = input.goal;
         input.goal = null;
-        if (goal && slots[goal]) {
-          const [gx, gz] = slots[goal];
+        const at = goal ? goalPosition(goal) : null;
+        if (goal && at) {
+          const [gx, gz] = at;
           facing.current = Math.atan2(gx - trainer.position.x, gz - trainer.position.z);
           game.onArrive?.(goal);
         }

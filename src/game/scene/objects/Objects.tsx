@@ -7,12 +7,14 @@ import { Gym } from "./Gym";
 import { PlateLayout } from "./Nameplate";
 import { Spawn } from "./Spawn";
 import { Stop } from "./Stop";
+import { WildSpawns } from "./WildSpawns";
 
 /** Every gym, stop, raid, wild Pokémon, and egg, each at its spot in the base. */
 export function Objects({ grass }: { grass: string }) {
   return (
     <>
       <PlateLayout />
+      <WildSpawns grass={grass} />
       {gyms.map((gym) => {
         const [x, z] = slots[gym.slug];
         return <Gym key={gym.slug} gym={gym} x={x} z={z} />;

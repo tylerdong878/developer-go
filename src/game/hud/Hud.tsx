@@ -22,7 +22,9 @@ export function Hud() {
   const [nearby, setNearby] = useState(false);
 
   useEffect(() => {
-    game.onArrive = (slug) => setCard(slug);
+    game.onArrive = (slug) => {
+      if (!slug.startsWith("wild:")) setCard(slug);
+    };
     const fromLink = decodeURIComponent(window.location.hash.slice(1));
     if (bySlug.has(fromLink)) goTo(fromLink, true);
     return () => {
