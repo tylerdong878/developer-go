@@ -63,11 +63,11 @@ export function Trees({ trunk, leaves }: { trunk: string; leaves: readonly [stri
 
   return (
     <>
-      <instancedMesh ref={trunks} args={[undefined, undefined, trees.length]} frustumCulled={false}>
+      <instancedMesh ref={trunks} args={[undefined, undefined, trees.length]} frustumCulled={false} castShadow>
         <cylinderGeometry args={[0.26, 0.38, 2.2, 6]} />
         <meshLambertMaterial color={trunk} />
       </instancedMesh>
-      <instancedMesh ref={canopies} args={[undefined, undefined, trees.length]} frustumCulled={false}>
+      <instancedMesh ref={canopies} args={[undefined, undefined, trees.length]} frustumCulled={false} castShadow>
         <icosahedronGeometry args={[1.9, 1]} />
         <meshLambertMaterial color="#ffffff" flatShading />
       </instancedMesh>

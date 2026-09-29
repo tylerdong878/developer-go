@@ -47,7 +47,7 @@ export function Stop({ stop, x, z }: { stop: StopContent; x: number; z: number }
   return (
     <group position={[x, 0, z]}>
       <group onClick={tapObject(stop.slug)} {...hover} scale={1.3}>
-        <Shadow size={1.6} />
+        <Shadow size={1.6} opacity={0.5} />
         <mesh position-y={0.05}>
           <cylinderGeometry args={[0.36, 0.42, 0.1, 16]} />
           <meshStandardMaterial color="#d6e6f2" roughness={0.6} />

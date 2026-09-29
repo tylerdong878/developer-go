@@ -8,6 +8,7 @@ import { circle } from "../geometry";
 import type { Palette } from "../palette";
 import { outlineGeometry, polygonGeometry, ribbonGeometry } from "./ground";
 import { Sky } from "./Sky";
+import { Sun } from "./Sun";
 import { Trees } from "./Trees";
 
 /** Fog starts past what's around you and swallows the edge of the base. */
@@ -72,7 +73,7 @@ export function World({ palette, night }: { palette: Palette; night: boolean }) 
       <fog attach="fog" args={[palette.sky.horizon, FOG.near, FOG.far]} />
       <Sky top={palette.sky.top} horizon={palette.sky.horizon} stars={night} />
       <hemisphereLight args={[palette.hemi.sky, palette.hemi.ground, palette.hemi.intensity]} />
-      <directionalLight position={[60, 120, 40]} color={palette.sun.color} intensity={palette.sun.intensity} />
+      <Sun color={palette.sun.color} intensity={palette.sun.intensity} night={night} />
       <CameraLight color={palette.fill.color} intensity={palette.fill.intensity} />
 
       {layers.map((layer, i) => (

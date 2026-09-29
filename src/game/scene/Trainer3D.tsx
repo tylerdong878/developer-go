@@ -49,7 +49,7 @@ export function Trainer3D({ mover }: { mover: Mover }) {
 
   return (
     <group ref={root}>
-      <Shadow size={1.7} />
+      <Shadow size={1.7} opacity={0.5} />
       <group scale={0.9}>
         <group name="body">
           {["legL", "legR"].map((name, i) => (

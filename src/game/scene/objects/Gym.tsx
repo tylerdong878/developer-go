@@ -47,7 +47,7 @@ export function Gym(props: Props) {
   return (
     <group position={[x, 0, z]}>
       <group onClick={tapObject(slug)} {...hover} scale={1.4}>
-        <Shadow size={4.2} />
+        <Shadow size={4.2} opacity={0.5} />
         <mesh position-y={0.18}>
           <cylinderGeometry args={[1.55, 1.7, 0.36, 8]} />
           <meshStandardMaterial color="#e9eef3" roughness={0.6} />

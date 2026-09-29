@@ -66,7 +66,7 @@ export function Teddy3D({ mover }: { mover: Mover }) {
 
   return (
     <group ref={root}>
-      <Shadow size={1.2} />
+      <Shadow size={1.2} opacity={0.5} />
       <group scale={0.85}>
         <group name="body">
           {[
