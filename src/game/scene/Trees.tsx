@@ -9,6 +9,14 @@ import { game } from "../state";
 
 const UP = new Vector3(0, 1, 0);
 
+/** A canopy is three overlapping puffs, so trees look soft and full instead of like one ball. */
+const PUFFS = [
+  { x: 0, y: 3.5, z: 0, r: 1 },
+  { x: 1.05, y: 2.9, z: 0.35, r: 0.72 },
+  { x: -0.85, y: 3.0, z: -0.45, r: 0.78 },
+];
+const puffAt = new Vector3();
+
 /**
  * Low-poly trees, drawn as two instanced meshes: trunks and faceted canopies.
  * Any tree standing between the camera and the trainer shrinks out of the
@@ -28,7 +36,9 @@ export function Trees({ trunk, leaves }: { trunk: string; leaves: readonly [stri
     const mesh = canopies.current;
     if (!mesh) return;
     const colors = leaves.map((c) => new Color(c));
-    trees.forEach((_, i) => mesh.setColorAt(i, colors[(i * 7) % 3 === 0 ? 1 : 0]));
+    trees.forEach((_, i) =>
+      PUFFS.forEach((__, j) => mesh.setColorAt(i * PUFFS.length + j, colors[(i * 7 + j) % 3 === 0 ? 1 : 0])),
+    );
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   }, [leaves]);
 
@@ -54,8 +64,12 @@ export function Trees({ trunk, leaves }: { trunk: string; leaves: readonly [stri
       q.setFromAxisAngle(UP, tree.turn);
       m.compose(p.set(tree.x, 1.1 * k, tree.z), q, s.set(k, k, k));
       trunks.current!.setMatrixAt(i, m);
-      m.compose(p.set(tree.x, 3.3 * k, tree.z), q, s.set(k, k * 1.12, k));
-      canopies.current!.setMatrixAt(i, m);
+      PUFFS.forEach((puff, j) => {
+        puffAt.set(puff.x, puff.y, puff.z).applyQuaternion(q).multiplyScalar(k);
+        const r = k * puff.r;
+        m.compose(p.set(tree.x + puffAt.x, puffAt.y, tree.z + puffAt.z), q, s.set(r, r * 0.92, r));
+        canopies.current!.setMatrixAt(i * PUFFS.length + j, m);
+      });
     });
     trunks.current.instanceMatrix.needsUpdate = true;
     canopies.current.instanceMatrix.needsUpdate = true;
@@ -67,8 +81,8 @@ export function Trees({ trunk, leaves }: { trunk: string; leaves: readonly [stri
         <cylinderGeometry args={[0.26, 0.38, 2.2, 6]} />
         <meshLambertMaterial color={trunk} />
       </instancedMesh>
-      <instancedMesh ref={canopies} args={[undefined, undefined, trees.length]} frustumCulled={false} castShadow>
-        <icosahedronGeometry args={[1.9, 1]} />
+      <instancedMesh ref={canopies} args={[undefined, undefined, trees.length * PUFFS.length]} frustumCulled={false} castShadow>
+        <icosahedronGeometry args={[1.75, 2]} />
         <meshLambertMaterial color="#ffffff" flatShading />
       </instancedMesh>
     </>

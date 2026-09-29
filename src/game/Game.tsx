@@ -34,7 +34,7 @@ export default function Game() {
       >
         <Canvas
           flat
-          shadows
+          shadows="percentage"
           dpr={[1, 2]}
           camera={{ fov: 56, near: 0.3, far: 2500, position: [0, 6.5, 17] }}
           onCreated={() => requestAnimationFrame(() => requestAnimationFrame(markReady))}

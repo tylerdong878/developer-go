@@ -209,6 +209,11 @@ export const trees: Vec2[] = (() => {
   return out;
 })();
 
+/** Is this spot at least `margin` from every road's edge? */
+export function clearOfRoads(p: Vec2, margin: number) {
+  return !roads.some((r) => nearLine(p, r.points, r.loop, r.width / 2 + margin));
+}
+
 function nearLine(p: Vec2, points: readonly Vec2[], loop: boolean | undefined, d: number) {
   const n = loop ? points.length : points.length - 1;
   for (let i = 0; i < n; i++) {

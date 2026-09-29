@@ -9,6 +9,7 @@ import type { Palette } from "../palette";
 import { outlineGeometry, polygonGeometry, ribbonGeometry } from "./ground";
 import { Sky } from "./Sky";
 import { Sun } from "./Sun";
+import { Flora } from "./Flora";
 import { Trees } from "./Trees";
 
 /** Fog starts past what's around you and swallows the edge of the base. */
@@ -83,6 +84,7 @@ export function World({ palette, night }: { palette: Palette; night: boolean }) 
       ))}
 
       <Trees trunk={palette.trunk} leaves={palette.leaves} />
+      <Flora grass={palette.leaves[1]} />
     </>
   );
 }
