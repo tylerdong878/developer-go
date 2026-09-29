@@ -2,6 +2,7 @@
 
 import { type PointerEvent, useRef, useState, useSyncExternalStore } from "react";
 import { gainXp, progressStore, recordSpin } from "../progress";
+import { sfx } from "../sound";
 
 const ITEMS = [
   { name: "Poké Ball", count: 3, color: "#e3350d" },
@@ -22,6 +23,7 @@ export function SpinDisc({ slug, name, lured }: { slug: string; name: string; lu
   const from = useRef<number | null>(null);
 
   const spin = () => {
+    sfx.spin();
     setTurns((t) => t + 1);
     setItems(true);
     if (!done) {

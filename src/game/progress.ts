@@ -1,5 +1,7 @@
 "use client";
 
+import { sfx } from "./sound";
+
 /**
  * What this visitor has done, kept in their browser: Pokémon caught (by dex
  * number), stops spun, places visited, and XP. It's only a convenience; if
@@ -93,6 +95,7 @@ export const popStore = {
 /** Adds XP and floats a "+100 XP" up the screen, like GO. */
 export function gainXp(amount: number, why: string) {
   addXp(amount);
+  window.setTimeout(sfx.xp, 150);
   const pop = { id: nextPop++, amount, why };
   pops = [...pops, pop];
   popListeners.forEach((l) => l());

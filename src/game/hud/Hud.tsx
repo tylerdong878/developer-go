@@ -5,6 +5,7 @@ import { bySlug } from "../objects";
 import { game } from "../state";
 import { goTo } from "../travel";
 import { gainXp, progressStore, recordCatch, recordVisit } from "../progress";
+import { sfx } from "../sound";
 import { findWild, removeWild } from "../wild";
 import { Encounter, type Foe, type Thrown } from "./Encounter";
 import { XpBar, XpPops } from "./Xp";
@@ -34,6 +35,7 @@ export function Hud() {
       const o = bySlug.get(goal);
       if (o?.kind === "spawn") return setFoe({ dex: o.pokemon.dex, name: o.pokemon.name, rare: true, goal });
       setCard(goal);
+      sfx.open();
       if (o && !progressStore.get().visited.includes(goal)) {
         recordVisit(goal);
         gainXp(250, "first visit");
@@ -72,6 +74,7 @@ export function Hud() {
     setScreen("trainer");
   }, []);
   const pick = (s: Screen) => {
+    sfx.open();
     setMenu(false);
     if (s === "nearby") setNearby(true);
     else setScreen(s);
@@ -110,7 +113,13 @@ export function Hud() {
         <TrainerBadge onOpen={() => setScreen("trainer")} />
       </div>
       <div className="pointer-events-auto absolute bottom-4 left-1/2 -translate-x-1/2">
-        <MenuBall open={menu} onToggle={() => setMenu((m) => !m)} />
+        <MenuBall
+          open={menu}
+          onToggle={() => {
+            sfx.tap();
+            setMenu((m) => !m);
+          }}
+        />
       </div>
       <div className="pointer-events-auto absolute right-4 bottom-4">
         <Nearby open={nearby} setOpen={setNearby} />

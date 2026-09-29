@@ -1,6 +1,7 @@
 "use client";
 
 import { type PointerEvent as ReactPointerEvent, useCallback, useEffect, useRef, useState } from "react";
+import { sfx } from "../sound";
 
 /** Who you're trying to catch. Fact Pokémon never run and always get caught by the second hit. */
 export type Foe = { dex: number; name: string; rare: boolean };
@@ -73,18 +74,22 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
     const caught = Math.random() < chance;
     const wiggles = caught ? 3 : 1 + Math.floor(Math.random() * 3);
     setPhase("wiggle");
+    for (let i = 0; i < wiggles; i++) window.setTimeout(sfx.wiggle, 500 + i * 650);
     window.setTimeout(() => {
       if (caught) {
         setPhase("caught");
+        sfx.catch();
         setMessage(`Gotcha! ${foe.name} was caught!`);
         return;
       }
       if (!foe.rare && Math.random() < 0.15) {
         setPhase("fled");
+        sfx.breakFree();
         setMessage(`Oh no! ${foe.name} fled.`);
         return;
       }
       setMessage(`${foe.name} broke free!`);
+      sfx.breakFree();
       setLabel(null);
       const { rest } = geometry();
       place(rest.x, rest.y);
@@ -94,6 +99,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
   };
 
   const fly = (from: { x: number; y: number }, to: { x: number; y: number }, hit: boolean) => {
+    sfx.throw();
     setPhase("flying");
     const t0 = performance.now();
     const duration = 560;
