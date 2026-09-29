@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { eggs, gyms, type MapObject, raids, spawns, stops } from "@/content";
 import { slots, START } from "../base";
 import { describe } from "../objects";
 import { game } from "../state";
 import { goTo } from "../travel";
+import { goalId, wildStore } from "../wild";
 import { ObjectIcon } from "./icons";
 
 const TABS = [
@@ -18,6 +19,8 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 
 const everything: MapObject[] = TABS.flatMap((t) => [...t.items]);
+
+const noWild: never[] = [];
 
 function distanceFrom([x, z]: readonly [number, number], o: MapObject) {
   const [ox, oz] = slots[o.slug];
@@ -64,6 +67,10 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
 
   const closest = [...everything].sort((a, b) => distanceFrom(spot, a) - distanceFrom(spot, b)).slice(0, 3);
   const current = TABS.find((t) => t.id === tab)!;
+  const wildNow = useSyncExternalStore(wildStore.subscribe, wildStore.get, () => noWild);
+  const wildList = [...wildNow].sort(
+    (a, b) => Math.hypot(a.x - spot[0], a.z - spot[1]) - Math.hypot(b.x - spot[0], b.z - spot[1]),
+  );
   const list = [...current.items].sort((a, b) => distanceFrom(spot, a) - distanceFrom(spot, b));
 
   const pick = (slug: string) => {
@@ -136,6 +143,33 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
           <p className="px-5 pb-2 text-xs font-semibold tracking-wide text-ink-soft uppercase">{current.hint}</p>
 
           <ul role="tabpanel" aria-label={current.label} className="flex-1 overflow-y-auto px-3 pb-4">
+            {tab === "spawn" && wildList.length ? (
+              <>
+                <li className="px-2 pt-1 pb-1 text-xs font-bold tracking-wide text-ink-soft uppercase">Wild right now</li>
+                {wildList.map((w) => (
+                  <li key={w.id}>
+                    <button
+                      type="button"
+                      onClick={() => pick(goalId(w))}
+                      className="flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-ink/6 focus-visible:bg-ink/6"
+                    >
+                      <span className="grid size-12 shrink-0 place-items-center rounded-full bg-sky">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- tiny local sprite */}
+                        <img src={`/sprites/${w.species.dex}.webp`} alt="" width={38} height={38} className="object-contain" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-semibold">{w.species.name}</span>
+                        <span className="block truncate text-sm text-ink-soft">Wild, go catch it</span>
+                      </span>
+                      <span className="shrink-0 text-xs font-semibold text-ink-soft tabular-nums">
+                        {formatDistance(Math.hypot(w.x - spot[0], w.z - spot[1]))}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+                <li className="px-2 pt-3 pb-1 text-xs font-bold tracking-wide text-ink-soft uppercase">✦ Facts about me</li>
+              </>
+            ) : null}
             {list.map((o) => {
               const { name, subtitle } = describe(o);
               return (
