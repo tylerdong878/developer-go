@@ -6,6 +6,7 @@ import { useControls } from "./controls";
 import { Hud } from "./hud/Hud";
 import { palettes } from "./palette";
 import { markReady } from "./ready";
+import { Balls } from "./scene/Balls";
 import { Controller } from "./scene/Controller";
 import { Objects } from "./scene/objects/Objects";
 import { Rings } from "./scene/Rings";
@@ -45,6 +46,7 @@ export default function Game() {
           <CastShadows>
             <Objects grass={palettes[time].leaves[1]} />
           </CastShadows>
+          <Balls />
           <Rings mover={game.player.trainer} still={still} />
           <CastShadows>
             <Trainer3D mover={game.player.trainer} />
