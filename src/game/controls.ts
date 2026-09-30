@@ -71,13 +71,13 @@ export function useControls(element: RefObject<HTMLElement | null>) {
       if (pinch && pointers.size >= 2) {
         const now = spanOf();
         view.distanceTo = clampZoom(pinch.distance * (pinch.span / now.span));
-        view.yawTo = pinch.yaw - (now.angle - pinch.angle);
+        view.yawTo = pinch.yaw + (now.angle - pinch.angle);
       } else if (drag) {
         const dx = e.clientX - drag.x;
         const dy = e.clientY - drag.y;
         if (!drag.moved && Math.hypot(dx, dy) > 6) drag.moved = true;
         if (drag.moved) {
-          view.yawTo = drag.yaw - dx * 0.006;
+          view.yawTo = drag.yaw + dx * 0.006;
           view.distanceTo = clampZoom(drag.distance * Math.exp(dy * 0.004));
         }
       }
