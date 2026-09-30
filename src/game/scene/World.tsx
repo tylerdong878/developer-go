@@ -67,7 +67,7 @@ function CameraLight({ color, intensity }: { color: string; intensity: number })
   return <directionalLight ref={light} color={color} intensity={intensity} target={target} />;
 }
 
-export function World({ palette, night }: { palette: Palette; night: boolean }) {
+export function World({ palette, night, shadowMap }: { palette: Palette; night: boolean; shadowMap: number }) {
   const layers = useMemo(() => groundLayers(), []);
   return (
     <>
@@ -75,7 +75,7 @@ export function World({ palette, night }: { palette: Palette; night: boolean }) 
       <fog attach="fog" args={[palette.sky.horizon, FOG.near, FOG.far]} />
       <Sky top={palette.sky.top} horizon={palette.sky.horizon} stars={night} />
       <hemisphereLight args={[palette.hemi.sky, palette.hemi.ground, palette.hemi.intensity]} />
-      <Sun color={palette.sun.color} intensity={palette.sun.intensity} night={night} />
+      <Sun color={palette.sun.color} intensity={palette.sun.intensity} night={night} mapSize={shadowMap} />
       <CameraLight color={palette.fill.color} intensity={palette.fill.intensity} />
 
       {layers.map((layer, i) => (

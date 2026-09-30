@@ -1,10 +1,11 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useControls } from "./controls";
 import { Hud } from "./hud/Hud";
 import { palettes } from "./palette";
+import { renderBudget } from "./device";
 import { markReady } from "./ready";
 import { Balls } from "./scene/Balls";
 import { Controller } from "./scene/Controller";
@@ -23,6 +24,7 @@ export default function Game() {
   const time = useTimeOfDay();
   const still = useReducedMotion();
   const stage = useRef<HTMLDivElement>(null);
+  const [budget] = useState(renderBudget);
   useControls(stage);
 
   return (
@@ -36,12 +38,12 @@ export default function Game() {
         <Canvas
           flat
           shadows="percentage"
-          dpr={[1, 2]}
+          dpr={budget.dpr}
           camera={{ fov: 56, near: 0.3, far: 2500, position: [0, 6.5, 17] }}
           onCreated={() => requestAnimationFrame(() => requestAnimationFrame(markReady))}
         >
           <Controller />
-          <World palette={palettes[time]} night={time === "night"} />
+          <World palette={palettes[time]} night={time === "night"} shadowMap={budget.shadowMap} />
           <TapTarget />
           <CastShadows>
             <Objects grass={palettes[time].leaves[1]} />

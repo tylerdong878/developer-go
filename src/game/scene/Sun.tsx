@@ -13,7 +13,7 @@ const OFFSET = { x: 30, y: 60, z: 20 };
  * so shadows stay crisp wherever he walks instead of covering the whole base
  * at low resolution.
  */
-export function Sun({ color, intensity, night }: { color: string; intensity: number; night: boolean }) {
+export function Sun({ color, intensity, night, mapSize }: { color: string; intensity: number; night: boolean; mapSize: number }) {
   const light = useRef<DirectionalLight>(null);
   const target = useMemo(() => new Object3D(), []);
   useFrame(() => {
@@ -35,7 +35,7 @@ export function Sun({ color, intensity, night }: { color: string; intensity: num
         intensity={intensity}
         target={target}
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[mapSize, mapSize]}
         shadow-camera-left={-45}
         shadow-camera-right={45}
         shadow-camera-top={45}
