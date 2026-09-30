@@ -10,7 +10,7 @@ import { sfx } from "../sound";
 import { earned, visitorMedals } from "../visitorMedals";
 import { findWild, removeWild } from "../wild";
 import { Encounter, type Foe, type Thrown } from "./Encounter";
-import { XpBar, XpPops } from "./Xp";
+import { XpPops } from "./Xp";
 import { Card } from "./Card";
 import { MainMenu, MenuBall, type Screen, TrainerBadge } from "./Menu";
 import { Nearby } from "./Nearby";
@@ -141,10 +141,6 @@ export function Hud() {
           </div>
         </div>
       ) : null}
-
-      <div className="pointer-events-auto absolute top-[72px] left-1/2 -translate-x-1/2 sm:top-4">
-        <XpBar />
-      </div>
       <XpPops />
 
       <div className="pointer-events-auto absolute bottom-4 left-4">

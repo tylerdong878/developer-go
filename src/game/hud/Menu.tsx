@@ -1,20 +1,27 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { trainer } from "@/content";
+import { type ReactNode, useSyncExternalStore } from "react";
+import { levelFor, progressStore, xpForLevel } from "../progress";
 import { Portrait } from "./Portrait";
 
 export type Screen = "profile" | "about" | "pokedex" | "bag" | "medals" | "nearby";
 
-/** The trainer badge in the bottom left, like GO's: portrait, level, and team. */
+/** The trainer badge in the bottom left, like GO's: portrait, your level, and an XP bar. */
 export function TrainerBadge({ onOpen }: { onOpen: () => void }) {
+  const { xp } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const level = levelFor(xp);
+  const from = xpForLevel(level);
+  const share = Math.min(1, (xp - from) / (xpForLevel(level + 1) - from));
   return (
-    <button type="button" onClick={onOpen} aria-label={`${trainer.name}, level ${trainer.go.level}. Open trainer profile`} className="group flex items-end">
+    <button type="button" onClick={onOpen} aria-label={`You, level ${level}. Open your profile`} className="group flex items-end">
       <span className="relative grid size-16 place-items-center overflow-hidden rounded-full bg-white shadow-lg ring-4 ring-mystic-500 transition group-hover:scale-105 group-active:scale-95">
         <Portrait size={60} />
       </span>
-      <span className="-ml-3 mb-0.5 rounded-full bg-surface/92 py-0.5 pr-3 pl-4 font-display text-sm font-semibold text-ink shadow backdrop-blur">
-        {trainer.go.level}
+      <span className="-ml-3 mb-0.5 rounded-2xl bg-surface/92 py-1 pr-3 pl-4 text-ink shadow backdrop-blur">
+        <span className="block font-display text-sm leading-none font-semibold">Lv {level}</span>
+        <span className="mt-1 block h-1 w-12 overflow-hidden rounded-full bg-ink/10">
+          <span className="block h-full rounded-full bg-teal transition-[width] duration-500" style={{ width: `${share * 100}%` }} />
+        </span>
       </span>
     </button>
   );

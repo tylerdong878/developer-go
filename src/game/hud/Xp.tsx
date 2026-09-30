@@ -1,27 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { levelFor, popStore, progressStore, xpForLevel } from "../progress";
-
-/** Your visit's level and XP, in a chip at the top, with GO's teal bar. */
-export function XpBar() {
-  const { xp } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
-  const level = levelFor(xp);
-  const from = xpForLevel(level);
-  const to = xpForLevel(level + 1);
-  const share = Math.min(1, (xp - from) / (to - from));
-  return (
-    <div className="rounded-full bg-surface/90 px-3.5 py-1.5 text-ink shadow-md backdrop-blur" title="Your visit">
-      <div className="flex items-baseline gap-2 text-xs font-semibold">
-        <span className="font-display text-sm">You, Lv {level}</span>
-        <span className="text-ink-soft tabular-nums">{xp.toLocaleString("en-US")} XP</span>
-      </div>
-      <div className="mt-1 h-1.5 w-36 overflow-hidden rounded-full bg-ink/10">
-        <div className="h-full rounded-full bg-teal transition-[width] duration-500" style={{ width: `${share * 100}%` }} />
-      </div>
-    </div>
-  );
-}
+import { popStore } from "../progress";
 
 /** "+100 XP" popups that float up and fade. */
 export function XpPops() {
