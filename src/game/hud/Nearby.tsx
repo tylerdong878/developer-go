@@ -136,7 +136,8 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
                   tab === t.id ? "bg-mystic-500 text-white shadow" : "bg-ink/6 text-ink-soft hover:bg-ink/12"
                 }`}
               >
-                {t.label} <span className="opacity-70">{t.items.length}</span>
+                {t.label}{" "}
+                <span className="opacity-70">{t.items.length + (t.id === "spawn" ? wildNow.length : 0)}</span>
               </button>
             ))}
           </div>
