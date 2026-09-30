@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { trainer } from "@/content";
 import { Portrait } from "./hud/Portrait";
@@ -66,6 +67,11 @@ function Start({ onStart }: { onStart: () => void }) {
       )}
       <p className="absolute bottom-6 max-w-md text-xs text-white/75">
         WASD or tap to walk · drag to look around · the Poké Ball is the menu
+        <br />
+        In a hurry?{" "}
+        <Link href="/text" className="font-semibold text-white underline underline-offset-2">
+          Read the text version
+        </Link>
       </p>
     </div>
   );
