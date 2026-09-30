@@ -5,6 +5,8 @@ import { bag, medals, type MedalTier, spawns, trainer, wild } from "@/content";
 import { buddyStore } from "../buddy";
 import { progressStore } from "../progress";
 import { visitorMedals } from "../visitorMedals";
+import { levelFor, xpForLevel } from "../progress";
+import { ITEM_INFO } from "./SpinDisc";
 import { Portrait } from "./Portrait";
 import { Sheet } from "./Sheet";
 
@@ -26,7 +28,7 @@ export function TrainerPanel({ onClose }: { onClose: () => void }) {
     ["Start date", since],
   ];
   return (
-    <Sheet title="Trainer" onClose={onClose}>
+    <Sheet title="About Tyler" onClose={onClose}>
       <div className="flex items-center gap-4 rounded-3xl bg-linear-to-br from-mystic-500 to-mystic-400 p-4 text-white">
         <div className="grid size-24 shrink-0 place-items-center overflow-hidden rounded-full bg-white/90">
           <Portrait size={88} />
@@ -59,6 +61,10 @@ export function TrainerPanel({ onClose }: { onClose: () => void }) {
         <span className="font-semibold">{trainer.school.name}</span>, {trainer.school.degree}, {trainer.school.graduation}.
         GPA {trainer.school.gpa}.
       </p>
+
+      <h3 className="mt-6 mb-2 text-xs font-bold tracking-wider text-ink-soft uppercase">Skills</h3>
+      <p className="mb-3 text-sm text-ink-soft">The number is how many things on the base use it.</p>
+      <Skills />
 
       <h3 className="mt-6 text-xs font-bold tracking-wider text-ink-soft uppercase">Buddy</h3>
       <p className="mt-1">{trainer.buddy.blurb}</p>
@@ -181,18 +187,17 @@ const KINDS = [
   ["hardware", "Hardware"],
 ] as const;
 
-/** The bag: every skill, counted by how many jobs, projects, and hackathons use it. */
-export function BagPanel({ onClose }: { onClose: () => void }) {
+/** Tyler's skills, counted by how many jobs, projects, and hackathons use them. */
+function Skills() {
   const items = bag();
   return (
-    <Sheet title="Bag" onClose={onClose}>
-      <p className="mb-4 text-sm text-ink-soft">The number is how many things on the base use it.</p>
+    <>
       {KINDS.map(([kind, label]) => {
         const group = items.filter((i) => i.kind === kind && (i.count > 0 || i.learning));
         if (!group.length) return null;
         return (
-          <section key={kind} className="mb-5">
-            <h3 className="mb-2 text-xs font-bold tracking-wider text-ink-soft uppercase">{label}</h3>
+          <section key={kind} className="mb-4">
+            <h4 className="mb-2 text-xs font-semibold text-ink-soft">{label}</h4>
             <ul className="flex flex-wrap gap-2">
               {group.map((i) => (
                 <li key={i.id} className="flex items-center gap-1.5 rounded-full bg-ink/6 py-1 pr-1.5 pl-3 text-sm font-semibold">
@@ -208,6 +213,67 @@ export function BagPanel({ onClose }: { onClose: () => void }) {
           </section>
         );
       })}
+    </>
+  );
+}
+
+/** Your bag, like GO's: the items you've picked up spinning stops. */
+export function BagPanel({ onClose }: { onClose: () => void }) {
+  const { items } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  return (
+    <Sheet title="Bag" onClose={onClose}>
+      <ul className="space-y-2">
+        {(Object.keys(ITEM_INFO) as (keyof typeof ITEM_INFO)[]).map((id) => (
+          <li key={id} className="flex items-center gap-3 rounded-2xl bg-ink/5 px-4 py-3">
+            <span aria-hidden className="size-8 rounded-full shadow-inner ring-4 ring-white/70" style={{ background: ITEM_INFO[id].color }} />
+            <span className="flex-1 font-semibold">{ITEM_INFO[id].name}</span>
+            <span className="font-display text-lg font-semibold tabular-nums">×{items[id]}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-4 text-sm text-ink-soft">
+        Spin PokéStops to get more. Great Balls catch better, and a Razz Berry makes the next catch easier.
+      </p>
+    </Sheet>
+  );
+}
+
+/** Your trainer profile: your level, what you've done on the base, and your medals. */
+export function ProfilePanel({ onClose }: { onClose: () => void }) {
+  const progress = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const level = levelFor(progress.xp);
+  const from = xpForLevel(level);
+  const to = xpForLevel(level + 1);
+  const catches = Object.values(progress.caught).reduce((a, b) => a + b, 0);
+  const medalsEarned = visitorMedals(progress).filter((m) => m.have >= m.need).length;
+  const stats = [
+    ["Pokémon caught", n(catches)],
+    ["Species", n(Object.keys(progress.caught).length)],
+    ["Stops spun", n(progress.spun.length)],
+    ["Places visited", n(progress.visited.length)],
+    ["Medals", `${medalsEarned} of ${visitorMedals(progress).length}`],
+  ];
+  return (
+    <Sheet title="Profile" onClose={onClose}>
+      <div className="rounded-3xl bg-linear-to-br from-mystic-500 to-mystic-400 p-4 text-white">
+        <p className="text-sm font-semibold opacity-90">You, on Tyler&apos;s base</p>
+        <p className="font-display text-3xl font-semibold">Level {level}</p>
+        <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-white/25">
+          <div className="h-full rounded-full bg-teal" style={{ width: `${Math.min(100, ((progress.xp - from) / (to - from)) * 100)}%` }} />
+        </div>
+        <p className="mt-1 text-sm tabular-nums opacity-90">
+          {n(progress.xp)} / {n(to)} XP
+        </p>
+      </div>
+      <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {stats.map(([label, value]) => (
+          <div key={label} className="rounded-2xl bg-ink/5 px-3 py-2.5">
+            <dt className="text-xs font-semibold text-ink-soft">{label}</dt>
+            <dd className="font-display text-lg font-semibold tabular-nums">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-4 text-sm text-ink-soft">Saved in this browser. Catch, spin, and explore to level up.</p>
     </Sheet>
   );
 }
@@ -219,9 +285,9 @@ const TIER: Record<MedalTier, string> = {
   platinum: "bg-platinum",
 };
 const GROUPS = [
-  ["go", "Mine in Pokémon GO"],
-  ["award", "Awards"],
-  ["honor", "Honors"],
+  ["go", "Tyler in Pokémon GO"],
+  ["award", "Tyler's awards"],
+  ["honor", "Tyler's honors"],
 ] as const;
 
 /** Medals: awards, honors, and GO feats, tinted by tier like the game's. */

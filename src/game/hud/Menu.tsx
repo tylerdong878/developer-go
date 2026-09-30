@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { trainer } from "@/content";
 import { Portrait } from "./Portrait";
 
-export type Screen = "trainer" | "pokedex" | "bag" | "medals" | "nearby";
+export type Screen = "profile" | "about" | "pokedex" | "bag" | "medals" | "nearby";
 
 /** The trainer badge in the bottom left, like GO's: portrait, level, and team. */
 export function TrainerBadge({ onOpen }: { onOpen: () => void }) {
@@ -65,6 +65,12 @@ const MEDAL = (
     <path d="m20 19 2 4 4.3.4-3.2 2.9 1 4.2-4.1-2.3-4.1 2.3 1-4.2-3.2-2.9 4.3-.4Z" fill="#fff6d8" />
   </svg>
 );
+const STAR = (
+  <svg viewBox="0 0 40 40" width="34" height="34">
+    <circle cx="20" cy="20" r="16" fill="#2fd3c6" />
+    <path d="m20 9 3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L20 25.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1Z" fill="#fff" />
+  </svg>
+);
 const PIN = (
   <svg viewBox="0 0 40 40" width="34" height="34">
     <ellipse cx="20" cy="35" rx="8" ry="2.5" fill="#0a2a4a" opacity=".2" />
@@ -74,10 +80,11 @@ const PIN = (
 );
 
 const ITEMS: { id: Screen; label: string; hint: string; icon: ReactNode }[] = [
-  { id: "trainer", label: "Trainer", hint: "About me", icon: <Portrait size={52} /> },
-  { id: "pokedex", label: "Pokédex", hint: "Fun facts", icon: DEX },
-  { id: "bag", label: "Bag", hint: "Skills", icon: BAG },
-  { id: "medals", label: "Medals", hint: "Awards", icon: MEDAL },
+  { id: "profile", label: "Profile", hint: "You", icon: STAR },
+  { id: "about", label: "About Tyler", hint: "Me, school, skills", icon: <Portrait size={52} /> },
+  { id: "pokedex", label: "Pokédex", hint: "Catches, facts", icon: DEX },
+  { id: "bag", label: "Bag", hint: "Items", icon: BAG },
+  { id: "medals", label: "Medals", hint: "Yours, my awards", icon: MEDAL },
   { id: "nearby", label: "Nearby", hint: "Everything", icon: PIN },
 ];
 

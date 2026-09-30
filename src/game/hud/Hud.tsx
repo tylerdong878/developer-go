@@ -14,7 +14,7 @@ import { XpBar, XpPops } from "./Xp";
 import { Card } from "./Card";
 import { MainMenu, MenuBall, type Screen, TrainerBadge } from "./Menu";
 import { Nearby } from "./Nearby";
-import { BagPanel, BuddyPanel, MedalsPanel, PokedexPanel, TrainerPanel } from "./Panels";
+import { BagPanel, BuddyPanel, MedalsPanel, PokedexPanel, ProfilePanel, TrainerPanel } from "./Panels";
 
 /**
  * GO's on-screen controls, laid over the 3D base: the trainer badge, the
@@ -109,7 +109,7 @@ export function Hud() {
   const closeScreen = useCallback(() => setScreen(null), []);
   const openAbout = useCallback(() => {
     setCard(null);
-    setScreen("trainer");
+    setScreen("about");
   }, []);
   const pick = (s: Screen) => {
     sfx.open();
@@ -148,7 +148,7 @@ export function Hud() {
       <XpPops />
 
       <div className="pointer-events-auto absolute bottom-4 left-4">
-        <TrainerBadge onOpen={() => setScreen("trainer")} />
+        <TrainerBadge onOpen={() => setScreen("profile")} />
       </div>
       <div className="pointer-events-auto absolute bottom-4 left-1/2 -translate-x-1/2">
         <MenuBall
@@ -165,7 +165,8 @@ export function Hud() {
 
       <div className="pointer-events-auto">
         {object ? <Card object={object} onClose={closeCard} onAbout={openAbout} /> : null}
-        {screen === "trainer" ? <TrainerPanel onClose={closeScreen} /> : null}
+        {screen === "profile" ? <ProfilePanel onClose={closeScreen} /> : null}
+        {screen === "about" ? <TrainerPanel onClose={closeScreen} /> : null}
         {screen === "pokedex" ? (
           <PokedexPanel
             onClose={closeScreen}
