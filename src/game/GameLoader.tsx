@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useSyncExternalStore } from "react";
 import { trainer } from "@/content";
 import { BallSpinner, Intro } from "./Intro";
+import { LoadingScreen } from "./LoadingScreen";
 import { markStarted, readyStore, startedStore } from "./ready";
 import { unlockSound } from "./sound";
 import { game } from "./state";
@@ -70,6 +71,7 @@ export function GameLoader() {
     <>
       <Game />
       {started ? null : <Intro ready={ready} onStart={start} />}
+      <LoadingScreen ready={ready} />
     </>
   );
 }

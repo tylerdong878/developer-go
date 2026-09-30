@@ -153,3 +153,19 @@ body {
   .dialog-next,
   .ball-spin { animation: none; }
 }
+
+/* The loading screen, like GO's: sky over a green hill with a bouncing Poké Ball. */
+.loading-screen {
+  background: radial-gradient(140% 55% at 50% 100%, #6cc05f 0 40%, transparent 40.5%), linear-gradient(#4fb2ea, #bfe8ff 62%, #a6dd8f 62%);
+}
+[data-time="night"] .loading-screen {
+  background: radial-gradient(140% 55% at 50% 100%, #2b5553 0 40%, transparent 40.5%), linear-gradient(#081231, #27356a 62%, #2e4166 62%);
+}
+.loading-ball { animation: loading-bounce 0.9s cubic-bezier(0.5, 0, 0.5, 1) infinite alternate; }
+.loading-shadow { animation: loading-shadow 0.9s cubic-bezier(0.5, 0, 0.5, 1) infinite alternate; }
+@keyframes loading-bounce { from { translate: 0 0; rotate: -8deg; } to { translate: 0 -46px; rotate: 8deg; } }
+@keyframes loading-shadow { to { scale: 0.55; opacity: 0.5; } }
+@media (prefers-reduced-motion: reduce) {
+  .loading-ball,
+  .loading-shadow { animation: none; }
+}

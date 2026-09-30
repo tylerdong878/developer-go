@@ -29,10 +29,10 @@ export function Intro({ ready, onStart }: { ready: boolean; onStart: () => void 
 
   // Type the greeting out a few letters at a time, like the games.
   useEffect(() => {
-    if (shown >= GREETING.length) return;
-    const id = window.setTimeout(() => setShown((n) => Math.min(GREETING.length, n + 2)), 28);
+    if (!ready || shown >= GREETING.length) return; // wait for the loading screen to clear
+    const id = window.setTimeout(() => setShown((n) => Math.min(GREETING.length, n + 2)), shown ? 28 : 900);
     return () => window.clearTimeout(id);
-  }, [shown]);
+  }, [shown, ready]);
 
   const typed = shown >= GREETING.length;
   const canStart = ready && typed;
