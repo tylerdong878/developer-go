@@ -8,7 +8,6 @@ import { progressStore } from "../progress";
 import { visitorMedals } from "../visitorMedals";
 import { levelFor, xpForLevel } from "../progress";
 import { ITEM_INFO } from "./SpinDisc";
-import { Portrait } from "./Portrait";
 import { Sheet } from "./Sheet";
 
 const n = (v: number) => v.toLocaleString("en-US");
@@ -30,10 +29,7 @@ export function TrainerPanel({ onClose }: { onClose: () => void }) {
   ];
   return (
     <Sheet title="About Tyler" onClose={onClose}>
-      <div className="flex items-center gap-4 rounded-3xl bg-linear-to-br from-mystic-500 to-mystic-400 p-4 text-white">
-        <div className="grid size-24 shrink-0 place-items-center overflow-hidden rounded-full bg-white/90">
-          <Portrait size={88} />
-        </div>
+      <div className="rounded-3xl bg-linear-to-br from-mystic-500 to-mystic-400 p-4 text-white">
         <div>
           <p className="font-display text-2xl font-semibold">{trainer.name}</p>
           <p className="text-sm font-semibold opacity-95">Level {trainer.go.level}, Team Mystic</p>

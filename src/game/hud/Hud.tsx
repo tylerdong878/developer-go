@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { startedStore } from "../ready";
 import { bySlug } from "../objects";
 import { game } from "../state";
 import { goTo } from "../travel";
@@ -24,6 +25,7 @@ import { BagPanel, BuddyPanel, MedalsPanel, PokedexPanel, ProfilePanel, TrainerP
  * opens its card, and every card has its own link: /#aws dashes you to AWS.
  */
 export function Hud() {
+  const started = useSyncExternalStore(startedStore.subscribe, startedStore.get, startedStore.server);
   const [card, setCard] = useState<string | null>(null);
   const [screen, setScreen] = useState<Exclude<Screen, "nearby"> | null>(null);
   const [menu, setMenu] = useState(false);
@@ -134,6 +136,7 @@ export function Hud() {
     if (caught && foe.rare) setCard(foe.goal); // a caught fact Pokémon shows its fact
   };
 
+  if (!started) return null;
   return (
     <div className="pointer-events-none absolute inset-0 z-20">
       {menu ? (

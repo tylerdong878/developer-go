@@ -2,80 +2,16 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { trainer } from "@/content";
-import { Portrait } from "./hud/Portrait";
-import { readyStore } from "./ready";
-import { game } from "./state";
+import { BallSpinner, Intro } from "./Intro";
+import { markStarted, readyStore, startedStore } from "./ready";
 import { unlockSound } from "./sound";
+import { game } from "./state";
 
 // three.js needs the browser, so the game loads on the client after the page
-// shell paints, under the start screen.
+// shell paints, under the intro.
 const Game = dynamic(() => import("./Game"), { ssr: false });
-
-/**
- * A start screen like a game's: my name and badge while the world loads,
- * then "Tap to start". Links straight to a card (like /#aws) skip it.
- */
-function Start({ onStart }: { onStart: () => void }) {
-  const ready = useSyncExternalStore(readyStore.subscribe, readyStore.get, readyStore.server);
-  const [shown, setShown] = useState(0);
-
-  // An honest-ish bar: creeps up while loading, fills when the world is drawn.
-  useEffect(() => {
-    if (ready) return;
-    const id = setInterval(() => setShown((s) => s + (0.9 - s) * 0.08), 120);
-    return () => clearInterval(id);
-  }, [ready]);
-
-  useEffect(() => {
-    if (!ready) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Enter" || e.key === " ") onStart();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [ready, onStart]);
-
-  return (
-    <div className="start-screen absolute inset-0 z-[70] flex flex-col items-center justify-center gap-6 px-6 text-center">
-      <div className="grid size-28 place-items-center overflow-hidden rounded-full bg-white shadow-xl ring-8 ring-mystic-500/80">
-        <Portrait size={104} />
-      </div>
-      <div>
-        <h2 className="font-display text-4xl font-semibold text-white drop-shadow">{trainer.name}</h2>
-        <p className="mt-1 font-semibold text-white/90 drop-shadow">
-          Level {trainer.go.level} · Team Mystic · my portfolio, Pokémon GO style
-        </p>
-      </div>
-      {ready ? (
-        <button
-          type="button"
-          autoFocus
-          onClick={onStart}
-          className="start-pulse rounded-full bg-white px-10 py-4 font-display text-xl font-semibold text-mystic-900 shadow-2xl"
-        >
-          Tap to start
-        </button>
-      ) : (
-        <div className="w-56" role="progressbar" aria-label="Loading the base" aria-valuenow={Math.round(shown * 100)}>
-          <div className="h-2.5 overflow-hidden rounded-full bg-white/30">
-            <div className="h-full rounded-full bg-white transition-[width] duration-300" style={{ width: `${shown * 100}%` }} />
-          </div>
-          <p className="mt-2 text-sm font-semibold text-white/90">Loading the base...</p>
-        </div>
-      )}
-      <p className="absolute bottom-6 max-w-md text-xs text-white/75">
-        WASD or tap to walk · drag to look around · the Poké Ball is the menu
-        <br />
-        In a hurry?{" "}
-        <Link href="/text" className="font-semibold text-white underline underline-offset-2">
-          Read the text version
-        </Link>
-      </p>
-    </div>
-  );
-}
 
 /** Can this browser draw 3D at all? Checked once: browsers limit how many 3D contexts a page can make. */
 let webgl: boolean | null = null;
@@ -93,45 +29,47 @@ function hasWebGL() {
 /** For browsers that can't run the game: the text version is one tap away. */
 function NoGame() {
   return (
-    <div className="start-screen absolute inset-0 z-[70] flex flex-col items-center justify-center gap-5 px-6 text-center text-white">
-      <div className="grid size-28 place-items-center overflow-hidden rounded-full bg-white shadow-xl ring-8 ring-mystic-500/80">
-        <Portrait size={104} />
+    <div className="absolute inset-0 z-[70] flex items-end justify-center bg-sky p-4 sm:p-8">
+      <div className="dialog-box w-full max-w-2xl px-6 py-5">
+        <p className="flex items-center gap-3 font-display text-lg font-medium text-[#1c2a3a]">
+          <BallSpinner size={24} />
+          This browser can&apos;t run the 3D world, but everything is in the text version.
+        </p>
+        <Link href="/text" className="mt-3 inline-block font-display font-semibold text-[#0b84d6] underline underline-offset-2">
+          Read {trainer.name}&apos;s portfolio as text
+        </Link>
       </div>
-      <h2 className="font-display text-3xl font-semibold drop-shadow">{trainer.name}</h2>
-      <p className="max-w-sm font-semibold text-white/90">
-        This browser can&apos;t run the 3D base, but everything is in the text version.
-      </p>
-      <Link href="/text" className="rounded-full bg-white px-8 py-3 font-display text-lg font-semibold text-mystic-900 shadow-2xl">
-        Read the text version
-      </Link>
     </div>
   );
 }
 
+const never = () => () => {};
+
 export function GameLoader() {
-  const [started, setStarted] = useState(false);
-  const skip = useSyncExternalStore(
-    () => () => {},
-    () => window.location.hash.length > 1,
-    () => false,
-  );
-  const canPlay = useSyncExternalStore(
-    () => () => {},
-    hasWebGL,
-    () => true,
-  );
+  const ready = useSyncExternalStore(readyStore.subscribe, readyStore.get, readyStore.server);
+  const started = useSyncExternalStore(startedStore.subscribe, startedStore.get, startedStore.server);
+  const skip = useSyncExternalStore(never, () => window.location.hash.length > 1, () => false);
+  const canPlay = useSyncExternalStore(never, hasWebGL, () => true);
+
+  // Links straight to a card (like /#aws) skip the intro.
   useEffect(() => {
-    game.input.locked = !(started || skip);
-  }, [started, skip]);
+    if (skip) markStarted();
+  }, [skip]);
+
+  useEffect(() => {
+    game.input.locked = !started;
+  }, [started]);
+
   const start = () => {
     unlockSound();
-    setStarted(true);
+    markStarted();
   };
+
   if (!canPlay) return <NoGame />;
   return (
     <>
       <Game />
-      {started || skip ? null : <Start onStart={start} />}
+      {started ? null : <Intro ready={ready} onStart={start} />}
     </>
   );
 }

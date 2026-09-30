@@ -34,6 +34,7 @@ export function Controller() {
     const { trainer, buddy } = game.player;
     const { view, input } = game;
 
+    if (input.locked) view.yawTo += dt * 0.18; // the intro: circle slowly around Tyler and Teddy
     view.yaw += (view.yawTo - view.yaw) * ease(10, dt);
     view.distance += (view.distanceTo - view.distance) * ease(10, dt);
     const fx = Math.sin(view.yaw); // camera forward on the ground

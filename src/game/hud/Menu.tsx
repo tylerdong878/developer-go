@@ -2,7 +2,6 @@
 
 import { type ReactNode, useSyncExternalStore } from "react";
 import { levelFor, progressStore, xpForLevel } from "../progress";
-import { Portrait } from "./Portrait";
 
 export type Screen = "profile" | "about" | "pokedex" | "bag" | "medals" | "nearby";
 
@@ -14,11 +13,11 @@ export function TrainerBadge({ onOpen }: { onOpen: () => void }) {
   const share = Math.min(1, (xp - from) / (xpForLevel(level + 1) - from));
   return (
     <button type="button" onClick={onOpen} aria-label={`You, level ${level}. Open your profile`} className="group flex items-end">
-      <span className="relative grid size-16 place-items-center overflow-hidden rounded-full bg-white shadow-lg ring-4 ring-mystic-500 transition group-hover:scale-105 group-active:scale-95">
-        <Portrait size={60} />
+      <span className="relative grid size-16 place-items-center rounded-full bg-linear-to-br from-mystic-400 to-mystic-700 font-display text-2xl font-bold text-white shadow-lg ring-4 ring-white transition group-hover:scale-105 group-active:scale-95">
+        {level}
       </span>
       <span className="-ml-3 mb-0.5 rounded-2xl bg-surface/92 py-1 pr-3 pl-4 text-ink shadow backdrop-blur">
-        <span className="block font-display text-sm leading-none font-semibold">Lv {level}</span>
+        <span className="block font-display text-sm leading-none font-semibold">You</span>
         <span className="mt-1 block h-1 w-12 overflow-hidden rounded-full bg-ink/10">
           <span className="block h-full rounded-full bg-teal transition-[width] duration-500" style={{ width: `${share * 100}%` }} />
         </span>
@@ -72,6 +71,15 @@ const MEDAL = (
     <path d="m20 19 2 4 4.3.4-3.2 2.9 1 4.2-4.1-2.3-4.1 2.3 1-4.2-3.2-2.9 4.3-.4Z" fill="#fff6d8" />
   </svg>
 );
+const CARD = (
+  <svg viewBox="0 0 40 40" width="34" height="34">
+    <rect x="4" y="9" width="32" height="22" rx="4" fill="#0b84d6" />
+    <circle cx="13" cy="19" r="4.5" fill="#fff" />
+    <path d="M7.5 28c.8-3.4 3-5 5.5-5s4.7 1.6 5.5 5Z" fill="#fff" />
+    <rect x="21" y="15" width="11" height="2.6" rx="1.3" fill="#fff" />
+    <rect x="21" y="20" width="8" height="2.6" rx="1.3" fill="#bfe9ff" />
+  </svg>
+);
 const STAR = (
   <svg viewBox="0 0 40 40" width="34" height="34">
     <circle cx="20" cy="20" r="16" fill="#2fd3c6" />
@@ -88,7 +96,7 @@ const PIN = (
 
 const ITEMS: { id: Screen; label: string; hint: string; icon: ReactNode }[] = [
   { id: "profile", label: "Profile", hint: "You", icon: STAR },
-  { id: "about", label: "About Tyler", hint: "Me, school, skills", icon: <Portrait size={52} /> },
+  { id: "about", label: "About Tyler", hint: "Me, school, skills", icon: CARD },
   { id: "pokedex", label: "Pokédex", hint: "Catches, facts", icon: DEX },
   { id: "bag", label: "Bag", hint: "Items", icon: BAG },
   { id: "medals", label: "Medals", hint: "Yours, my awards", icon: MEDAL },
