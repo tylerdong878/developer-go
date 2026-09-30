@@ -77,12 +77,48 @@ function Start({ onStart }: { onStart: () => void }) {
   );
 }
 
+/** Can this browser draw 3D at all? Checked once: browsers limit how many 3D contexts a page can make. */
+let webgl: boolean | null = null;
+function hasWebGL() {
+  if (webgl !== null) return webgl;
+  try {
+    const canvas = document.createElement("canvas");
+    webgl = !!(canvas.getContext("webgl2") ?? canvas.getContext("webgl"));
+  } catch {
+    webgl = false;
+  }
+  return webgl;
+}
+
+/** For browsers that can't run the game: the text version is one tap away. */
+function NoGame() {
+  return (
+    <div className="start-screen absolute inset-0 z-[70] flex flex-col items-center justify-center gap-5 px-6 text-center text-white">
+      <div className="grid size-28 place-items-center overflow-hidden rounded-full bg-white shadow-xl ring-8 ring-mystic-500/80">
+        <Portrait size={104} />
+      </div>
+      <h2 className="font-display text-3xl font-semibold drop-shadow">{trainer.name}</h2>
+      <p className="max-w-sm font-semibold text-white/90">
+        This browser can&apos;t run the 3D base, but everything is in the text version.
+      </p>
+      <Link href="/text" className="rounded-full bg-white px-8 py-3 font-display text-lg font-semibold text-mystic-900 shadow-2xl">
+        Read the text version
+      </Link>
+    </div>
+  );
+}
+
 export function GameLoader() {
   const [started, setStarted] = useState(false);
   const skip = useSyncExternalStore(
     () => () => {},
     () => window.location.hash.length > 1,
     () => false,
+  );
+  const canPlay = useSyncExternalStore(
+    () => () => {},
+    hasWebGL,
+    () => true,
   );
   useEffect(() => {
     game.input.locked = !(started || skip);
@@ -91,6 +127,7 @@ export function GameLoader() {
     unlockSound();
     setStarted(true);
   };
+  if (!canPlay) return <NoGame />;
   return (
     <>
       <Game />
