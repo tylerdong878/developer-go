@@ -56,7 +56,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
     const box = field.current?.getBoundingClientRect();
     const w = box?.width ?? 390;
     const h = box?.height ?? 800;
-    return { w, h, target: { x: w / 2, y: h * 0.4 }, rest: { x: w / 2, y: h - 110 } };
+    return { w, h, target: { x: w / 2, y: h * 0.4 }, rest: { x: w / 2, y: h - 150 } };
   }, []);
 
   const place = useCallback((x: number, y: number, scale = 1, spin = 0) => {
@@ -287,7 +287,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
           </p>
         </div>
       ) : phase === "aim" ? (
-        <p className="absolute inset-x-0 bottom-28 text-center text-sm font-semibold text-white drop-shadow">
+        <p className="absolute inset-x-0 bottom-[200px] text-center text-sm font-semibold text-white drop-shadow">
           Flick the ball up to throw (or press space)
         </p>
       ) : null}
