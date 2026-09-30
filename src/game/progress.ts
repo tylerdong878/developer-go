@@ -4,23 +4,33 @@ import { sfx } from "./sound";
 
 /**
  * What this visitor has done, kept in their browser: Pokémon caught (by dex
- * number), stops spun, places visited, and XP. It's only a convenience; if
- * storage is blocked, everything still works for the visit.
+ * number), stops spun, places visited, XP, and the items in their bag. It's
+ * only a convenience; if storage is blocked, everything still works for the visit.
  */
+export type ItemId = "ball" | "great" | "razz";
+export type Items = Record<ItemId, number>;
+
 export type Progress = {
   caught: Record<number, number>;
   spun: string[];
   visited: string[];
   xp: number;
+  items: Items;
 };
 
+/** What a new trainer starts with, like GO's starter bag. */
+export const STARTER_ITEMS: Items = { ball: 20, great: 0, razz: 2 };
+
 const KEY = "developer-go:progress";
-const empty: Progress = { caught: {}, spun: [], visited: [], xp: 0 };
+const empty: Progress = { caught: {}, spun: [], visited: [], xp: 0, items: STARTER_ITEMS };
 
 function load(): Progress {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return { ...empty, ...JSON.parse(raw) };
+    if (raw) {
+      const saved = JSON.parse(raw);
+      return { ...empty, ...saved, items: { ...STARTER_ITEMS, ...saved.items } };
+    }
   } catch {
     // Private mode or blocked storage: start fresh.
   }
@@ -66,6 +76,22 @@ export function recordVisit(slug: string) {
 export function recordSpin(slug: string) {
   const p = current();
   if (!p.spun.includes(slug)) save({ ...p, spun: [...p.spun, slug] });
+}
+
+/** Adds items to the bag (from a stop spin, say). */
+export function addItems(found: Partial<Items>) {
+  const p = current();
+  const items = { ...p.items };
+  for (const [id, n] of Object.entries(found) as [ItemId, number][]) items[id] += n;
+  save({ ...p, items });
+}
+
+/** Uses one item if there's one left. Returns whether it did. */
+export function spendItem(id: ItemId) {
+  const p = current();
+  if (p.items[id] <= 0) return false;
+  save({ ...p, items: { ...p.items, [id]: p.items[id] - 1 } });
+  return true;
 }
 
 export function addXp(amount: number) {

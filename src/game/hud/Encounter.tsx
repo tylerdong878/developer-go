@@ -1,6 +1,14 @@
 "use client";
 
-import { type PointerEvent as ReactPointerEvent, useCallback, useEffect, useRef, useState } from "react";
+import {
+  type PointerEvent as ReactPointerEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import { addItems, progressStore, spendItem } from "../progress";
 import { sfx } from "../sound";
 
 /** Who you're trying to catch. Fact Pokémon never run and always get caught by the second hit. */
@@ -30,6 +38,16 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
   const hits = useRef(0);
   const drag = useRef<{ id: number; samples: { x: number; y: number; t: number }[] } | null>(null);
   const start = useRef(0);
+  const { items } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const [ballType, setBallType] = useState<"ball" | "great">("ball");
+  const [berry, setBerry] = useState(false);
+  const thrown = useRef<{ great: boolean; berry: boolean }>({ great: false, berry: false });
+
+  // A fact Pokémon never gets stuck behind an empty bag: it hands you a ball.
+  useEffect(() => {
+    const bag = progressStore.get().items;
+    if (foe.rare && bag.ball + bag.great === 0) addItems({ ball: 1 });
+  }, [foe.rare]);
 
   // Ring colors like GO: green is easy, yellow harder, red hardest.
   const ringColor = foe.rare ? "#f6c453" : "#5fc15a";
@@ -70,7 +88,10 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
       ? hits.current >= 2
         ? 1
         : 0.7
-      : 0.5 + { Nice: 0.1, Great: 0.2, Excellent: 0.35 }[bonus];
+      : 0.45 +
+        { Nice: 0.1, Great: 0.2, Excellent: 0.35 }[bonus] +
+        (thrown.current.great ? 0.15 : 0) +
+        (thrown.current.berry ? 0.2 : 0);
     const caught = Math.random() < chance;
     const wiggles = caught ? 3 : 1 + Math.floor(Math.random() * 3);
     setPhase("wiggle");
@@ -96,6 +117,18 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
       setPhase("aim");
       window.setTimeout(() => setMessage(null), 1100);
     }, 700 + wiggles * 650);
+  };
+
+  /** Spends a ball from the bag for this throw (and the berry, if one's fed). */
+  const spendBall = () => {
+    if (!spendItem(ballType)) {
+      setMessage(ballType === "great" ? "Out of Great Balls." : "Out of Poké Balls. Spin a PokéStop!");
+      window.setTimeout(() => setMessage(null), 1400);
+      return false;
+    }
+    thrown.current = { great: ballType === "great", berry };
+    setBerry(false);
+    return true;
   };
 
   const fly = (from: { x: number; y: number }, to: { x: number; y: number }, hit: boolean) => {
@@ -161,6 +194,10 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
     const lead = (from.y - target.y) / -vy;
     const x = from.x + vx * lead;
     const hit = Math.abs(x - target.x) < HIT_RADIUS && from.y > target.y;
+    if (!spendBall()) {
+      place(rest.x, rest.y);
+      return;
+    }
     fly(from, hit ? target : { x, y: target.y - 60 }, hit);
   };
 
@@ -171,7 +208,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
       if ((e.key === " " || e.key === "Enter") && phase === "aim") {
         e.preventDefault();
         const { target, rest } = geometry();
-        fly(rest, target, true);
+        if (spendBall()) fly(rest, target, true);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -250,9 +287,37 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
           </p>
         </div>
       ) : phase === "aim" ? (
-        <p className="absolute inset-x-0 bottom-6 text-center text-sm font-semibold text-white drop-shadow">
+        <p className="absolute inset-x-0 bottom-28 text-center text-sm font-semibold text-white drop-shadow">
           Flick the ball up to throw (or press space)
         </p>
+      ) : null}
+
+      {phase === "aim" ? (
+        <div className="absolute inset-x-0 bottom-5 flex justify-center gap-2 px-4">
+          {(["ball", "great"] as const).map((b) => (
+            <button
+              key={b}
+              type="button"
+              onClick={() => setBallType(b)}
+              aria-pressed={ballType === b}
+              className={`rounded-full px-3.5 py-2 text-sm font-bold shadow ${
+                ballType === b ? "bg-white text-mystic-900 ring-4 ring-mystic-400" : "bg-white/75 text-ink"
+              }`}
+            >
+              {b === "ball" ? "Poké Ball" : "Great Ball"} ×{items[b]}
+            </button>
+          ))}
+          <button
+            type="button"
+            disabled={berry || items.razz <= 0}
+            onClick={() => {
+              if (spendItem("razz")) setBerry(true);
+            }}
+            className="rounded-full bg-white/75 px-3.5 py-2 text-sm font-bold text-ink shadow disabled:opacity-60"
+          >
+            {berry ? "Berry fed" : `Razz Berry ×${items.razz}`}
+          </button>
+        </div>
       ) : null}
 
       {done ? (

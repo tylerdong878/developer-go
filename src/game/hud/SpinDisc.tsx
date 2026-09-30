@@ -1,14 +1,27 @@
 "use client";
 
 import { type PointerEvent, useRef, useState, useSyncExternalStore } from "react";
-import { gainXp, progressStore, recordSpin } from "../progress";
+import { addItems, gainXp, type Items, progressStore, recordSpin } from "../progress";
 import { sfx } from "../sound";
 
-const ITEMS = [
-  { name: "Poké Ball", count: 3, color: "#e3350d" },
-  { name: "Razz Berry", count: 1, color: "#e0457b" },
-  { name: "Potion", count: 2, color: "#b05cd6" },
-];
+export const ITEM_INFO = {
+  ball: { name: "Poké Ball", color: "#e3350d" },
+  great: { name: "Great Ball", color: "#2b6fd6" },
+  razz: { name: "Razz Berry", color: "#e0457b" },
+} as const;
+
+/** Like GO, a stop refills a few minutes after you spin it. */
+const COOLDOWN = 3 * 60 * 1000;
+const lastSpin = new Map<string, number>();
+
+/** What a spin drops: a few Poké Balls, sometimes Great Balls and berries. Lures double it. */
+function loot(lured: boolean): Partial<Items> {
+  const k = lured ? 2 : 1;
+  const found: Partial<Items> = { ball: (3 + Math.floor(Math.random() * 3)) * k };
+  if (Math.random() < 0.35) found.great = (1 + Math.floor(Math.random() * 2)) * k;
+  if (Math.random() < 0.3) found.razz = k;
+  return found;
+}
 
 /**
  * GO's PokéStop disc: swipe it (or tap Spin) and it whirls, items pop out,
@@ -19,13 +32,22 @@ export function SpinDisc({ slug, name, lured }: { slug: string; name: string; lu
   const { spun } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
   const done = spun.includes(slug);
   const [turns, setTurns] = useState(0);
-  const [items, setItems] = useState(false);
+  const [items, setItems] = useState<Partial<Items> | null>(null);
+  const [cooling, setCooling] = useState(false);
   const from = useRef<number | null>(null);
 
   const spin = () => {
     sfx.spin();
     setTurns((t) => t + 1);
-    setItems(true);
+    const now = performance.now();
+    if (now - (lastSpin.get(slug) ?? -Infinity) < COOLDOWN) {
+      setCooling(true);
+      return;
+    }
+    lastSpin.set(slug, now);
+    const found = loot(lured);
+    addItems(found);
+    setItems(found);
     if (!done) {
       recordSpin(slug);
       gainXp(50, "spun a stop");
@@ -56,19 +78,21 @@ export function SpinDisc({ slug, name, lured }: { slug: string; name: string; lu
       </div>
       {items ? (
         <ul className="flex gap-2" aria-label="Items">
-          {ITEMS.map((i) => (
+          {(Object.entries(items) as [keyof typeof ITEM_INFO, number][]).map(([id, count]) => (
             <li
-              key={i.name}
+              key={id}
               className="item-pop flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-mystic-900 shadow"
             >
-              <span className="size-3 rounded-full" style={{ background: i.color }} />
-              {i.name} ×{i.count}
+              <span className="size-3 rounded-full" style={{ background: ITEM_INFO[id].color }} />
+              {ITEM_INFO[id].name} ×{count}
             </li>
           ))}
         </ul>
+      ) : cooling ? (
+        <p className="text-sm font-semibold text-ink-soft">Try again in a few minutes. This stop is refilling.</p>
       ) : (
         <button type="button" onClick={spin} className="rounded-full bg-mystic-500 px-5 py-2 font-display font-semibold text-white shadow">
-          {done ? "Spin again" : "Spin the disc"}
+          Spin the disc
         </button>
       )}
     </div>

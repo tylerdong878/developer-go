@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { gyms, spawns } from "@/content";
 import { earned, visitorMedals } from "./visitorMedals";
 
-const empty = { caught: {}, spun: [], visited: [], xp: 0 };
+const empty = { caught: {}, spun: [], visited: [], xp: 0, items: { ball: 0, great: 0, razz: 0 } };
 
 describe("visitor medals", () => {
   it("starts with nothing earned", () => {
