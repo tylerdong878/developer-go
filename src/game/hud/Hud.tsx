@@ -7,6 +7,7 @@ import { goTo } from "../travel";
 import { gainXp, progressStore, recordCatch, recordVisit } from "../progress";
 import { buddyStore } from "../buddy";
 import { sfx } from "../sound";
+import { earned, visitorMedals } from "../visitorMedals";
 import { findWild, removeWild } from "../wild";
 import { Encounter, type Foe, type Thrown } from "./Encounter";
 import { XpBar, XpPops } from "./Xp";
@@ -28,6 +29,25 @@ export function Hud() {
   const [nearby, setNearby] = useState(false);
   const [foe, setFoe] = useState<(Foe & { goal: string }) | null>(null);
   const [buddy, setBuddy] = useState(false);
+
+  // Earning a visitor medal is worth 200 XP. Medals already earned on an
+  // earlier visit don't pay out again.
+  useEffect(() => {
+    let have = new Set(earned(progressStore.get()));
+    const off = progressStore.subscribe(() => {
+      const p = progressStore.get();
+      const now = earned(p).filter((id) => !have.has(id));
+      if (!now.length) return;
+      have = new Set([...have, ...now]);
+      for (const id of now) {
+        const medal = visitorMedals(p).find((m) => m.id === id);
+        window.setTimeout(() => gainXp(200, `medal: ${medal?.title ?? id}`), 500);
+      }
+    });
+    return () => {
+      off();
+    };
+  }, []);
   const pettedOnce = useRef(false);
 
   // Petting Teddy opens his buddy screen (and the first pet each visit is worth a little XP).

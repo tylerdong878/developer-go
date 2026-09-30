@@ -4,6 +4,7 @@ import { useSyncExternalStore } from "react";
 import { bag, medals, type MedalTier, spawns, trainer, wild } from "@/content";
 import { buddyStore } from "../buddy";
 import { progressStore } from "../progress";
+import { visitorMedals } from "../visitorMedals";
 import { Portrait } from "./Portrait";
 import { Sheet } from "./Sheet";
 
@@ -218,15 +219,45 @@ const TIER: Record<MedalTier, string> = {
   platinum: "bg-platinum",
 };
 const GROUPS = [
-  ["go", "Pokémon GO"],
+  ["go", "Mine in Pokémon GO"],
   ["award", "Awards"],
   ["honor", "Honors"],
 ] as const;
 
 /** Medals: awards, honors, and GO feats, tinted by tier like the game's. */
 export function MedalsPanel({ onClose }: { onClose: () => void }) {
+  const progress = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const yours = visitorMedals(progress);
   return (
     <Sheet title="Medals" onClose={onClose}>
+      <section className="mb-6">
+        <h3 className="mb-2 text-xs font-bold tracking-wider text-ink-soft uppercase">Yours, from playing</h3>
+        <ul className="space-y-2">
+          {yours.map((m) => {
+            const done = m.have >= m.need;
+            return (
+              <li key={m.id} className="flex items-center gap-3 rounded-2xl bg-ink/5 px-3 py-2.5">
+                <span
+                  aria-hidden
+                  className={`size-10 shrink-0 rounded-full shadow-inner ring-2 ring-ink/20 ${done ? "bg-gold" : "bg-ink/10"}`}
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">
+                    {m.title} {done ? <span className="text-xs text-ink-soft">earned</span> : null}
+                  </span>
+                  <span className="block text-sm text-ink-soft">{m.detail}</span>
+                  <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-ink/10">
+                    <span className="block h-full rounded-full bg-teal" style={{ width: `${(m.have / m.need) * 100}%` }} />
+                  </span>
+                </span>
+                <span className="shrink-0 text-xs font-semibold text-ink-soft tabular-nums">
+                  {m.have}/{m.need}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
       {GROUPS.map(([group, label]) => (
         <section key={group} className="mb-5">
           <h3 className="mb-2 text-xs font-bold tracking-wider text-ink-soft uppercase">{label}</h3>
