@@ -1,6 +1,7 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { communityOn, fetchTotals, type Totals } from "../community";
 import { bag, medals, type MedalTier, spawns, trainer, wild } from "@/content";
 import { buddyStore } from "../buddy";
 import { progressStore } from "../progress";
@@ -238,6 +239,42 @@ export function BagPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+/** Everyone's totals across every visitor, refreshed while the profile is open. */
+function Everyone() {
+  const [totals, setTotals] = useState<Totals | null>(null);
+  useEffect(() => {
+    let live = true;
+    const load = () => fetchTotals().then((t) => live && t && setTotals(t));
+    load();
+    const id = setInterval(load, 15000);
+    return () => {
+      live = false;
+      clearInterval(id);
+    };
+  }, []);
+  if (!totals) return null;
+  const rows = [
+    ["Trainers", totals.trainers],
+    ["Pokémon caught", totals.catches],
+    ["Stops spun", totals.spins],
+    ["Places visited", totals.visits],
+  ] as const;
+  return (
+    <section className="mt-6">
+      <h3 className="mb-2 text-xs font-bold tracking-wider text-ink-soft uppercase">Everyone</h3>
+      <dl className="grid grid-cols-2 gap-2">
+        {rows.map(([label, value]) => (
+          <div key={label} className="rounded-2xl bg-teal/15 px-3 py-2.5">
+            <dt className="text-xs font-semibold text-ink-soft">{label}</dt>
+            <dd className="font-display text-lg font-semibold tabular-nums">{n(value)}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-2 text-xs text-ink-soft">Every visitor adds to these. You&apos;re one of them.</p>
+    </section>
+  );
+}
+
 /** Your trainer profile: your level, what you've done on the base, and your medals. */
 export function ProfilePanel({ onClose }: { onClose: () => void }) {
   const progress = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
@@ -274,6 +311,7 @@ export function ProfilePanel({ onClose }: { onClose: () => void }) {
         ))}
       </dl>
       <p className="mt-4 text-sm text-ink-soft">Saved in this browser. Catch, spin, and explore to level up.</p>
+      {communityOn ? <Everyone /> : null}
     </Sheet>
   );
 }

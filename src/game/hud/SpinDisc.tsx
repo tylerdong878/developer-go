@@ -2,6 +2,7 @@
 
 import { type PointerEvent, useRef, useState, useSyncExternalStore } from "react";
 import { addItems, gainXp, type Items, progressStore, recordSpin } from "../progress";
+import { count } from "../community";
 import { sfx } from "../sound";
 
 export const ITEM_INFO = {
@@ -47,6 +48,7 @@ export function SpinDisc({ slug, name, lured }: { slug: string; name: string; lu
     lastSpin.set(slug, now);
     const found = loot(lured);
     addItems(found);
+    count("spins");
     setItems(found);
     if (!done) {
       recordSpin(slug);

@@ -6,6 +6,7 @@ import { game } from "../state";
 import { goTo } from "../travel";
 import { gainXp, progressStore, recordCatch, recordVisit } from "../progress";
 import { buddyStore } from "../buddy";
+import { count } from "../community";
 import { sfx } from "../sound";
 import { earned, visitorMedals } from "../visitorMedals";
 import { findWild, removeWild } from "../wild";
@@ -76,6 +77,7 @@ export function Hud() {
       sfx.open();
       if (o && !progressStore.get().visited.includes(goal)) {
         recordVisit(goal);
+        count("visits");
         gainXp(250, "first visit");
       }
     };
@@ -124,6 +126,7 @@ export function Hud() {
     if (w) removeWild(w.id);
     if (caught) {
       recordCatch(foe.dex);
+      count("catches");
       const bonus = best === "Excellent" ? 100 : best === "Great" ? 50 : best === "Nice" ? 10 : 0;
       gainXp((foe.rare ? 500 : 100) + bonus, best ? `${best} throw` : "caught");
     }
