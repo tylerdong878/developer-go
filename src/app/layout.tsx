@@ -13,7 +13,10 @@ const nunitoSans = Nunito_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://developer-go.vercel.app"),
   title: "Tyler Dong",
+  openGraph: { title: "Tyler Dong", siteName: "Tyler Dong", type: "website" },
+  twitter: { card: "summary_large_image", title: "Tyler Dong" },
   description:
     "CS + Computer Engineering at Northeastern. Explore my work Pokémon GO style: gyms are jobs, PokéStops are projects, raids are hackathons.",
 };
