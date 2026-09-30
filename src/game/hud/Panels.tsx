@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { bag, medals, type MedalTier, spawns, trainer, wild } from "@/content";
+import { buddyStore } from "../buddy";
 import { progressStore } from "../progress";
 import { Portrait } from "./Portrait";
 import { Sheet } from "./Sheet";
@@ -135,6 +136,39 @@ function Sprite({ dex, caught, small = false }: { dex: number; caught: boolean; 
       height={64}
       className={`${small ? "size-12" : "size-16"} object-contain ${caught ? "" : "brightness-0 opacity-35"}`}
     />
+  );
+}
+
+/** Teddy's buddy screen, like GO's: who he is and how much love he's gotten this visit. */
+export function BuddyPanel({ onClose }: { onClose: () => void }) {
+  const petted = useSyncExternalStore(buddyStore.subscribe, buddyStore.get, buddyStore.server);
+  return (
+    <Sheet title="Buddy" onClose={onClose}>
+      <div className="flex items-center gap-4 rounded-3xl bg-linear-to-br from-[#f9a8d4] to-[#fbcfe8] p-4 text-mystic-900">
+        <div className="grid size-20 shrink-0 place-items-center rounded-full bg-white" aria-hidden>
+          <svg viewBox="0 0 40 40" width="60" height="60">
+            <ellipse cx="9" cy="20" rx="6" ry="10" fill="#e6cfa9" />
+            <ellipse cx="31" cy="20" rx="6" ry="10" fill="#e6cfa9" />
+            <circle cx="20" cy="19" r="13" fill="#f5ebd8" />
+            <circle cx="15" cy="17" r="2.3" fill="#1a1310" />
+            <circle cx="25" cy="17" r="2.3" fill="#1a1310" />
+            <ellipse cx="20" cy="24" rx="5" ry="3.5" fill="#fbf6ec" />
+            <ellipse cx="20" cy="22.5" rx="2.2" ry="1.6" fill="#1a1310" />
+            <ellipse cx="20" cy="27" rx="1.4" ry="1" fill="#ef8a8f" />
+          </svg>
+        </div>
+        <div>
+          <p className="font-display text-2xl font-semibold">{trainer.buddy.name}</p>
+          <p className="text-sm font-semibold">{trainer.buddy.kind}, {trainer.name.split(" ")[0]}&apos;s buddy</p>
+        </div>
+      </div>
+      <p className="mt-4 leading-relaxed">{trainer.buddy.blurb}</p>
+      <p className="mt-4 flex items-center gap-2 font-display text-lg font-semibold">
+        <span aria-hidden className="text-2xl text-[#ff5c8a]">♥</span>
+        Petted {petted} {petted === 1 ? "time" : "times"} this visit
+      </p>
+      <p className="mt-1 text-sm text-ink-soft">Tap him on the map anytime. He follows you everywhere.</p>
+    </Sheet>
   );
 }
 

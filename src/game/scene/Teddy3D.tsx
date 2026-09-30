@@ -1,12 +1,68 @@
 "use client";
 
-import { useFrame } from "@react-three/fiber";
-import { useRef } from "react";
-import type { Group } from "three";
+import { type ThreeEvent, useFrame } from "@react-three/fiber";
+import { useMemo, useRef } from "react";
+import { CanvasTexture, type Group, type Sprite, SRGBColorSpace } from "three";
+import { lastPetAt, pet } from "../buddy";
 import { random } from "../geometry";
 import type { Mover } from "../player";
 import { parts } from "./parts";
+import { hover } from "./objects/tap";
 import { Shadow } from "./Shadow";
+
+let heartTexture: CanvasTexture | null = null;
+function heart() {
+  if (heartTexture) return heartTexture;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 64;
+  const g = canvas.getContext("2d")!;
+  g.fillStyle = "#ff5c8a";
+  g.strokeStyle = "#ffffff";
+  g.lineWidth = 5;
+  g.beginPath();
+  g.moveTo(32, 54);
+  g.bezierCurveTo(4, 34, 8, 8, 32, 20);
+  g.bezierCurveTo(56, 8, 60, 34, 32, 54);
+  g.closePath();
+  g.stroke();
+  g.fill();
+  heartTexture = new CanvasTexture(canvas);
+  heartTexture.colorSpace = SRGBColorSpace;
+  return heartTexture;
+}
+
+/** Hearts that float up off Teddy for a moment after he's petted. */
+function Hearts() {
+  const group = useRef<Group>(null);
+  const map = useMemo(() => heart(), []);
+  useFrame(() => {
+    const since = (performance.now() - lastPetAt()) / 1000;
+    group.current?.children.forEach((child, i) => {
+      const t = since - i * 0.15;
+      const s = child as Sprite;
+      s.visible = t > 0 && t < 1.6;
+      if (!s.visible) return;
+      s.position.set((i - 1.5) * 0.35, 1.1 + t * 1.3, 0);
+      s.scale.setScalar(0.35 + Math.min(t, 0.3));
+      s.material.opacity = 1 - t / 1.6;
+    });
+  });
+  return (
+    <group ref={group}>
+      {[0, 1, 2, 3].map((i) => (
+        <sprite key={i} visible={false}>
+          <spriteMaterial map={map} transparent depthWrite={false} />
+        </sprite>
+      ))}
+    </group>
+  );
+}
+
+const onPet = (e: ThreeEvent<MouseEvent>) => {
+  if (e.delta > 6) return;
+  e.stopPropagation();
+  pet();
+};
 
 const PARTS = ["body", "tail", "eyes", "leg0", "leg1", "leg2", "leg3"] as const;
 
@@ -65,7 +121,8 @@ export function Teddy3D({ mover }: { mover: Mover }) {
   });
 
   return (
-    <group ref={root}>
+    <group ref={root} onClick={onPet} {...hover}>
+      <Hearts />
       <Shadow size={1.2} opacity={0.5} />
       <group scale={0.85}>
         <group name="body">
