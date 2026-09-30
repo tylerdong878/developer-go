@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Local, git-ignored scratch space (screenshot tools, caches).
     ".cache/**",
+    // Written by Convex codegen.
+    "convex/_generated/**",
   ]),
 ]);
 
