@@ -3,7 +3,7 @@
 import { type ReactNode, useSyncExternalStore } from "react";
 import { levelFor, progressStore, xpForLevel } from "../progress";
 
-export type Screen = "profile" | "about" | "pokedex" | "bag" | "medals" | "nearby" | "settings";
+export type Screen = "profile" | "about" | "pokedex" | "bag" | "settings";
 
 /** The trainer badge in the bottom left, like GO's: your level, ringed by how far you are to the next one. */
 export function TrainerBadge({ onOpen }: { onOpen: () => void }) {
@@ -76,13 +76,6 @@ const BAG = (
     <rect x="17" y="21" width="6" height="5" rx="1.5" fill="#f6c453" />
   </svg>
 );
-const MEDAL = (
-  <svg viewBox="0 0 40 40" width="34" height="34">
-    <path d="M13 3h6l3 11h-6ZM27 3h-6l-3 11h6Z" fill="#1ab6e8" />
-    <circle cx="20" cy="25" r="11" fill="#f6c453" stroke="#d99a1e" strokeWidth="2.5" />
-    <path d="m20 19 2 4 4.3.4-3.2 2.9 1 4.2-4.1-2.3-4.1 2.3 1-4.2-3.2-2.9 4.3-.4Z" fill="#fff6d8" />
-  </svg>
-);
 const CARD = (
   <svg viewBox="0 0 40 40" width="34" height="34">
     <rect x="4" y="9" width="32" height="22" rx="4" fill="#0b84d6" />
@@ -98,14 +91,6 @@ const STAR = (
     <path d="m20 9 3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L20 25.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1Z" fill="#fff" />
   </svg>
 );
-const PIN = (
-  <svg viewBox="0 0 40 40" width="34" height="34">
-    <ellipse cx="20" cy="35" rx="8" ry="2.5" fill="#0a2a4a" opacity=".2" />
-    <path d="M20 4c6.6 0 11 4.8 11 10.6C31 22 20 34 20 34S9 22 9 14.6C9 8.8 13.4 4 20 4Z" fill="#2fd3c6" />
-    <circle cx="20" cy="14.5" r="4.5" fill="#fff" />
-  </svg>
-);
-
 const GEAR = (
   <svg viewBox="0 0 40 40" width="34" height="34">
     <circle cx="20" cy="20" r="16" fill="#9aa5b4" />
@@ -114,29 +99,30 @@ const GEAR = (
   </svg>
 );
 
-const ITEMS: { id: Screen; label: string; hint: string; icon: ReactNode }[] = [
-  { id: "profile", label: "Profile", hint: "You", icon: STAR },
-  { id: "about", label: "About Tyler", hint: "Me, school, skills", icon: CARD },
-  { id: "pokedex", label: "Pokédex", hint: "Catches, facts", icon: DEX },
-  { id: "bag", label: "Bag", hint: "Items", icon: BAG },
-  { id: "medals", label: "Medals", hint: "Yours, my awards", icon: MEDAL },
-  { id: "nearby", label: "Nearby", hint: "Everything", icon: PIN },
-  { id: "settings", label: "Settings", hint: "Sound, night", icon: GEAR },
+const ITEMS: { id: Screen; label: string; icon: ReactNode }[] = [
+  { id: "profile", label: "Profile", icon: STAR },
+  { id: "about", label: "About Tyler", icon: CARD },
+  { id: "pokedex", label: "Pokédex", icon: DEX },
+  { id: "bag", label: "Bag", icon: BAG },
+  { id: "settings", label: "Settings", icon: GEAR },
 ];
 
-/** GO's main menu: big round buttons fanned out above the Poké Ball. */
+/** GO's main menu: round buttons that pop up above the Poké Ball, one after another. */
 export function MainMenu({ onPick }: { onPick: (screen: Screen) => void }) {
   return (
-    <nav aria-label="Main menu" className="card-in flex flex-wrap justify-center gap-4 px-4">
-      {ITEMS.map((item) => (
-        <button key={item.id} type="button" onClick={() => onPick(item.id)} className="group flex w-20 flex-col items-center gap-1.5">
-          <span aria-hidden className="grid size-16 place-items-center overflow-hidden rounded-full bg-white shadow-lg transition group-hover:scale-105 group-active:scale-95">
+    <nav aria-label="Main menu" className="flex flex-wrap justify-center gap-x-3 gap-y-4 px-4">
+      {ITEMS.map((item, i) => (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => onPick(item.id)}
+          className="menu-pop group flex w-[72px] flex-col items-center gap-2"
+          style={{ animationDelay: `${i * 35}ms` }}
+        >
+          <span aria-hidden className="panel grid size-16 place-items-center rounded-full transition group-hover:scale-105 group-active:scale-95">
             {item.icon}
           </span>
-          <span className="rounded-full bg-surface/92 px-2.5 py-0.5 text-center text-sm font-semibold text-ink shadow backdrop-blur">
-            {item.label}
-          </span>
-          <span className="text-[11px] font-semibold text-white drop-shadow">{item.hint}</span>
+          <span className="text-center font-display text-sm font-semibold text-white">{item.label}</span>
         </button>
       ))}
     </nav>

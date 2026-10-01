@@ -17,7 +17,7 @@ import { Card } from "./Card";
 import { MainMenu, MenuBall, type Screen, TrainerBadge } from "./Menu";
 import { Nearby } from "./Nearby";
 import { SettingsPanel } from "./Settings";
-import { BagPanel, BuddyPanel, MedalsPanel, PokedexPanel, ProfilePanel, TrainerPanel } from "./Panels";
+import { BagPanel, BuddyPanel, PokedexPanel, ProfilePanel, TrainerPanel } from "./Panels";
 
 /**
  * GO's on-screen controls, laid over the 3D base: the trainer badge, the
@@ -28,7 +28,7 @@ import { BagPanel, BuddyPanel, MedalsPanel, PokedexPanel, ProfilePanel, TrainerP
 export function Hud() {
   const started = useSyncExternalStore(startedStore.subscribe, startedStore.get, startedStore.server);
   const [card, setCard] = useState<string | null>(null);
-  const [screen, setScreen] = useState<Exclude<Screen, "nearby"> | null>(null);
+  const [screen, setScreen] = useState<Screen | null>(null);
   const [menu, setMenu] = useState(false);
   const [nearby, setNearby] = useState(false);
   const [foe, setFoe] = useState<(Foe & { goal: string }) | null>(null);
@@ -119,8 +119,7 @@ export function Hud() {
   const pick = (s: Screen) => {
     sfx.open();
     setMenu(false);
-    if (s === "nearby") setNearby(true);
-    else setScreen(s);
+    setScreen(s);
   };
   const object = card ? bySlug.get(card) : undefined;
   const endCatch = (caught: boolean, best: Thrown) => {
@@ -141,7 +140,7 @@ export function Hud() {
   return (
     <div className="pointer-events-none absolute inset-0 z-20">
       {menu ? (
-        <div className="pointer-events-auto absolute inset-0 flex flex-col justify-end bg-mystic-900/40 pb-32 backdrop-blur-[2px]">
+        <div className="scrim-in pointer-events-auto absolute inset-0 flex flex-col justify-end bg-linear-to-t from-mystic-900/70 via-mystic-900/30 to-transparent pb-28">
           <button type="button" aria-label="Close menu" tabIndex={-1} className="absolute inset-0" onClick={() => setMenu(false)} />
           <div className="relative">
             <MainMenu onPick={pick} />
@@ -180,7 +179,6 @@ export function Hud() {
           />
         ) : null}
         {screen === "bag" ? <BagPanel onClose={closeScreen} /> : null}
-        {screen === "medals" ? <MedalsPanel onClose={closeScreen} /> : null}
         {screen === "settings" ? <SettingsPanel onClose={closeScreen} /> : null}
         {buddy ? <BuddyPanel onClose={() => setBuddy(false)} /> : null}
         {foe ? <Encounter key={foe.goal} foe={foe} onDone={endCatch} /> : null}
