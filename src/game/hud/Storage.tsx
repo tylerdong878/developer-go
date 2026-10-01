@@ -37,7 +37,7 @@ function Detail({ c, onBack }: { c: Catch; onBack: () => void }) {
       </p>
       <p className="mt-1 text-sm text-ink-soft">
         No. {String(c.dex).padStart(4, "0")}. Caught {when(c.at)}
-        {c.throw ? ` with a ${c.throw} throw` : ""}.
+        {c.throw ? ` with ${c.throw === "Excellent" ? "an" : "a"} ${c.throw} throw` : ""}.
       </p>
       <div className="mt-6 flex justify-center gap-2">
         <button type="button" onClick={onBack} className="rounded-full bg-ink/6 px-5 py-2.5 font-display font-semibold transition hover:bg-ink/12">

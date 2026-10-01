@@ -3,14 +3,28 @@
 import { DoubleSide } from "three";
 import { landmarks } from "../base";
 import type { Vec2 } from "../geometry";
+import { useTimeOfDay } from "../useTimeOfDay";
 import { CastShadows } from "./Sun";
+
+const DUSK = [0x16, 0x21, 0x3a];
+/** Mixes a hex color toward the night sky, by eye (in sRGB, the way it looks). */
+function dusk(hex: string, k = 0.55) {
+  const n = parseInt(hex.slice(1), 16);
+  const rgb = [n >> 16, (n >> 8) & 255, n & 255].map((c, i) => Math.round(c + (DUSK[i] - c) * k));
+  return `#${rgb.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+}
+/** Ground paint ignores the lights, so it's dimmed by hand after dark to match the grass around it. */
+function usePaint(color: string) {
+  return useTimeOfDay() === "night" ? dusk(color) : color;
+}
 
 /** Flat paint on the ground: drawn after the ground layers, never z-fighting them. */
 function Flat({ x, z, w, d, color, order = -36 }: { x: number; z: number; w: number; d: number; color: string; order?: number }) {
+  const paint = usePaint(color);
   return (
     <mesh position={[x, 0, z]} rotation-x={-Math.PI / 2} renderOrder={order}>
       <planeGeometry args={[w, d]} />
-      <meshBasicMaterial color={color} side={DoubleSide} depthTest={false} depthWrite={false} />
+      <meshBasicMaterial color={paint} side={DoubleSide} depthTest={false} depthWrite={false} />
     </mesh>
   );
 }
@@ -36,6 +50,7 @@ function Lines({ x, z, w, d, extra = [] }: { x: number; z: number; w: number; d:
 
 /** Where I played soccer from 5 to 17: a striped pitch with goals. */
 function Soccer({ at: [x, z] }: { at: Vec2 }) {
+  const line = usePaint("#ffffff");
   const w = 44;
   const d = 28;
   return (
@@ -46,7 +61,7 @@ function Soccer({ at: [x, z] }: { at: Vec2 }) {
       <Lines x={x} z={z} w={w} d={d} extra={[[0, 0, 0.18, d]]} />
       <mesh position={[x, 0.01, z]} rotation-x={-Math.PI / 2} renderOrder={-34}>
         <ringGeometry args={[4, 4.18, 48]} />
-        <meshBasicMaterial color="#ffffff" depthTest={false} depthWrite={false} />
+        <meshBasicMaterial color={line} depthTest={false} depthWrite={false} />
       </mesh>
       <CastShadows>
         {[-1, 1].map((s) => (
@@ -101,13 +116,14 @@ function Tennis({ at: [x, z] }: { at: Vec2 }) {
 
 /** A half court and a hoop, next to the NBA analyzer. */
 function Hoops({ at: [x, z] }: { at: Vec2 }) {
+  const line = usePaint("#ffffff");
   return (
     <group>
       <Flat x={x} z={z} w={15} d={14} color="#d99a5b" />
       <Lines x={x} z={z} w={15} d={14} extra={[[0, 3.3, 4.8, 0.18], [0, -1.5, 0.18, 9.6]]} />
       <mesh position={[x, 0.01, z + 7]} rotation-x={-Math.PI / 2} renderOrder={-34}>
         <ringGeometry args={[6.5, 6.68, 48, 1, 0, Math.PI]} />
-        <meshBasicMaterial color="#ffffff" depthTest={false} depthWrite={false} side={DoubleSide} />
+        <meshBasicMaterial color={line} depthTest={false} depthWrite={false} side={DoubleSide} />
       </mesh>
       <CastShadows>
         <mesh position={[x, 1.8, z + 7.6]}>
