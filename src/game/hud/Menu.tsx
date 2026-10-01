@@ -1,9 +1,10 @@
 "use client";
 
 import { type ReactNode, useSyncExternalStore } from "react";
+import { communityOn } from "../community";
 import { levelFor, progressStore, xpForLevel } from "../progress";
 
-export type Screen = "pokemon" | "profile" | "about" | "pokedex" | "bag" | "settings";
+export type Screen = "community" | "pokemon" | "profile" | "about" | "pokedex" | "bag" | "settings";
 
 /** The trainer badge in the bottom left, like GO's: your level, ringed by how far you are to the next one. */
 export function TrainerBadge({ onOpen }: { onOpen: () => void }) {
@@ -107,6 +108,15 @@ const MON = (
   </svg>
 );
 
+const PEOPLE = (
+  <svg viewBox="0 0 40 40" width="34" height="34">
+    <circle cx="14" cy="15" r="5" fill="#1ab6e8" />
+    <path d="M5 30c.8-5 4.4-8 9-8s8.2 3 9 8Z" fill="#1ab6e8" />
+    <circle cx="26" cy="13" r="5.5" fill="#0b84d6" />
+    <path d="M16 30c.9-5.5 4.8-9 10-9s9.1 3.5 10 9Z" fill="#0b84d6" />
+  </svg>
+);
+
 const GEAR = (
   <svg viewBox="0 0 40 40" width="34" height="34">
     <circle cx="20" cy="20" r="16" fill="#9aa5b4" />
@@ -120,6 +130,7 @@ type Item = { id: Screen; label: string; icon: ReactNode };
 /** The small row along the top, and the two big ones beside the ball, like GO. */
 const TOP: Item[] = [
   { id: "pokedex", label: "Pokédex", icon: DEX },
+  ...(communityOn ? [{ id: "community" as const, label: "Community", icon: PEOPLE }] : []),
   { id: "profile", label: "Profile", icon: STAR },
   { id: "about", label: "About Tyler", icon: CARD },
   { id: "settings", label: "Settings", icon: GEAR },

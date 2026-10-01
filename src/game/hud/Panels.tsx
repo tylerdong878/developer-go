@@ -1,7 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useState, useSyncExternalStore } from "react";
-import { communityOn, fetchTotals, type Totals } from "../community";
+import { type ReactNode, useSyncExternalStore } from "react";
 import { bag, medals, type MedalTier, spawns, trainer, wild } from "@/content";
 import { buddyStore } from "../buddy";
 import { MYSTIC } from "../colors";
@@ -283,34 +282,7 @@ export function BagPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
-/** Everyone's totals across every visitor, refreshed while the profile is open. */
-function Everyone() {
-  const [totals, setTotals] = useState<Totals | null>(null);
-  useEffect(() => {
-    let live = true;
-    const load = () => fetchTotals().then((t) => live && t && setTotals(t));
-    load();
-    const id = setInterval(load, 15000);
-    return () => {
-      live = false;
-      clearInterval(id);
-    };
-  }, []);
-  if (!totals) return null;
-  const rows = [
-    ["Trainers", n(totals.trainers)],
-    ["Caught", n(totals.catches)],
-    ["Stops spun", n(totals.spins)],
-  ] as const;
-  return (
-    <section>
-      <Label>Everyone who&apos;s visited</Label>
-      <Tiles rows={rows} tint="bg-teal/15" />
-    </section>
-  );
-}
-
-/** Your trainer profile: your level, what you've done on the base, your medals, and everyone's totals. */
+/** Your trainer profile: your level, what you've done on the base, and your medals. */
 export function ProfilePanel({ onClose }: { onClose: () => void }) {
   const progress = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
   const level = levelFor(progress.xp);
@@ -348,7 +320,6 @@ export function ProfilePanel({ onClose }: { onClose: () => void }) {
           );
         })}
       </ul>
-      {communityOn ? <Everyone /> : null}
     </Sheet>
   );
 }

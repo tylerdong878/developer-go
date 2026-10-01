@@ -20,6 +20,7 @@ import { MainMenu, MenuBall, type Screen, TrainerBadge } from "./Menu";
 import { Nearby } from "./Nearby";
 import { SettingsPanel } from "./Settings";
 import { PokemonPanel } from "./Storage";
+import { CommunityPanel } from "./Community";
 import { BagPanel, BuddyPanel, PokedexPanel, ProfilePanel, TrainerPanel } from "./Panels";
 
 /**
@@ -170,7 +171,7 @@ export function Hud() {
     if (w) removeWild(w.id);
     if (caught) {
       recordCatch({ dex: foe.dex, name: foe.name, cp: foe.cp, throw: best });
-      count("catches");
+      count("catches", { dex: foe.dex, cp: foe.cp });
       const bonus = best === "Excellent" ? 100 : best === "Great" ? 50 : best === "Nice" ? 10 : 0;
       gainXp((foe.rare ? 500 : 100) + bonus, best ? `${best} throw` : "caught");
     }
@@ -230,6 +231,7 @@ export function Hud() {
         {screen === "bag" ? <BagPanel onClose={closeScreen} /> : null}
         {screen === "settings" ? <SettingsPanel onClose={closeScreen} /> : null}
         {screen === "pokemon" ? <PokemonPanel onClose={closeScreen} /> : null}
+        {screen === "community" ? <CommunityPanel onClose={closeScreen} /> : null}
         {buddy ? <BuddyPanel onClose={() => setBuddy(false)} /> : null}
         {foe ? <Encounter key={foe.goal} foe={foe} onDone={endCatch} /> : null}
       </div>
