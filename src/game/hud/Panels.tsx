@@ -7,6 +7,7 @@ import { buddyStore } from "../buddy";
 import { MYSTIC } from "../colors";
 import { levelFor, progressStore, xpForLevel } from "../progress";
 import { visitorMedals } from "../visitorMedals";
+import { ItemIcon } from "./icons";
 import { ITEM_INFO } from "./SpinDisc";
 import { Sheet } from "./Sheet";
 
@@ -251,23 +252,33 @@ function Skills() {
   );
 }
 
-/** Your bag, like GO's: the items you've picked up spinning stops. */
+/** GO's bag holds 350 items. */
+const BAG_MAX = 350;
+
+/** Your items, like GO's: each one with its picture, how many you have, and what it does. */
 export function BagPanel({ onClose }: { onClose: () => void }) {
   const { items } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const ids = Object.keys(ITEM_INFO) as (keyof typeof ITEM_INFO)[];
+  const total = ids.reduce((sum, id) => sum + items[id], 0);
   return (
-    <Sheet title="Bag" onClose={onClose}>
-      <ul className="divide-y divide-ink/6">
-        {(Object.keys(ITEM_INFO) as (keyof typeof ITEM_INFO)[]).map((id) => (
-          <li key={id} className="flex items-center gap-3 py-3">
-            <span aria-hidden className="size-8 rounded-full ring-4 ring-ink/5" style={{ background: ITEM_INFO[id].color }} />
-            <span className="flex-1 font-semibold">{ITEM_INFO[id].name}</span>
-            <span className="font-display text-lg font-semibold tabular-nums">×{items[id]}</span>
+    <Sheet title="Items" subtitle={`${total}/${BAG_MAX}`} onClose={onClose}>
+      <ul className="space-y-2">
+        {ids.map((id) => (
+          <li key={id} className={`flex items-center gap-4 rounded-2xl bg-ink/5 px-4 py-3 ${items[id] ? "" : "opacity-55"}`}>
+            <span className="grid size-14 shrink-0 place-items-center rounded-full bg-surface">
+              <ItemIcon id={id} size={40} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-baseline justify-between gap-2">
+                <span className="font-display text-lg font-semibold">{ITEM_INFO[id].name}</span>
+                <span className="font-display text-lg font-semibold tabular-nums">×{items[id]}</span>
+              </span>
+              <span className="block text-sm leading-snug text-ink-soft">{ITEM_INFO[id].about}</span>
+            </span>
           </li>
         ))}
       </ul>
-      <p className="mt-4 text-sm text-ink-soft">
-        Spin PokéStops to get more. Great Balls catch better, and a Razz Berry makes the next catch easier.
-      </p>
+      <p className="mt-4 text-sm text-ink-soft">Spin PokéStops for more. Each one refills a few minutes after you spin it.</p>
     </Sheet>
   );
 }

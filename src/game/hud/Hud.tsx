@@ -186,7 +186,7 @@ export function Hud() {
   return (
     <div className="pointer-events-none absolute inset-0 z-20">
       {menu ? (
-        <div className="scrim-in pointer-events-auto absolute inset-0 flex flex-col justify-end bg-linear-to-t from-mystic-900/70 via-mystic-900/30 to-transparent pb-28">
+        <div className="scrim-in pointer-events-auto absolute inset-0 flex flex-col justify-end bg-linear-to-t from-mystic-900/70 via-mystic-900/30 to-transparent">
           <button type="button" aria-label="Close menu" tabIndex={-1} className="absolute inset-0" onClick={() => setMenu(false)} />
           <div className="relative">
             <MainMenu onPick={pick} />
@@ -198,7 +198,7 @@ export function Hud() {
         <XpPops />
       </div>
 
-      <div className="pointer-events-auto absolute bottom-4 left-4">
+      <div className={`pointer-events-auto absolute bottom-4 left-4 transition-opacity ${menu ? "invisible opacity-0" : ""}`}>
         <TrainerBadge onOpen={() => setScreen("profile")} />
       </div>
       <div className="pointer-events-auto absolute bottom-4 left-1/2 -translate-x-1/2">
@@ -210,7 +210,7 @@ export function Hud() {
           }}
         />
       </div>
-      <div className="pointer-events-auto absolute right-4 bottom-4">
+      <div className={`pointer-events-auto absolute right-4 bottom-4 transition-opacity ${menu ? "invisible opacity-0" : ""}`}>
         <Nearby open={nearby} setOpen={setNearby} />
       </div>
 

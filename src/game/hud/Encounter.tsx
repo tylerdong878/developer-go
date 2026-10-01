@@ -10,6 +10,7 @@ import {
 } from "react";
 import { addItems, progressStore, spendItem } from "../progress";
 import { sfx } from "../sound";
+import { ItemIcon } from "./icons";
 
 /** Who you're trying to catch. Fact Pokémon never run and always get caught by the second hit. */
 export type Foe = { dex: number; name: string; rare: boolean; cp: number };
@@ -310,7 +311,10 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
                 ballType === b ? "bg-surface text-ink ring-2 ring-mystic-500" : "bg-surface/75 text-ink"
               }`}
             >
-              {b === "ball" ? "Poké Ball" : "Great Ball"} ×{items[b]}
+              <span className="flex items-center gap-1.5">
+                <ItemIcon id={b} size={18} />
+                {b === "ball" ? "Poké Ball" : "Great Ball"} ×{items[b]}
+              </span>
             </button>
           ))}
           <button
@@ -321,7 +325,10 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
             }}
             className="rounded-full bg-surface/75 px-3.5 py-2 text-sm font-bold text-ink shadow disabled:opacity-60"
           >
-            {berry ? "Berry fed" : `Razz Berry ×${items.razz}`}
+            <span className="flex items-center gap-1.5">
+              <ItemIcon id="razz" size={18} />
+              {berry ? "Berry fed" : `Razz Berry ×${items.razz}`}
+            </span>
           </button>
         </div>
       ) : null}

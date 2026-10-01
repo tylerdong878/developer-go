@@ -73,3 +73,33 @@ export function ObjectIcon({ object, size = 36 }: { object: MapObject; size?: nu
       );
   }
 }
+
+/** GO's items, drawn small: a Poké Ball, a Great Ball, and a Razz Berry. */
+export function ItemIcon({ id, size = 32 }: { id: "ball" | "great" | "razz"; size?: number }) {
+  if (id === "razz")
+    return (
+      <svg viewBox="0 0 40 40" width={size} height={size} aria-hidden>
+        <path d="M20 9c2-4 6-5 9-4-1 3-4 5-8 5Z" fill="#4fae4a" />
+        <path d="M20 10C11 10 7 17 8 24c1 7 6 12 12 12s11-5 12-12c1-7-3-14-12-14Z" fill="#e0457b" />
+        {[[14, 18], [20, 16], [26, 18], [12, 24], [18, 23], [24, 23], [29, 25], [15, 30], [21, 29], [26, 30]].map(([x, y]) => (
+          <circle key={`${x}-${y}`} cx={x} cy={y} r="1.3" fill="#ffd1e1" />
+        ))}
+      </svg>
+    );
+  const top = id === "great" ? "#2b6fd6" : "#e3350d";
+  return (
+    <svg viewBox="0 0 40 40" width={size} height={size} aria-hidden>
+      <circle cx="20" cy="20" r="17" fill="#fff" />
+      <path d="M3 20a17 17 0 0 1 34 0Z" fill={top} />
+      {id === "great" ? (
+        <>
+          <path d="M8 12c3 1 5 3 6 6l-6 1Z" fill="#e3350d" />
+          <path d="M32 12c-3 1-5 3-6 6l6 1Z" fill="#e3350d" />
+        </>
+      ) : null}
+      <circle cx="20" cy="20" r="17" fill="none" stroke="#1c1c24" strokeWidth="2.4" />
+      <path d="M3 20h34" stroke="#1c1c24" strokeWidth="3" />
+      <circle cx="20" cy="20" r="5" fill="#fff" stroke="#1c1c24" strokeWidth="2.6" />
+    </svg>
+  );
+}

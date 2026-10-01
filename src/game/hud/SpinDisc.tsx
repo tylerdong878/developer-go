@@ -4,12 +4,12 @@ import { type PointerEvent, useRef, useState, useSyncExternalStore } from "react
 import { addItems, gainXp, type Items, progressStore, recordSpin } from "../progress";
 import { count } from "../community";
 import { sfx } from "../sound";
-import { StopIcon } from "./icons";
+import { ItemIcon, StopIcon } from "./icons";
 
 export const ITEM_INFO = {
-  ball: { name: "Poké Ball", color: "#e3350d" },
-  great: { name: "Great Ball", color: "#2b6fd6" },
-  razz: { name: "Razz Berry", color: "#e0457b" },
+  ball: { name: "Poké Ball", color: "#e3350d", about: "A device for catching wild Pokémon. Throw it like a ball." },
+  great: { name: "Great Ball", color: "#2b6fd6", about: "A good, high-performance ball. Catches better than a Poké Ball." },
+  razz: { name: "Razz Berry", color: "#e0457b", about: "Feed it to a wild Pokémon to make the next catch easier." },
 } as const;
 
 /** Like GO, a stop refills a few minutes after you spin it. */
@@ -86,7 +86,7 @@ export function SpinDisc({ slug, lured }: { slug: string; lured: boolean }) {
               key={id}
               className="item-pop flex items-center gap-1.5 rounded-full bg-ink/6 px-3 py-1.5 text-xs font-bold text-ink"
             >
-              <span className="size-3 rounded-full" style={{ background: ITEM_INFO[id].color }} />
+              <ItemIcon id={id} size={18} />
               {ITEM_INFO[id].name} ×{count}
             </li>
           ))}

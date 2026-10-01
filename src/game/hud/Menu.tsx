@@ -38,7 +38,7 @@ export function TrainerBadge({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-/** GO's Poké Ball menu button. */
+/** GO's Poké Ball menu button. While the menu's open it's the white × that closes it. */
 export function MenuBall({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   return (
     <button
@@ -48,14 +48,22 @@ export function MenuBall({ open, onToggle }: { open: boolean; onToggle: () => vo
       aria-label={open ? "Close menu" : "Open menu"}
       className="grid size-16 place-items-center rounded-full drop-shadow-md transition hover:scale-105 active:scale-95"
     >
-      <svg viewBox="0 0 64 64" className="size-full" aria-hidden>
-        <circle cx="32" cy="32" r="30" fill="#fff" />
-        <path d="M2 32a30 30 0 0 1 60 0Z" fill={open ? "#9aa5b4" : "#e3350d"} />
-        <circle cx="32" cy="32" r="30" fill="none" stroke="#1c1c24" strokeWidth="3" />
-        <path d="M2.5 32h59" stroke="#1c1c24" strokeWidth="4" />
-        <circle cx="32" cy="32" r="9.5" fill="#fff" stroke="#1c1c24" strokeWidth="4" />
-        <circle cx="32" cy="32" r="4.5" fill={open ? "#9aa5b4" : "#f4f4f4"} stroke="#1c1c24" strokeWidth="1.5" />
-      </svg>
+      {open ? (
+        <span className="panel grid size-14 place-items-center rounded-full text-mystic-500">
+          <svg viewBox="0 0 16 16" className="size-5" aria-hidden>
+            <path d="m3 3 10 10M13 3 3 13" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+          </svg>
+        </span>
+      ) : (
+        <svg viewBox="0 0 64 64" className="size-full" aria-hidden>
+          <circle cx="32" cy="32" r="30" fill="#fff" />
+          <path d="M2 32a30 30 0 0 1 60 0Z" fill="#e3350d" />
+          <circle cx="32" cy="32" r="30" fill="none" stroke="#1c1c24" strokeWidth="3" />
+          <path d="M2.5 32h59" stroke="#1c1c24" strokeWidth="4" />
+          <circle cx="32" cy="32" r="9.5" fill="#fff" stroke="#1c1c24" strokeWidth="4" />
+          <circle cx="32" cy="32" r="4.5" fill="#f4f4f4" stroke="#1c1c24" strokeWidth="1.5" />
+        </svg>
+      )}
     </button>
   );
 }
@@ -107,33 +115,55 @@ const GEAR = (
   </svg>
 );
 
-const ITEMS: { id: Screen; label: string; icon: ReactNode }[] = [
-  { id: "pokemon", label: "Pokémon", icon: MON },
+type Item = { id: Screen; label: string; icon: ReactNode };
+
+/** The small row along the top, and the two big ones beside the ball, like GO. */
+const TOP: Item[] = [
+  { id: "pokedex", label: "Pokédex", icon: DEX },
   { id: "profile", label: "Profile", icon: STAR },
   { id: "about", label: "About Tyler", icon: CARD },
-  { id: "pokedex", label: "Pokédex", icon: DEX },
-  { id: "bag", label: "Bag", icon: BAG },
   { id: "settings", label: "Settings", icon: GEAR },
 ];
+const BIG: [Item, Item] = [
+  { id: "pokemon", label: "Pokémon", icon: MON },
+  { id: "bag", label: "Items", icon: BAG },
+];
 
-/** GO's main menu: round buttons that pop up above the Poké Ball, one after another. */
+function MenuButton({ item, big = false, delay, onPick }: { item: Item; big?: boolean; delay: number; onPick: (s: Screen) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onPick(item.id)}
+      className={`menu-pop group flex flex-col items-center gap-1.5 ${big ? "w-24" : "w-[72px]"}`}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <span
+        aria-hidden
+        className={`panel grid place-items-center rounded-full transition group-hover:scale-105 group-active:scale-95 ${big ? "size-[76px] [&_svg]:size-11" : "size-14"}`}
+      >
+        {item.icon}
+      </span>
+      <span className={`text-center font-display font-semibold text-white ${big ? "text-base" : "text-sm"}`}>{item.label}</span>
+    </button>
+  );
+}
+
+/**
+ * GO's main menu: a row of small buttons up top, and the two you use most,
+ * Pokémon and Items, big on either side of the ball. They pop in one by one.
+ */
 export function MainMenu({ onPick }: { onPick: (screen: Screen) => void }) {
   return (
-    <nav aria-label="Main menu" className="flex flex-wrap justify-center gap-x-3 gap-y-4 px-4">
-      {ITEMS.map((item, i) => (
-        <button
-          key={item.id}
-          type="button"
-          onClick={() => onPick(item.id)}
-          className="menu-pop group flex w-[72px] flex-col items-center gap-2"
-          style={{ animationDelay: `${i * 35}ms` }}
-        >
-          <span aria-hidden className="panel grid size-16 place-items-center rounded-full transition group-hover:scale-105 group-active:scale-95">
-            {item.icon}
-          </span>
-          <span className="text-center font-display text-sm font-semibold text-white">{item.label}</span>
-        </button>
-      ))}
+    <nav aria-label="Main menu" className="flex flex-col items-center gap-8 px-4 pb-3">
+      <div className="flex flex-wrap justify-center gap-x-4 gap-y-4">
+        {TOP.map((item, i) => (
+          <MenuButton key={item.id} item={item} delay={60 + i * 35} onPick={onPick} />
+        ))}
+      </div>
+      <div className="flex items-end gap-24">
+        <MenuButton item={BIG[0]} big delay={0} onPick={onPick} />
+        <MenuButton item={BIG[1]} big delay={30} onPick={onPick} />
+      </div>
     </nav>
   );
 }
