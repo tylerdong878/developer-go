@@ -209,7 +209,7 @@ export function BuddyPanel({ onClose }: { onClose: () => void }) {
     >
       <p className="leading-relaxed">{trainer.buddy.blurb}</p>
       <p className="mt-4 flex items-center gap-2 font-display text-lg font-semibold">
-        <span aria-hidden className="text-2xl text-[#ff5c8a]">♥</span>
+        <span aria-hidden className="text-2xl text-heart">♥</span>
         Petted {petted} {petted === 1 ? "time" : "times"} this visit
       </p>
       <p className="mt-1 text-sm text-ink-soft">Tap him on the map anytime. He follows you everywhere.</p>

@@ -54,6 +54,23 @@ export function Hud() {
       off();
     };
   }, []);
+  // Little things: the tab calls you back when you leave, and the console says hi.
+  useEffect(() => {
+    const title = document.title;
+    const onVisible = () => {
+      document.title = document.hidden ? "Teddy misses you | Tyler Dong" : title;
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    console.log(
+      "%cHey, you found the console.%c\nThis base is open source: https://github.com/tylerdong878/developer-go",
+      "font: 600 16px sans-serif; color: #0b84d6",
+      "font: 13px sans-serif",
+    );
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      document.title = title;
+    };
+  }, []);
   const pettedOnce = useRef(false);
 
   // Petting Teddy opens his buddy screen (and the first pet each visit is worth a little XP).

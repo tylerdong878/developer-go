@@ -72,6 +72,13 @@
   --color-valor: #e43127;
   --color-instinct: #ffcc00;
 
+  /* The Poké Ball red, the classic text box's inks, and the warm accents */
+  --color-pokeball: #e3350d;
+  --color-dialog-ink: #1c2a3a;
+  --color-dialog-soft: #3d5a75;
+  --color-gold-ink: #c48a12;
+  --color-heart: #ff5c8a;
+
   /* Medal tiers */
   --color-bronze: #a9662a;
   --color-silver: #c9cdd3;

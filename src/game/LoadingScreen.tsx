@@ -47,7 +47,7 @@ export function LoadingScreen({ ready }: { ready: boolean }) {
           <circle cx="32" cy="32" r="9" fill="#fff" stroke="#1c1c24" strokeWidth="4.5" />
           <circle cx="32" cy="32" r="4" fill="#f4f4f4" />
         </svg>
-        <span className="loading-shadow mt-1 block h-3 w-16 rounded-[50%] bg-[#1c3a2a]/30" aria-hidden />
+        <span className="loading-shadow mt-1 block h-3 w-16 rounded-[50%] bg-mystic-900/25" aria-hidden />
       </div>
       <div className="mt-8 h-2 w-56 overflow-hidden rounded-full bg-white/40">
         <div

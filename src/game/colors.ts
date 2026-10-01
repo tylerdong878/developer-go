@@ -4,6 +4,8 @@ export const MYSTIC_LIGHT = "#1ab6e8";
 export const TEAL = "#2fd3c6";
 /** A lured stop's pink petals. */
 export const LURE = "#f472b6";
+/** Gold that reads on white, for 3-star raids and fact Pokémon. */
+export const GOLD_INK = "#c48a12";
 
 /** Raid eggs: pink for 1 star, yellow for 3, legendary purple for 5. */
 export const RAID_EGG = { 1: "#f472b6", 3: "#f6c453", 5: "#5b45b0" } as const;

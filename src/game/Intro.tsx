@@ -71,10 +71,10 @@ export function Intro({ ready, onStart }: { ready: boolean; onStart: () => void 
       />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-4 sm:p-8">
         <div className="dialog-box pointer-events-auto relative w-full max-w-2xl px-6 pt-5 pb-7" onClick={go}>
-          <p className="min-h-[4em] font-display text-lg leading-snug font-medium text-[#1c2a3a] sm:text-xl">
+          <p className="min-h-[4em] font-display text-lg leading-snug font-medium text-dialog-ink sm:text-xl">
             {GREETING.slice(0, shown)}
           </p>
-          <div className="mt-2 flex items-center justify-between gap-3 text-sm font-semibold text-[#3d5a75]">
+          <div className="mt-2 flex items-center justify-between gap-3 text-sm font-semibold text-dialog-soft">
             {ready ? (
               <span>{typed ? controls : " "}</span>
             ) : (
@@ -86,7 +86,7 @@ export function Intro({ ready, onStart }: { ready: boolean; onStart: () => void 
               Plain version
             </Link>
           </div>
-          {canStart ? <span className="dialog-next absolute right-5 bottom-2 text-xl text-[#e3350d]">▼</span> : null}
+          {canStart ? <span className="dialog-next absolute right-5 bottom-2 text-xl text-pokeball">▼</span> : null}
         </div>
       </div>
     </div>

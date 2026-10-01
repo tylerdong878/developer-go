@@ -232,11 +232,11 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
         <button
           type="button"
           onClick={() => onDone(phase === "caught", label)}
-          className="rounded-full bg-white/85 px-4 py-2 font-display font-semibold text-ink shadow"
+          className="panel rounded-full px-4 py-2 font-display font-semibold transition active:scale-95"
         >
           {done ? "Back to the map" : "Run"}
         </button>
-        <p className="rounded-full bg-white/85 px-4 py-2 font-display font-semibold text-ink shadow">
+        <p className="panel rounded-full px-4 py-2 font-display font-semibold">
           {foe.rare ? "✦ " : ""}
           {foe.name}
         </p>
@@ -282,7 +282,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
 
       {message ? (
         <div className="absolute inset-x-0 bottom-36 flex justify-center px-6">
-          <p className="card-in rounded-2xl bg-white/92 px-5 py-3 text-center font-display text-xl font-semibold text-ink shadow-xl">
+          <p className="panel card-in rounded-2xl px-5 py-3 text-center font-display text-xl font-semibold">
             {message}
           </p>
         </div>
@@ -301,7 +301,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
               onClick={() => setBallType(b)}
               aria-pressed={ballType === b}
               className={`rounded-full px-3.5 py-2 text-sm font-bold shadow ${
-                ballType === b ? "bg-white text-mystic-900 ring-4 ring-mystic-400" : "bg-white/75 text-ink"
+                ballType === b ? "bg-surface text-ink ring-2 ring-mystic-500" : "bg-surface/75 text-ink"
               }`}
             >
               {b === "ball" ? "Poké Ball" : "Great Ball"} ×{items[b]}
@@ -313,7 +313,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
             onClick={() => {
               if (spendItem("razz")) setBerry(true);
             }}
-            className="rounded-full bg-white/75 px-3.5 py-2 text-sm font-bold text-ink shadow disabled:opacity-60"
+            className="rounded-full bg-surface/75 px-3.5 py-2 text-sm font-bold text-ink shadow disabled:opacity-60"
           >
             {berry ? "Berry fed" : `Razz Berry ×${items.razz}`}
           </button>
@@ -325,7 +325,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
           <button
             type="button"
             onClick={() => onDone(phase === "caught", label)}
-            className="rounded-full bg-teal px-8 py-3 font-display text-lg font-semibold text-mystic-900 shadow-lg"
+            className="rounded-full bg-mystic-500 px-8 py-3 font-display text-lg font-semibold text-white shadow-lg transition active:scale-95"
           >
             OK
           </button>

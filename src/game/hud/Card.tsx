@@ -2,7 +2,7 @@
 
 import { type ReactNode, useState } from "react";
 import { type Egg, type Gym, type MapObject, type Raid, type Role, skills, type SkillId, type Spawn, type Stop } from "@/content";
-import { LURE, MYSTIC, RAID_EGG } from "../colors";
+import { GOLD_INK, LURE, MYSTIC, RAID_EGG } from "../colors";
 import { Sheet } from "./Sheet";
 import { EggIcon, GymIcon, RaidIcon, StopIcon } from "./icons";
 import { SpinDisc } from "./SpinDisc";
@@ -106,7 +106,7 @@ function stopCard(s: Stop): View {
 function raidCard(r: Raid): View {
   const egg = RAID_EGG[r.stars];
   return {
-    accent: egg === RAID_EGG[3] ? "#c48a12" : egg,
+    accent: egg === RAID_EGG[3] ? GOLD_INK : egg,
     art: <RaidIcon stars={r.stars} size={38} />,
     kicker: `${"★".repeat(r.stars)} Raid`,
     title: r.event,
@@ -150,7 +150,7 @@ function spawnCard(s: Spawn, onAbout: () => void): View {
           <button
             type="button"
             onClick={onAbout}
-            className="rounded-full bg-teal px-5 py-2.5 font-display font-semibold text-mystic-900 transition hover:brightness-105 active:scale-95"
+            className="rounded-full bg-mystic-500 px-5 py-2.5 font-display font-semibold text-white transition hover:brightness-110 active:scale-95"
           >
             Wake it up
           </button>
@@ -222,7 +222,7 @@ function Links({ links }: { links: { label: string; href: string }[] }) {
           href={l.href}
           target="_blank"
           rel="noreferrer"
-          className="rounded-full bg-teal px-4 py-2 text-sm font-bold text-mystic-900 transition hover:brightness-105 active:scale-95"
+          className="rounded-full bg-mystic-500 px-4 py-2 text-sm font-bold text-white transition hover:brightness-110 active:scale-95"
         >
           {l.label}
         </a>
