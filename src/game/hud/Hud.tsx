@@ -13,7 +13,7 @@ import { sfx } from "../sound";
 import { earned, visitorMedals } from "../visitorMedals";
 import { findWild, removeWild } from "../wild";
 import { Encounter, type Foe, type Thrown } from "./Encounter";
-import { XpPops } from "./Xp";
+import { FactToast, XpPops } from "./Xp";
 import { Card } from "./Card";
 import { MainMenu, MenuBall, type Screen, TrainerBadge } from "./Menu";
 import { Nearby } from "./Nearby";
@@ -34,6 +34,7 @@ export function Hud() {
   const [nearby, setNearby] = useState(false);
   const [foe, setFoe] = useState<(Foe & { goal: string }) | null>(null);
   const [buddy, setBuddy] = useState(false);
+  const [fact, setFact] = useState<string | null>(null);
 
   // Earning a visitor medal is worth 200 XP. Medals already earned on an
   // earlier visit don't pay out again.
@@ -131,6 +132,8 @@ export function Hud() {
   }, [menu]);
 
   const closeCard = useCallback(() => setCard(null), []);
+  const closeFact = useCallback(() => setFact(null), []);
+  const factSpawn = fact ? bySlug.get(fact) : undefined;
   const closeScreen = useCallback(() => setScreen(null), []);
   const openAbout = useCallback(() => {
     setCard(null);
@@ -153,7 +156,11 @@ export function Hud() {
       gainXp((foe.rare ? 500 : 100) + bonus, best ? `${best} throw` : "caught");
     }
     setFoe(null);
-    if (caught && foe.rare) setCard(foe.goal); // a caught fact Pokémon shows its fact
+    if (!caught || !foe.rare) return;
+    // A caught fact Pokémon drops its fact in as a toast. Snorlax still opens its card: waking it leads to About.
+    const o = bySlug.get(foe.goal);
+    if (o?.kind === "spawn" && !o.opensAbout) setFact(foe.goal);
+    else setCard(foe.goal);
   };
 
   if (!started) return null;
@@ -167,7 +174,10 @@ export function Hud() {
           </div>
         </div>
       ) : null}
-      <XpPops />
+      <div className="pointer-events-none fixed inset-x-0 top-4 z-[60] flex flex-col items-center gap-2 px-4">
+        {factSpawn?.kind === "spawn" ? <FactToast key={factSpawn.slug} spawn={factSpawn} onDone={closeFact} /> : null}
+        <XpPops />
+      </div>
 
       <div className="pointer-events-auto absolute bottom-4 left-4">
         <TrainerBadge onOpen={() => setScreen("profile")} />
