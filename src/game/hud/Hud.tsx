@@ -16,6 +16,7 @@ import { XpPops } from "./Xp";
 import { Card } from "./Card";
 import { MainMenu, MenuBall, type Screen, TrainerBadge } from "./Menu";
 import { Nearby } from "./Nearby";
+import { SettingsPanel } from "./Settings";
 import { BagPanel, BuddyPanel, MedalsPanel, PokedexPanel, ProfilePanel, TrainerPanel } from "./Panels";
 
 /**
@@ -180,6 +181,7 @@ export function Hud() {
         ) : null}
         {screen === "bag" ? <BagPanel onClose={closeScreen} /> : null}
         {screen === "medals" ? <MedalsPanel onClose={closeScreen} /> : null}
+        {screen === "settings" ? <SettingsPanel onClose={closeScreen} /> : null}
         {buddy ? <BuddyPanel onClose={() => setBuddy(false)} /> : null}
         {foe ? <Encounter key={foe.goal} foe={foe} onDone={endCatch} /> : null}
       </div>

@@ -3,25 +3,37 @@
 import { type ReactNode, useSyncExternalStore } from "react";
 import { levelFor, progressStore, xpForLevel } from "../progress";
 
-export type Screen = "profile" | "about" | "pokedex" | "bag" | "medals" | "nearby";
+export type Screen = "profile" | "about" | "pokedex" | "bag" | "medals" | "nearby" | "settings";
 
-/** The trainer badge in the bottom left, like GO's: portrait, your level, and an XP bar. */
+/** The trainer badge in the bottom left, like GO's: your level, ringed by how far you are to the next one. */
 export function TrainerBadge({ onOpen }: { onOpen: () => void }) {
   const { xp } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
   const level = levelFor(xp);
   const from = xpForLevel(level);
   const share = Math.min(1, (xp - from) / (xpForLevel(level + 1) - from));
+  const around = 2 * Math.PI * 25;
   return (
-    <button type="button" onClick={onOpen} aria-label={`You, level ${level}. Open your profile`} className="group flex items-end">
-      <span className="relative grid size-16 place-items-center rounded-full bg-linear-to-br from-mystic-400 to-mystic-700 font-display text-2xl font-bold text-white shadow-lg ring-4 ring-white transition group-hover:scale-105 group-active:scale-95">
-        {level}
-      </span>
-      <span className="-ml-3 mb-0.5 rounded-2xl bg-surface/92 py-1 pr-3 pl-4 text-ink shadow backdrop-blur">
-        <span className="block font-display text-sm leading-none font-semibold">You</span>
-        <span className="mt-1 block h-1 w-12 overflow-hidden rounded-full bg-ink/10">
-          <span className="block h-full rounded-full bg-teal transition-[width] duration-500" style={{ width: `${share * 100}%` }} />
-        </span>
-      </span>
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={`You, level ${level}. Open your profile`}
+      className="relative grid size-14 place-items-center transition hover:scale-105 active:scale-95"
+    >
+      <svg viewBox="0 0 56 56" className="absolute inset-0 -rotate-90" aria-hidden>
+        <circle cx="28" cy="28" r="25" fill="var(--surface)" stroke="rgb(10 42 74 / 0.12)" strokeWidth="4" />
+        <circle
+          cx="28"
+          cy="28"
+          r="25"
+          fill="none"
+          stroke="var(--color-teal)"
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeDasharray={`${share * around} ${around}`}
+          className="transition-[stroke-dasharray] duration-500"
+        />
+      </svg>
+      <span className="relative font-display text-xl font-bold text-mystic-500 tabular-nums">{level}</span>
     </button>
   );
 }
@@ -34,7 +46,7 @@ export function MenuBall({ open, onToggle }: { open: boolean; onToggle: () => vo
       onClick={onToggle}
       aria-expanded={open}
       aria-label={open ? "Close menu" : "Open menu"}
-      className="grid size-[72px] place-items-center rounded-full shadow-xl transition hover:scale-105 active:scale-95"
+      className="grid size-16 place-items-center rounded-full drop-shadow-md transition hover:scale-105 active:scale-95"
     >
       <svg viewBox="0 0 64 64" className="size-full" aria-hidden>
         <circle cx="32" cy="32" r="30" fill="#fff" />
@@ -94,6 +106,14 @@ const PIN = (
   </svg>
 );
 
+const GEAR = (
+  <svg viewBox="0 0 40 40" width="34" height="34">
+    <circle cx="20" cy="20" r="16" fill="#9aa5b4" />
+    <path d="M20 10.5 22 13l3.2-.6.9 3.1 3 1.3-.9 3.2 1.8 2.7-2.6 1.9.2 3.3-3.3.3-1.5 2.9-2.8-1.6-2.8 1.6-1.5-2.9-3.3-.3.2-3.3-2.6-1.9 1.8-2.7-.9-3.2 3-1.3.9-3.1 3.2.6Z" fill="#fff" />
+    <circle cx="20" cy="21" r="3.6" fill="#9aa5b4" />
+  </svg>
+);
+
 const ITEMS: { id: Screen; label: string; hint: string; icon: ReactNode }[] = [
   { id: "profile", label: "Profile", hint: "You", icon: STAR },
   { id: "about", label: "About Tyler", hint: "Me, school, skills", icon: CARD },
@@ -101,6 +121,7 @@ const ITEMS: { id: Screen; label: string; hint: string; icon: ReactNode }[] = [
   { id: "bag", label: "Bag", hint: "Items", icon: BAG },
   { id: "medals", label: "Medals", hint: "Yours, my awards", icon: MEDAL },
   { id: "nearby", label: "Nearby", hint: "Everything", icon: PIN },
+  { id: "settings", label: "Settings", hint: "Sound, night", icon: GEAR },
 ];
 
 /** GO's main menu: big round buttons fanned out above the Poké Ball. */

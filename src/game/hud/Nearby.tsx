@@ -88,16 +88,15 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-label="Nearby"
-        className="flex items-center gap-1.5 rounded-2xl bg-surface/92 px-2.5 py-1.5 text-ink shadow-lg backdrop-blur transition hover:scale-[1.03] active:scale-95 sm:px-3 sm:py-2"
+        className="panel flex h-14 items-center gap-0.5 rounded-full px-3 transition hover:scale-[1.03] active:scale-95"
       >
         <span className="flex items-end gap-0.5">
           {closest.map((o) => (
-            <span key={o.slug} className="grid size-7 place-items-center sm:size-9">
-              <ObjectIcon object={o} size={26} />
+            <span key={o.slug} className="grid size-8 place-items-center">
+              <ObjectIcon object={o} size={24} />
             </span>
           ))}
         </span>
-        <span className="hidden font-display text-sm font-semibold sm:inline">Nearby</span>
       </button>
 
       {open ? (

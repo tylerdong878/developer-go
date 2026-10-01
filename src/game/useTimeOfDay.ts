@@ -16,3 +16,13 @@ const read = (): TimeOfDay => (document.documentElement.dataset.time === "night"
 export function useTimeOfDay(): TimeOfDay {
   return useSyncExternalStore(subscribe, read, () => "day");
 }
+
+/** Flip the whole site between day and night, and remember the choice. */
+export function setTimeOfDay(next: TimeOfDay) {
+  document.documentElement.dataset.time = next;
+  try {
+    localStorage.setItem("time", next);
+  } catch {
+    // Private mode: the switch still works, it just won't be remembered.
+  }
+}
