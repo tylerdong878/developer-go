@@ -12,7 +12,7 @@ import { addItems, progressStore, spendItem } from "../progress";
 import { sfx } from "../sound";
 
 /** Who you're trying to catch. Fact Pokémon never run and always get caught by the second hit. */
-export type Foe = { dex: number; name: string; rare: boolean };
+export type Foe = { dex: number; name: string; rare: boolean; cp: number };
 
 type Phase = "aim" | "flying" | "wiggle" | "caught" | "fled";
 type Throw = "Nice" | "Great" | "Excellent" | null;
@@ -239,6 +239,12 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
         <p className="panel rounded-full px-4 py-2 font-display font-semibold">
           {foe.rare ? "✦ " : ""}
           {foe.name}
+        </p>
+      </div>
+
+      <div className="pointer-events-none absolute inset-x-0 top-[13%] text-center text-white drop-shadow-md">
+        <p className="font-display text-lg font-semibold">
+          <span className="text-sm opacity-90">CP</span> <span className="text-4xl">{foe.cp}</span>
         </p>
       </div>
 

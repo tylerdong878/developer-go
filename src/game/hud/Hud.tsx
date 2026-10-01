@@ -9,6 +9,7 @@ import { goTo } from "../travel";
 import { gainXp, progressStore, recordCatch, recordVisit } from "../progress";
 import { buddyStore } from "../buddy";
 import { count } from "../community";
+import { cpFor } from "../cp";
 import { sfx } from "../sound";
 import { earned, visitorMedals } from "../visitorMedals";
 import { findWild, removeWild } from "../wild";
@@ -18,6 +19,7 @@ import { Card } from "./Card";
 import { MainMenu, MenuBall, type Screen, TrainerBadge } from "./Menu";
 import { Nearby } from "./Nearby";
 import { SettingsPanel } from "./Settings";
+import { PokemonPanel } from "./Storage";
 import { BagPanel, BuddyPanel, PokedexPanel, ProfilePanel, TrainerPanel } from "./Panels";
 
 /**
@@ -92,9 +94,9 @@ export function Hud() {
     // Walking up to a Pokémon starts a catch; anything else opens its card.
     game.onArrive = (goal) => {
       const w = findWild(goal);
-      if (w) return setFoe({ dex: w.species.dex, name: w.species.name, rare: false, goal });
+      if (w) return setFoe({ dex: w.species.dex, name: w.species.name, rare: false, cp: cpFor(w.species.dex, false, Math.random()), goal });
       const o = bySlug.get(goal);
-      if (o?.kind === "spawn") return setFoe({ dex: o.pokemon.dex, name: o.pokemon.name, rare: true, goal });
+      if (o?.kind === "spawn") return setFoe({ dex: o.pokemon.dex, name: o.pokemon.name, rare: true, cp: cpFor(o.pokemon.dex, true, Math.random()), goal });
       setCard(goal);
       sfx.open();
       if (o && !progressStore.get().visited.includes(goal)) {
@@ -167,7 +169,7 @@ export function Hud() {
     const w = findWild(foe.goal);
     if (w) removeWild(w.id);
     if (caught) {
-      recordCatch(foe.dex);
+      recordCatch({ dex: foe.dex, name: foe.name, cp: foe.cp, throw: best });
       count("catches");
       const bonus = best === "Excellent" ? 100 : best === "Great" ? 50 : best === "Nice" ? 10 : 0;
       gainXp((foe.rare ? 500 : 100) + bonus, best ? `${best} throw` : "caught");
@@ -227,6 +229,7 @@ export function Hud() {
         ) : null}
         {screen === "bag" ? <BagPanel onClose={closeScreen} /> : null}
         {screen === "settings" ? <SettingsPanel onClose={closeScreen} /> : null}
+        {screen === "pokemon" ? <PokemonPanel onClose={closeScreen} /> : null}
         {buddy ? <BuddyPanel onClose={() => setBuddy(false)} /> : null}
         {foe ? <Encounter key={foe.goal} foe={foe} onDone={endCatch} /> : null}
       </div>

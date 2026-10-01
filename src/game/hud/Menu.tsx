@@ -3,7 +3,7 @@
 import { type ReactNode, useSyncExternalStore } from "react";
 import { levelFor, progressStore, xpForLevel } from "../progress";
 
-export type Screen = "profile" | "about" | "pokedex" | "bag" | "settings";
+export type Screen = "pokemon" | "profile" | "about" | "pokedex" | "bag" | "settings";
 
 /** The trainer badge in the bottom left, like GO's: your level, ringed by how far you are to the next one. */
 export function TrainerBadge({ onOpen }: { onOpen: () => void }) {
@@ -91,6 +91,14 @@ const STAR = (
     <path d="m20 9 3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L20 25.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1Z" fill="#fff" />
   </svg>
 );
+const MON = (
+  <svg viewBox="0 0 40 40" width="34" height="34">
+    <circle cx="20" cy="20" r="15" fill="#fff" stroke="#1c1c24" strokeWidth="2.5" />
+    <path d="M5 20a15 15 0 0 1 30 0Z" fill="#e3350d" stroke="#1c1c24" strokeWidth="2.5" />
+    <circle cx="20" cy="20" r="4.5" fill="#fff" stroke="#1c1c24" strokeWidth="2.5" />
+  </svg>
+);
+
 const GEAR = (
   <svg viewBox="0 0 40 40" width="34" height="34">
     <circle cx="20" cy="20" r="16" fill="#9aa5b4" />
@@ -100,6 +108,7 @@ const GEAR = (
 );
 
 const ITEMS: { id: Screen; label: string; icon: ReactNode }[] = [
+  { id: "pokemon", label: "Pokémon", icon: MON },
   { id: "profile", label: "Profile", icon: STAR },
   { id: "about", label: "About Tyler", icon: CARD },
   { id: "pokedex", label: "Pokédex", icon: DEX },

@@ -4,14 +4,22 @@ import { sfx } from "./sound";
 
 /**
  * What this visitor has done, kept in their browser: Pokémon caught (by dex
- * number), stops spun, places visited, XP, and the items in their bag. It's
+ * number, plus a history of each catch), stops spun, places visited, XP,
+ * and the items in their bag. It's
  * only a convenience; if storage is blocked, everything still works for the visit.
  */
 export type ItemId = "ball" | "great" | "razz";
 export type Items = Record<ItemId, number>;
 
+/** One catch, for the Pokémon screen: who, how strong, when, and how good the throw was. */
+export type Catch = { id: number; dex: number; name: string; cp: number; at: number; throw: string | null };
+
+/** The Pokémon screen keeps the most recent catches, like GO's storage. */
+export const HISTORY_MAX = 300;
+
 export type Progress = {
   caught: Record<number, number>;
+  history: Catch[];
   spun: string[];
   visited: string[];
   xp: number;
@@ -22,7 +30,7 @@ export type Progress = {
 export const STARTER_ITEMS: Items = { ball: 20, great: 0, razz: 2 };
 
 const KEY = "developer-go:progress";
-const empty: Progress = { caught: {}, spun: [], visited: [], xp: 0, items: STARTER_ITEMS };
+const empty: Progress = { caught: {}, history: [], spun: [], visited: [], xp: 0, items: STARTER_ITEMS };
 
 function load(): Progress {
   try {
@@ -63,9 +71,21 @@ export const progressStore = {
   server: () => empty,
 };
 
-export function recordCatch(dex: number) {
+export function recordCatch(c: Omit<Catch, "id" | "at">) {
   const p = current();
-  save({ ...p, caught: { ...p.caught, [dex]: (p.caught[dex] ?? 0) + 1 } });
+  const at = Date.now();
+  const entry: Catch = { ...c, id: at + Math.random(), at };
+  save({
+    ...p,
+    caught: { ...p.caught, [c.dex]: (p.caught[c.dex] ?? 0) + 1 },
+    history: [entry, ...p.history].slice(0, HISTORY_MAX),
+  });
+}
+
+/** Lets one go, like GO's transfer. The Pokédex still remembers you caught it. */
+export function releaseCatch(id: number) {
+  const p = current();
+  save({ ...p, history: p.history.filter((c) => c.id !== id) });
 }
 
 export function recordVisit(slug: string) {
