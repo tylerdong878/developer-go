@@ -4,6 +4,7 @@ import { type PointerEvent, useRef, useState, useSyncExternalStore } from "react
 import { addItems, gainXp, type Items, progressStore, recordSpin } from "../progress";
 import { count } from "../community";
 import { sfx } from "../sound";
+import { StopIcon } from "./icons";
 
 export const ITEM_INFO = {
   ball: { name: "Poké Ball", color: "#e3350d" },
@@ -29,7 +30,7 @@ function loot(lured: boolean): Partial<Items> {
  * and the stop turns purple on the map. You can spin each stop once per visit
  * for XP; after that the disc just spins for fun.
  */
-export function SpinDisc({ slug, name, lured }: { slug: string; name: string; lured: boolean }) {
+export function SpinDisc({ slug, lured }: { slug: string; lured: boolean }) {
   const { spun } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
   const done = spun.includes(slug);
   const [turns, setTurns] = useState(0);
@@ -67,15 +68,15 @@ export function SpinDisc({ slug, name, lured }: { slug: string; name: string; lu
       <div
         onPointerDown={down}
         onPointerUp={up}
-        className="relative grid size-40 cursor-grab touch-pan-y place-items-center rounded-full shadow-xl select-none"
+        className="relative grid size-36 cursor-grab touch-pan-y place-items-center rounded-full shadow-md select-none"
         style={{
           background: `conic-gradient(from 0deg, ${ring}, #ffffff, ${ring}, #ffffff, ${ring})`,
           rotate: `${turns * 1080}deg`,
           transition: "rotate 1.1s cubic-bezier(0.2, 0.8, 0.3, 1)",
         }}
       >
-        <div className="grid size-32 place-items-center rounded-full bg-surface p-3 text-center font-display text-lg leading-tight font-semibold text-ink">
-          {name}
+        <div className="grid size-28 place-items-center rounded-full bg-surface">
+          <StopIcon size={30} lured={lured} />
         </div>
       </div>
       {items ? (
@@ -83,7 +84,7 @@ export function SpinDisc({ slug, name, lured }: { slug: string; name: string; lu
           {(Object.entries(items) as [keyof typeof ITEM_INFO, number][]).map(([id, count]) => (
             <li
               key={id}
-              className="item-pop flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-mystic-900 shadow"
+              className="item-pop flex items-center gap-1.5 rounded-full bg-ink/6 px-3 py-1.5 text-xs font-bold text-ink"
             >
               <span className="size-3 rounded-full" style={{ background: ITEM_INFO[id].color }} />
               {ITEM_INFO[id].name} ×{count}
@@ -93,7 +94,7 @@ export function SpinDisc({ slug, name, lured }: { slug: string; name: string; lu
       ) : cooling ? (
         <p className="text-sm font-semibold text-ink-soft">Try again in a few minutes. This stop is refilling.</p>
       ) : (
-        <button type="button" onClick={spin} className="rounded-full bg-mystic-500 px-5 py-2 font-display font-semibold text-white shadow">
+        <button type="button" onClick={spin} className="rounded-full bg-mystic-500 px-5 py-2 font-display font-semibold text-white transition hover:brightness-110 active:scale-95">
           Spin the disc
         </button>
       )}

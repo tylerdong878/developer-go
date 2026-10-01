@@ -8,6 +8,7 @@ import { game } from "../state";
 import { goTo } from "../travel";
 import { goalId, wildStore } from "../wild";
 import { ObjectIcon } from "./icons";
+import { CloseButton } from "./Sheet";
 
 const TABS = [
   { id: "gym", label: "Gyms", hint: "Jobs", items: gyms },
@@ -104,24 +105,20 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
           role="dialog"
           aria-modal="true"
           aria-labelledby="nearby-title"
-          className="fixed inset-x-0 bottom-0 z-40 flex max-h-[80dvh] flex-col rounded-t-3xl bg-surface text-ink shadow-2xl sm:inset-y-4 sm:right-4 sm:left-auto sm:max-h-none sm:w-[420px] sm:rounded-3xl"
+          className="panel card-in fixed inset-x-0 bottom-0 z-40 flex max-h-[80dvh] flex-col rounded-t-3xl sm:inset-y-4 sm:right-4 sm:left-auto sm:max-h-none sm:w-[400px] sm:rounded-3xl"
         >
-          <div className="flex items-center justify-between px-5 pt-5 pb-3">
+          <div className="flex items-center justify-between px-6 pt-6 pb-3">
             <h2 id="nearby-title" className="font-display text-2xl font-semibold">
               Nearby
             </h2>
-            <button
+            <CloseButton
               ref={close}
-              type="button"
+              label="Close Nearby"
               onClick={() => {
                 setOpen(false);
                 button.current?.focus();
               }}
-              aria-label="Close Nearby"
-              className="grid size-10 place-items-center rounded-full bg-ink/8 text-xl leading-none transition hover:bg-ink/15"
-            >
-              ×
-            </button>
+            />
           </div>
 
           <div role="tablist" aria-label="What's nearby" className="flex gap-1.5 overflow-x-auto px-4 pb-3">
@@ -133,7 +130,7 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
                 aria-selected={tab === t.id}
                 onClick={() => setTab(t.id)}
                 className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
-                  tab === t.id ? "bg-mystic-500 text-white shadow" : "bg-ink/6 text-ink-soft hover:bg-ink/12"
+                  tab === t.id ? "bg-mystic-500 text-white" : "bg-ink/6 text-ink-soft hover:bg-ink/12"
                 }`}
               >
                 {t.label}{" "}
