@@ -9,6 +9,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { addItems, progressStore, spendItem } from "../progress";
+import { catchRewards } from "../cp";
 import { sfx } from "../sound";
 import { ItemIcon } from "./icons";
 
@@ -42,6 +43,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
   const { items } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
   const [ballType, setBallType] = useState<"ball" | "great">("ball");
   const [berry, setBerry] = useState(false);
+  const [firstOfKind] = useState(() => !progressStore.get().caught[foe.dex]);
   const thrown = useRef<{ great: boolean; berry: boolean }>({ great: false, berry: false });
 
   // A fact Pokémon never gets stuck behind an empty bag: it hands you a ball.
@@ -217,6 +219,8 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
   });
 
   const done = phase === "caught" || phase === "fled";
+  // Worked out when the encounter starts, so a catch doesn't count itself as already in the Pokédex.
+  const rewards = catchRewards(foe.rare, label, firstOfKind);
 
   return (
     <div
@@ -287,7 +291,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
         </div>
       </div>
 
-      {message ? (
+      {message && phase !== "caught" ? (
         <div className="absolute inset-x-0 bottom-36 flex justify-center px-6">
           <p className="panel card-in rounded-2xl px-5 py-3 text-center font-display text-xl font-semibold">
             {message}
@@ -333,6 +337,10 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
         </div>
       ) : null}
 
+      {phase === "caught" ? (
+        <Caught foe={foe} rewards={rewards} />
+      ) : null}
+
       {done ? (
         <div className="absolute inset-x-0 bottom-12 flex justify-center">
           <button
@@ -344,6 +352,28 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
           </button>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+/** GO's results after a catch: the Pokémon, its CP, and what you earned. */
+function Caught({ foe, rewards }: { foe: Foe; rewards: [string, number][] }) {
+  return (
+    <div className="absolute inset-x-0 bottom-32 flex justify-center px-6">
+      <div className="panel card-in w-full max-w-xs rounded-3xl p-5 text-center">
+        <p className="text-xs font-bold tracking-wide text-mystic-500">Gotcha!</p>
+        <p className="font-display text-xl font-semibold">
+          {foe.name} <span className="text-base font-medium text-ink-soft">CP {foe.cp}</span>
+        </p>
+        <ul className="mt-3 space-y-1 text-sm">
+          {rewards.map(([why, xp], i) => (
+            <li key={why} className="item-pop flex justify-between" style={{ animationDelay: `${200 + i * 120}ms` }}>
+              <span className="text-ink-soft">{why}</span>
+              <span className="font-bold tabular-nums">+{xp} XP</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

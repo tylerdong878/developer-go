@@ -9,7 +9,7 @@ import { goTo } from "../travel";
 import { gainXp, progressStore, recordCatch, recordVisit } from "../progress";
 import { buddyStore } from "../buddy";
 import { count } from "../community";
-import { cpFor } from "../cp";
+import { catchRewards, cpFor } from "../cp";
 import { sfx } from "../sound";
 import { earned, visitorMedals } from "../visitorMedals";
 import { findWild, removeWild } from "../wild";
@@ -170,10 +170,13 @@ export function Hud() {
     const w = findWild(foe.goal);
     if (w) removeWild(w.id);
     if (caught) {
+      const rewards = catchRewards(foe.rare, best, !progressStore.get().caught[foe.dex]);
       recordCatch({ dex: foe.dex, name: foe.name, cp: foe.cp, throw: best });
       count("catches", { dex: foe.dex, cp: foe.cp });
-      const bonus = best === "Excellent" ? 100 : best === "Great" ? 50 : best === "Nice" ? 10 : 0;
-      gainXp((foe.rare ? 500 : 100) + bonus, best ? `${best} throw` : "caught");
+      gainXp(
+        rewards.reduce((sum, [, xp]) => sum + xp, 0),
+        rewards.length > 1 ? rewards[rewards.length - 1][0].toLowerCase() : "caught",
+      );
     }
     setFoe(null);
     if (!caught || !foe.rare) return;
