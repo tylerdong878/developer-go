@@ -6,8 +6,9 @@ import { CanvasTexture, type PerspectiveCamera, type Sprite, SRGBColorSpace, Vec
 import { game } from "../../state";
 
 /** Plate height as a share of the camera's view, so names read the same near and far. */
-const HEIGHT = 0.042;
-const SHOW_WITHIN = 46;
+const HEIGHT = 0.036;
+/** Names only show once you're close enough to walk over, so the map stays clean. */
+const SHOW_WITHIN = 22;
 
 type Plate = { sprite: Sprite; x: number; y: number; z: number; aspect: number; shown: number };
 const plates = new Set<Plate>();
@@ -44,7 +45,8 @@ async function drawPlate(text: string, accent: string) {
 /**
  * A name floating over a map object, always the same size on screen. It
  * fades in as the trainer gets close, and <PlateLayout> hides it if it would
- * cover a nearer one.
+ * cover a nearer one. It goes inside the object's group (so it draws at
+ * height y over it); x and z are the object's spot on the map, for the layout.
  */
 export function Nameplate({ text, accent, x, z, y }: { text: string; accent: string; x: number; z: number; y: number }) {
   const sprite = useRef<Sprite>(null);
@@ -75,7 +77,7 @@ export function Nameplate({ text, accent, x, z, y }: { text: string; accent: str
 
   if (!plate) return null;
   return (
-    <sprite ref={sprite} position={[x, y, z]} scale={[HEIGHT * plate.aspect, HEIGHT, 1]} renderOrder={5} visible={false}>
+    <sprite ref={sprite} position={[0, y, 0]} scale={[HEIGHT * plate.aspect, HEIGHT, 1]} renderOrder={5} visible={false}>
       <spriteMaterial map={plate.texture} transparent depthWrite={false} sizeAttenuation={false} opacity={0} />
     </sprite>
   );
@@ -98,7 +100,7 @@ export function PlateLayout() {
       .map((p) => ({ p, d: Math.hypot(position.x - p.x, position.z - p.z) }))
       .sort((a, b) => a.d - b.d);
     for (const { p, d } of order) {
-      let want = Math.min(1, Math.max(0, (SHOW_WITHIN - d) / 8));
+      let want = Math.min(1, Math.max(0, (SHOW_WITHIN - d) / 5));
       if (want > 0) {
         const v = point.current.set(p.x, p.y, p.z).project(camera);
         const onScreen = v.z < 1 && Math.abs(v.x) < 1.2 && Math.abs(v.y) < 1.2;
