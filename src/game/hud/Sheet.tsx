@@ -19,12 +19,14 @@ export function CloseButton({ label, onClick, ref }: { label: string; onClick: (
   );
 }
 
-type Head = { art?: ReactNode; kicker?: string; accent?: string; subtitle?: string };
+type Head = { art?: ReactNode; kicker?: string; accent?: string; subtitle?: string; side?: boolean };
 
 /**
  * Every panel on the base: cards, menu screens, all of them. One look: a
  * sheet from the bottom on phones, a centered panel on bigger screens, with
- * an optional icon, kicker, and subtitle. Escape or the × closes it.
+ * an optional icon, kicker, and subtitle. Cards for things on the map sit
+ * to the side on bigger screens, so the thing itself stays in view. Escape
+ * or the × closes it.
  */
 export function Sheet({
   title,
@@ -34,6 +36,7 @@ export function Sheet({
   kicker,
   accent,
   subtitle,
+  side = false,
 }: { title: string; onClose: () => void; children: ReactNode } & Head) {
   const close = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -46,13 +49,19 @@ export function Sheet({
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
-      <button type="button" aria-label="Close" tabIndex={-1} onClick={onClose} className="scrim-in absolute inset-0 bg-mystic-900/25" />
+    <div className={`fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6 ${side ? "sm:justify-end" : ""}`}>
+      <button
+        type="button"
+        aria-label="Close"
+        tabIndex={-1}
+        onClick={onClose}
+        className={`scrim-in absolute inset-0 ${side ? "bg-mystic-900/20 sm:bg-linear-to-l sm:from-mystic-900/25 sm:to-transparent" : "bg-mystic-900/25"}`}
+      />
       <section
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="panel card-in relative flex max-h-[88dvh] w-full flex-col overflow-hidden rounded-t-3xl sm:max-w-lg sm:rounded-3xl"
+        className={`panel card-in relative flex max-h-[88dvh] w-full flex-col overflow-hidden rounded-t-3xl sm:max-w-lg sm:rounded-3xl ${side ? "sm:max-h-full" : ""}`}
       >
         <header className="flex items-start gap-4 px-6 pt-6 pb-4">
           {art ? <div className="grid size-16 shrink-0 place-items-center rounded-2xl bg-ink/5">{art}</div> : null}

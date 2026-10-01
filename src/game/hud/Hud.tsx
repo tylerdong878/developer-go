@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { startedStore } from "../ready";
 import { bySlug } from "../objects";
-import { game } from "../state";
+import { slots } from "../base";
+import { game, ZOOM } from "../state";
 import { goTo } from "../travel";
 import { gainXp, progressStore, recordCatch, recordVisit } from "../progress";
 import { buddyStore } from "../buddy";
@@ -95,6 +96,25 @@ export function Hud() {
   useEffect(() => {
     game.input.paused = card !== null || screen !== null || menu || nearby || foe !== null || buddy;
   }, [card, screen, menu, nearby, foe, buddy]);
+
+  // Opening a card frames its object: the camera swings around to put it
+  // ahead of the trainer and moves in a little, then eases back on close.
+  useEffect(() => {
+    const at = card ? slots[card] : undefined;
+    if (!at) return;
+    const { view } = game;
+    const { x, z } = game.player.trainer.position;
+    const want = Math.atan2(at[0] - x, -(at[1] - z));
+    let d = (want - view.yawTo) % (Math.PI * 2);
+    if (d > Math.PI) d -= Math.PI * 2;
+    if (d < -Math.PI) d += Math.PI * 2;
+    view.yawTo += d;
+    const before = view.distanceTo;
+    view.distanceTo = Math.max(ZOOM.min, Math.min(before, 16));
+    return () => {
+      view.distanceTo = before;
+    };
+  }, [card]);
 
   useEffect(() => {
     const url = window.location.pathname + window.location.search + (card ? `#${card}` : "");

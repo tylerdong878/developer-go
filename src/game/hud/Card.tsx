@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { type Egg, type Gym, type MapObject, type Raid, type Role, skills, type SkillId, type Spawn, type Stop } from "@/content";
 import { LURE, MYSTIC, RAID_EGG } from "../colors";
 import { Sheet } from "./Sheet";
@@ -22,7 +22,7 @@ const span = (r: Role) => `${month(r.start)} - ${r.end ? month(r.end) : "present
 export function Card({ object, onClose, onAbout }: { object: MapObject; onClose: () => void; onAbout: () => void }) {
   const view = cardFor(object, onAbout);
   return (
-    <Sheet title={view.title} onClose={onClose} art={view.art} kicker={view.kicker} accent={view.accent} subtitle={view.subtitle}>
+    <Sheet side title={view.title} onClose={onClose} art={view.art} kicker={view.kicker} accent={view.accent} subtitle={view.subtitle}>
       <div className="space-y-5">{view.body}</div>
     </Sheet>
   );
@@ -83,14 +83,13 @@ function stopCard(s: Stop): View {
     subtitle: `${s.period}, ${s.role}`,
     body: (
       <>
-        <SpinDisc slug={s.slug} lured={s.featured} />
         <p className="text-base leading-relaxed">{s.tagline}</p>
         {s.stats.length ? (
-          <ul className="flex flex-wrap gap-2.5" aria-label="Numbers">
+          <ul className="flex flex-wrap gap-2" aria-label="Numbers">
             {s.stats.map((stat) => (
-              <li key={stat.label} className="item-pop rounded-2xl bg-mystic-50 px-3.5 py-2 text-center text-mystic-900">
+              <li key={stat.label} className="item-pop rounded-2xl bg-ink/5 px-3.5 py-2">
                 <span className="block font-display text-xl font-semibold">{stat.value}</span>
-                <span className="block text-xs font-semibold opacity-75">{stat.label}</span>
+                <span className="block text-xs font-semibold text-ink-soft">{stat.label}</span>
               </li>
             ))}
           </ul>
@@ -98,6 +97,7 @@ function stopCard(s: Stop): View {
         <Bullets items={s.highlights} />
         <Stack ids={s.stack} />
         <Links links={s.links} />
+        <SpinDisc slug={s.slug} lured={s.featured} />
       </>
     ),
   };
@@ -121,12 +121,9 @@ function raidCard(r: Raid): View {
         ) : null}
         <div>
           <h3 className="font-display text-lg font-semibold">{r.project.name}</h3>
-          <p className="leading-relaxed">{r.project.tagline}</p>
+          <p className="mt-0.5 leading-relaxed">{r.project.tagline}</p>
         </div>
-        <div>
-          <h4 className="text-xs font-bold tracking-wider text-ink-soft uppercase">What I built</h4>
-          <Bullets items={r.project.built} />
-        </div>
+        <Bullets items={r.project.built} />
         {r.project.team.length ? (
           <p className="text-sm text-ink-soft">With {r.project.team.join(", ")}</p>
         ) : null}
@@ -178,17 +175,27 @@ function eggCard(e: Egg): View {
   };
 }
 
+/** The first point, with the rest a tap away, so a card reads at a glance. */
 function Bullets({ items }: { items: string[] }) {
+  const [all, setAll] = useState(false);
   if (!items.length) return null;
+  const shown = all ? items : items.slice(0, 1);
   return (
-    <ul className="mt-2 space-y-1.5">
-      {items.map((b) => (
-        <li key={b} className="flex gap-2 leading-relaxed">
-          <span aria-hidden className="mt-2.5 size-1.5 shrink-0 rounded-full bg-mystic-400" />
-          <span>{b}</span>
-        </li>
-      ))}
-    </ul>
+    <div className="mt-2">
+      <ul className="space-y-1.5">
+        {shown.map((b) => (
+          <li key={b} className="flex gap-2 leading-relaxed">
+            <span aria-hidden className="mt-2.5 size-1.5 shrink-0 rounded-full bg-mystic-400" />
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+      {items.length > 1 && !all ? (
+        <button type="button" onClick={() => setAll(true)} className="mt-1.5 pl-3.5 text-sm font-bold text-mystic-500 hover:underline">
+          {items.length - 1} more
+        </button>
+      ) : null}
+    </div>
   );
 }
 
