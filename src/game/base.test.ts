@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mapObjects } from "@/content";
-import { RADIUS, START, areas, onLand, roads, slots, trees, walkable } from "./base";
+import { RADIUS, START, areas, buildings, onLand, roads, slots, trees, walkable } from "./base";
+import { distanceToBuilding } from "./lots";
 import { distance, pointInPolygon, type Vec2 } from "./geometry";
 
 const kindOf = new Map(mapObjects.map((o) => [o.slug, o.kind]));
@@ -69,5 +70,30 @@ describe("home base", () => {
     const water = areas.filter((a) => a.kind === "water");
     for (const t of trees) expect(water.some((w) => pointInPolygon(t, w.points))).toBe(false);
     expect(trees.length).toBeGreaterThan(40);
+  });
+
+  it("builds a neighborhood that stays off the streets and out of the way", () => {
+    expect(buildings.length).toBeGreaterThan(30);
+    for (const b of buildings) {
+      const name = b.slug ?? `${b.kind} at ${Math.round(b.x)},${Math.round(b.z)}`;
+      for (const fx of [-0.5, 0, 0.5]) for (const fz of [-0.5, 0, 0.5]) {
+        expect(distanceToRoad([b.x + fx * b.w, b.z + fz * b.d]), name).toBeGreaterThan(0.5);
+      }
+      for (const [slug, p] of Object.entries(slots)) expect(distanceToBuilding(p, b), `${name} / ${slug}`).toBeGreaterThan(3);
+      expect(distanceToBuilding(START, b), name).toBeGreaterThan(4);
+    }
+  });
+
+  it("gives every job its own building, and Tyler a house", () => {
+    for (const slug of ["aws", "tetracorp", "philips", "khoury", "outamation", "quartzy", "homegoods", "home"]) {
+      expect(buildings.some((b) => b.slug === slug), slug).toBe(true);
+    }
+  });
+
+  it("leaves room to walk up to everything", () => {
+    for (const [slug, [x, z]] of Object.entries(slots)) {
+      const sides = [[x + 3.4, z], [x - 3.4, z], [x, z + 3.4], [x, z - 3.4]] as const;
+      expect(sides.some((p) => walkable(p)), slug).toBe(true);
+    }
   });
 });

@@ -1,4 +1,5 @@
 import { blob, circle, ellipse, pointInPolygon, random, rect, type Vec2 } from "./geometry";
+import { distanceToBuilding, placeBuildings } from "./lots";
 
 /**
  * Tyler's home base: a small, hand-designed GO neighborhood with some Boston
@@ -209,6 +210,21 @@ export const trees: Vec2[] = (() => {
   return out;
 })();
 
+/** Courts and fields, with a little room around them, so nothing gets built on them. */
+const landmarkLots: Vec2[][] = [rect(-54, 62, 48, 32), rect(-16, 62, 18, 17), rect(4, 64, 18, 33), rect(-10, 98, 14, 14)];
+
+/** The neighborhood's buildings, placed once from the layout above (see lots.ts). */
+export const buildings = placeBuildings({
+  radius: RADIUS,
+  nearRoad: (p, margin) => !clearOfRoads(p, margin),
+  keepOut: [...areas.map((a) => a.points), pierWalk, ...landmarkLots],
+  clearings: [
+    { at: START, r: 6 },
+    ...Object.values(slots).map((at) => ({ at, r: 6.5 })),
+  ],
+  trees,
+});
+
 /** Is this spot at least `margin` from every road's edge? */
 export function clearOfRoads(p: Vec2, margin: number) {
   return !roads.some((r) => nearLine(p, r.points, r.loop, r.width / 2 + margin));
@@ -237,7 +253,11 @@ export function onLand(p: Vec2) {
 /** Things you have to walk around, like the Snorlax asleep across the road to the park. */
 export const blockers: { at: Vec2; r: number }[] = [{ at: slots.snorlax, r: 2.8 }];
 
-/** Can the trainer stand here? */
+/** Can the trainer stand here? Not in the water, on Snorlax, or inside a building. */
 export function walkable(p: Vec2) {
-  return onLand(p) && !blockers.some(({ at, r }) => Math.hypot(p[0] - at[0], p[1] - at[1]) < r);
+  return (
+    onLand(p) &&
+    !blockers.some(({ at, r }) => Math.hypot(p[0] - at[0], p[1] - at[1]) < r) &&
+    !buildings.some((b) => distanceToBuilding(p, b) < 0.5)
+  );
 }
