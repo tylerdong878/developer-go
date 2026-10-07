@@ -4,6 +4,9 @@ import { createPlayer, type Player } from "./player";
 /** A game jog: quick enough to cross the base in about half a minute. */
 export const WALK_SPEED = 8;
 
+/** Holding Shift, or heading somewhere far: a proper run. */
+export const RUN_SPEED = 15;
+
 /** Nearby travel: a dash across the base in a second or two. */
 export const DASH_SPEED = 90;
 

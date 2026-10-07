@@ -43,6 +43,8 @@ export function Trainer3D({ mover }: { mover: Mover }) {
     p.legR.rotation.x = -swing;
     p.armL.rotation.x = -swing * 0.8;
     p.armR.rotation.x = swing * 0.8;
+    // Leaning into a run.
+    p.body.rotation.x += (Math.min(0.16, Math.max(0, mover.speed - 9) * 0.03) - p.body.rotation.x) * Math.min(1, dt * 8);
     p.body.position.y =
       Math.abs(Math.cos(phase.current)) * 0.05 * stride + Math.sin(phase.current * 0.45) * 0.012 * (1 - stride);
   });

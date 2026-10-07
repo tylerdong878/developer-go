@@ -5,7 +5,8 @@ import { useRef } from "react";
 import { Vector3 } from "three";
 import { walkable } from "../base";
 import { MOVE_KEYS } from "../controls";
-import { DASH_SPEED, game, WALK_SPEED, ZOOM } from "../state";
+import { DASH_SPEED, game, RUN_SPEED, WALK_SPEED, ZOOM } from "../state";
+import type { PerspectiveCamera } from "three";
 import { goalPosition } from "../travel";
 import { updateFocus } from "../focus";
 
@@ -29,6 +30,7 @@ function turn(from: number, to: number) {
 export function Controller() {
   const focus = useRef<Vector3>(null);
   const facing = useRef<number | null>(null);
+  const rushed = useRef(0);
 
   useFrame(({ camera }, frame) => {
     const dt = Math.min(frame, 0.05); // no leaps after a background tab wakes up
@@ -55,7 +57,7 @@ export function Controller() {
       const len = Math.hypot(mx, mz);
       mx /= len;
       mz /= len;
-      want = WALK_SPEED;
+      want = input.keys.has("ShiftLeft") || input.keys.has("ShiftRight") ? RUN_SPEED : WALK_SPEED;
     } else if (input.target) {
       const dx = input.target.x - trainer.position.x;
       const dz = input.target.z - trainer.position.z;
@@ -74,7 +76,9 @@ export function Controller() {
       } else {
         mx = dx / left;
         mz = dz / left;
-        want = Math.min(input.dash ? DASH_SPEED : WALK_SPEED, 1.5 + left * (input.dash ? 7 : 4)); // ease into the stop
+        // Far taps break into a run; either way he eases into the stop.
+        const top = input.dash ? DASH_SPEED : left > 22 ? RUN_SPEED : WALK_SPEED;
+        want = Math.min(top, 1.5 + left * (input.dash ? 7 : 4));
       }
     }
     trainer.speed = lerp(trainer.speed, want, ease(input.dash ? 5 : 12, dt));
@@ -128,9 +132,19 @@ export function Controller() {
     const k = ease(12, dt);
     look.x += (trainer.position.x + fx * lead - look.x) * k;
     look.z += (trainer.position.z + fz * lead - look.z) * k;
-    const flat = view.distance * Math.cos(pitch);
-    camera.position.set(look.x - fx * flat, look.y + view.distance * Math.sin(pitch), look.z - fz * flat);
+    // Running pulls the camera back and widens the view a touch, so it feels faster.
+    const rush = input.dash ? 0 : Math.max(0, Math.min(1, (trainer.speed - WALK_SPEED) / (RUN_SPEED - WALK_SPEED)));
+    rushed.current += (rush - rushed.current) * ease(4, dt);
+    const back = view.distance + rushed.current * 2.5;
+    const flat = back * Math.cos(pitch);
+    camera.position.set(look.x - fx * flat, look.y + back * Math.sin(pitch), look.z - fz * flat);
     camera.lookAt(look);
+    const lens = camera as PerspectiveCamera;
+    const fov = 56 + rushed.current * 7;
+    if (Math.abs(lens.fov - fov) > 0.01) {
+      lens.fov = fov;
+      lens.updateProjectionMatrix();
+    }
   });
 
   return null;

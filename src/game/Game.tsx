@@ -14,6 +14,7 @@ import { Rings } from "./scene/Rings";
 import { TapTarget } from "./scene/TapTarget";
 import { Teddy3D } from "./scene/Teddy3D";
 import { Trainer3D } from "./scene/Trainer3D";
+import { Dust } from "./scene/Dust";
 import { CastShadows } from "./scene/Sun";
 import { World } from "./scene/World";
 import { game } from "./state";
@@ -50,6 +51,7 @@ export default function Game() {
           </CastShadows>
           <Balls />
           <Rings mover={game.player.trainer} still={still} />
+          <Dust />
           <CastShadows>
             <Trainer3D mover={game.player.trainer} />
             <Teddy3D mover={game.player.buddy} />

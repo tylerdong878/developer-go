@@ -38,7 +38,8 @@ export function useControls(element: RefObject<HTMLElement | null>) {
         input.goal = null;
         input.dash = false;
         e.preventDefault();
-      } else if (e.code === "KeyQ" || e.code === "KeyZ") view.yawTo -= 0.4;
+      } else if (e.code === "ShiftLeft" || e.code === "ShiftRight") input.keys.add(e.code); // hold to run
+      else if (e.code === "KeyQ" || e.code === "KeyZ") view.yawTo -= 0.4;
       else if (e.code === "KeyC") view.yawTo += 0.4;
       else if (e.code === "Equal" || e.code === "NumpadAdd") zoomBy(0.85);
       else if (e.code === "Minus" || e.code === "NumpadSubtract") zoomBy(1.18);
