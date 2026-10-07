@@ -2,7 +2,9 @@
 
 import { type ThreeEvent, useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
-import { ConeGeometry, type Group, type Sprite } from "three";
+import { ConeGeometry, type Group, type Sprite, Vector3 } from "three";
+import { game } from "../../state";
+import { POKEMON_3D } from "../pokemon/models";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { Shadow } from "../Shadow";
 import { hover } from "./tap";
@@ -57,9 +59,24 @@ export function Critter({
   const blades = useTuft();
   const size = critterSize(dex);
   const lift = critterLift(dex);
+  const Model = POKEMON_3D[dex];
+  const model = useRef<Group>(null);
+  const here = useMemo(() => new Vector3(), []);
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, dt) => {
     const t = clock.elapsedTime + seed * 0.37;
+    const m = model.current;
+    if (m) {
+      // 3D Pokémon turn to look at you, and hop like the sprites do
+      m.getWorldPosition(here);
+      const { position } = game.player.trainer;
+      const face = Math.atan2(position.x - here.x, position.z - here.z);
+      let turn = (face - m.rotation.y) % (Math.PI * 2);
+      if (turn > Math.PI) turn -= Math.PI * 2;
+      if (turn < -Math.PI) turn += Math.PI * 2;
+      m.rotation.y += turn * Math.min(1, dt * (asleep ? 0.5 : 4));
+      m.position.y = lift ? lift + Math.sin(t * 2) * 0.18 : asleep ? 0 : Math.max(0, Math.sin(t * 2.4)) ** 2 * 0.22;
+    }
     if (body.current) {
       body.current.position.y = lift
         ? lift + Math.sin(t * 2) * 0.18
@@ -81,7 +98,11 @@ export function Critter({
           </mesh>
         </group>
       )}
-      {art ? (
+      {Model ? (
+        <group ref={model} scale={size}>
+          <Model asleep={asleep} seed={seed} />
+        </group>
+      ) : art ? (
         <sprite ref={body} center={[0.5, art.feet]} scale={[size, size, 1]}>
           <spriteMaterial map={art.texture} transparent alphaTest={0.08} />
         </sprite>
