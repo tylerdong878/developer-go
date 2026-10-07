@@ -67,3 +67,16 @@ export function removeWild(id: number) {
   spawns = spawns.filter((s) => s.id !== id);
   notify();
 }
+
+/**
+ * Moves one along as it wanders. Positions change every frame, so this
+ * updates the spawn in place instead of telling listeners (lists sample
+ * positions on their own schedule).
+ */
+export function moveWild(id: number, x: number, z: number) {
+  const s = spawns.find((w) => w.id === id);
+  if (s && walkable([x, z])) {
+    s.x = x;
+    s.z = z;
+  }
+}
