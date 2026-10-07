@@ -84,7 +84,22 @@ export function Part({
 }
 
 /** A cartoon eye: a black oval with a white glint up top, set into the face. */
-export function Eye({ geometry, at, size, turn = [0, 0, 0], closed = false }: { geometry: BufferGeometry; at: Xyz; size: number; turn?: Xyz; closed?: boolean }) {
+export function Eye({
+  geometry,
+  at,
+  size,
+  turn = [0, 0, 0],
+  closed = false,
+  iris,
+}: {
+  geometry: BufferGeometry;
+  at: Xyz;
+  size: number;
+  turn?: Xyz;
+  closed?: boolean;
+  /** A colored iris with a black pupil (Jigglypuff, Bulbasaur), instead of an all-dark eye. */
+  iris?: string;
+}) {
   if (closed) {
     return (
       <mesh geometry={geometry} material={plain("#1c1620")} position={at as [number, number, number]} rotation={turn as [number, number, number]} scale={[size * 1.2, size * 0.18, size * 0.4]} />
@@ -92,7 +107,10 @@ export function Eye({ geometry, at, size, turn = [0, 0, 0], closed = false }: { 
   }
   return (
     <group position={at as [number, number, number]} rotation={turn as [number, number, number]}>
-      <mesh geometry={geometry} material={plain("#1c1620")} scale={[size * 0.8, size, size * 0.45]} />
+      <mesh geometry={geometry} material={plain(iris ?? "#1c1620")} scale={[size * 0.8, size, size * 0.45]} />
+      {iris ? (
+        <mesh geometry={geometry} material={plain("#1c1620")} position={[0, -size * 0.1, size * 0.12]} scale={[size * 0.42, size * 0.55, size * 0.4]} />
+      ) : null}
       <mesh geometry={geometry} material={plain("#ffffff")} position={[size * 0.22, size * 0.38, size * 0.32]} scale={size * 0.28} />
     </group>
   );
