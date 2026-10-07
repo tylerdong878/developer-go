@@ -10,7 +10,7 @@ const coarse = () => window.matchMedia("(pointer: coarse)").matches;
 const never = () => () => {};
 function useControlsHint() {
   const touch = useSyncExternalStore(never, coarse, () => false);
-  return touch ? "Tap to walk. Drag to look around." : "WASD or click to walk. Drag to look, scroll to zoom.";
+  return touch ? "Tap to walk, tap the prompt to open things. Drag to look." : "WASD or click to walk, E to open what's close. Drag to look around.";
 }
 
 /** A spinning Poké Ball, for while the world loads. */

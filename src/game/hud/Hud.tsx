@@ -18,6 +18,7 @@ import { FactToast, XpPops } from "./Xp";
 import { Card } from "./Card";
 import { MainMenu, MenuBall, type Screen, TrainerBadge } from "./Menu";
 import { Nearby } from "./Nearby";
+import { Prompt } from "./Prompt";
 import { SettingsPanel } from "./Settings";
 import { PokemonPanel } from "./Storage";
 import { CommunityPanel } from "./Community";
@@ -202,6 +203,9 @@ export function Hud() {
         <XpPops />
       </div>
 
+      <div className="pointer-events-none absolute inset-x-0 bottom-24 flex justify-center px-4">
+        <Prompt hidden={card !== null || screen !== null || menu || nearby || foe !== null || buddy} />
+      </div>
       <div className={`pointer-events-auto absolute bottom-4 left-4 transition-opacity ${menu ? "invisible opacity-0" : ""}`}>
         <TrainerBadge onOpen={() => setScreen("profile")} />
       </div>

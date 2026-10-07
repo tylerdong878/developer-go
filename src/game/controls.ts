@@ -18,7 +18,7 @@ export const MOVE_KEYS: Record<string, readonly [forward: number, right: number]
 /**
  * Keyboard, mouse, and touch, like GO: drag sideways to spin the camera
  * around the trainer, drag up and down or scroll or pinch to zoom, twist two
- * fingers to turn. WASD or the arrows walk; Q/E turn; +/- zoom. Taps are
+ * fingers to turn. WASD or the arrows walk; Q and C turn (E is for opening what's in reach); +/- zoom. Taps are
  * handled in the scene, where they can hit the ground or a map object.
  */
 export function useControls(element: RefObject<HTMLElement | null>) {
@@ -38,8 +38,8 @@ export function useControls(element: RefObject<HTMLElement | null>) {
         input.goal = null;
         input.dash = false;
         e.preventDefault();
-      } else if (e.code === "KeyQ") view.yawTo -= 0.4;
-      else if (e.code === "KeyE") view.yawTo += 0.4;
+      } else if (e.code === "KeyQ" || e.code === "KeyZ") view.yawTo -= 0.4;
+      else if (e.code === "KeyC") view.yawTo += 0.4;
       else if (e.code === "Equal" || e.code === "NumpadAdd") zoomBy(0.85);
       else if (e.code === "Minus" || e.code === "NumpadSubtract") zoomBy(1.18);
     };

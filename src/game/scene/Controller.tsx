@@ -7,6 +7,7 @@ import { walkable } from "../base";
 import { MOVE_KEYS } from "../controls";
 import { DASH_SPEED, game, WALK_SPEED, ZOOM } from "../state";
 import { goalPosition } from "../travel";
+import { updateFocus } from "../focus";
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 /** Frame-rate independent easing: how far to close a gap this frame. */
@@ -115,6 +116,8 @@ export function Controller() {
     } else {
       buddy.heading += turn(buddy.heading, trainer.heading) * ease(3, dt);
     }
+
+    updateFocus(trainer.position.x, trainer.position.z);
 
     // The camera: behind the trainer at the chosen yaw, looking a little ahead of him.
     focus.current ??= new Vector3(trainer.position.x, 1.4, trainer.position.z);
