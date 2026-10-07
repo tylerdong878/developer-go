@@ -14,6 +14,7 @@ import { Landmarks } from "./Landmarks";
 import { Trees } from "./Trees";
 import { Buildings } from "./Buildings";
 import { Props } from "./Props";
+import { Signs } from "./Signs";
 
 /** Fog starts past what's around you and swallows the edge of the base. */
 export const FOG = { near: 60, far: 185 };
@@ -88,6 +89,7 @@ export function World({ palette, night, shadowMap }: { palette: Palette; night: 
 
       <Buildings night={night} />
       <Props night={night} />
+      <Signs />
       <Trees trunk={palette.trunk} leaves={palette.leaves} />
       <Flora grass={palette.leaves[1]} />
       <Landmarks />
