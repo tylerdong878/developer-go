@@ -1,5 +1,5 @@
 import { Vector3 } from "three";
-import { slots, walkable } from "./base";
+import { places, slots, walkable } from "./base";
 import type { Vec2 } from "./geometry";
 import { bySlug, standOff } from "./objects";
 import { game } from "./state";
@@ -11,7 +11,7 @@ export function goalPosition(goal: string): Vec2 | null {
     const w = findWild(goal);
     return w ? [w.x, w.z] : null;
   }
-  return slots[goal] ?? null;
+  return slots[goal] ?? places[goal] ?? null;
 }
 
 /**

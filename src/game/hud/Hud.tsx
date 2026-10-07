@@ -96,6 +96,11 @@ export function Hud() {
   useEffect(() => {
     // Walking up to a Pokémon starts a catch; anything else opens its card.
     game.onArrive = (goal) => {
+      // The Pokémon Center is where you learn about Tyler; the Poké Mart is your bag.
+      if (goal === "place:center" || goal === "place:mart") {
+        sfx.open();
+        return setScreen(goal === "place:center" ? "about" : "bag");
+      }
       const w = findWild(goal);
       if (w) return setFoe({ dex: w.species.dex, name: w.species.name, rare: false, cp: cpFor(w.species.dex, false, Math.random()), goal });
       const o = bySlug.get(goal);

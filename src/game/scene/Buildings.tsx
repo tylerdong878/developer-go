@@ -1,9 +1,10 @@
 "use client";
 
 import { useFrame, useLoader } from "@react-three/fiber";
-import { Suspense, useLayoutEffect, useMemo, useRef } from "react";
+import { Component, type ReactNode, Suspense, useLayoutEffect, useMemo, useRef } from "react";
 import {
   BoxGeometry,
+  CircleGeometry,
   type BufferGeometry,
   Color,
   Float32BufferAttribute,
@@ -21,7 +22,7 @@ import {
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { buildings } from "../base";
-import type { Building, ModelId } from "../lots";
+import { type Building, type ModelId, MODELS } from "../lots";
 import { game } from "../state";
 
 /** Shared by every building material: 1 after dark, so windows glow. */
@@ -105,8 +106,9 @@ const local = (x: number, y: number, z: number, sx: number, sy: number, sz: numb
  * awning, and framed windows on the front and sides.
  */
 function housePieces(): Record<string, Piece[]> {
-  const out: Record<string, Piece[]> = { base: [], walls: [], gable: [], roof: [], chimney: [], door: [], frame: [], glass: [] };
+  const out: Record<string, Piece[]> = { base: [], walls: [], gable: [], roof: [], chimney: [], door: [], frame: [], glass: [], disc: [], half: [] };
   buildings.forEach((b, i) => {
+    if (b.model === "center" || b.model === "mart") return civicPieces(b, i, out);
     if (b.model !== "house") return;
     const sideways = Math.round(b.turn / (Math.PI / 2)) % 2 !== 0;
     const W = sideways ? b.d : b.w;
@@ -142,6 +144,49 @@ function housePieces(): Record<string, Piece[]> {
   return out;
 }
 
+/**
+ * The Pokémon Center and Poké Mart, Let's Go style: white walls over a
+ * grey-blue base band, a low red (or blue) roof with dark eaves, two-leaf
+ * glass sliding doors in a frame of the roof color, wide windows either side.
+ * The Center wears a big Poké Ball on its roof; the Mart gets its sign.
+ */
+function civicPieces(b: Building, i: number, out: Record<string, Piece[]>) {
+  const sideways = Math.round(b.turn / (Math.PI / 2)) % 2 !== 0;
+  const W = sideways ? b.d : b.w;
+  const D = sideways ? b.w : b.d;
+  const H = b.h;
+  const center = b.model === "center";
+  const roof = center ? "#e3342f" : "#2f6fd6";
+  const eave = center ? "#b32222" : "#1e4e9e";
+  const at = placeOf(b);
+  const add = (part: string, m: Matrix4, color: string) => out[part].push({ b: i, m: at.clone().multiply(m), color });
+  const front = D / 2 + 0.06;
+  add("walls", local(0, H / 2, 0, W, H, D), b.color);
+  add("base", local(0, 0.45, 0, W + 0.2, 0.9, D + 0.2), "#9aa7b4");
+  add("roof", local(0, H + 0.15, 0, W + 1.2, 0.3, D + 1.2), eave);
+  add("gable", local(0, H + 0.3, 0, W + 0.9, 1.5, D + 0.9), roof);
+  // the doors: a frame in the roof color, two glass leaves
+  add("frame", local(0, 1.55, front, 3.6, 3.1, 0.2), roof);
+  for (const x of [-0.82, 0.82]) add("glass", local(x, 1.42, front + 0.06, 1.5, 2.7, 0.14), "#9fd3e6");
+  // wide windows either side
+  for (const x of [-W * 0.32, W * 0.32]) {
+    add("frame", local(x, 2.35, front, W * 0.24 + 0.3, 1.6, 0.16), "#d9dee5");
+    add("glass", local(x, 2.35, front + 0.05, W * 0.24, 1.3, 0.14), "#9fd3e6");
+  }
+  if (center) {
+    // the Poké Ball on the roof, standing up and facing the street
+    const y = H + 2.1;
+    const z = D / 2 - 0.4;
+    add("disc", local(0, y, z - 0.05, 3.3, 3.3, 1), "#1c1c24"); // outline
+    add("disc", local(0, y, z, 3, 3, 1), "#ffffff");
+    add("half", local(0, y, z + 0.02, 3, 3, 1), "#e3342f");
+    add("frame", local(0, y, z + 0.04, 3, 0.26, 0.02), "#1c1c24"); // the band
+    add("disc", local(0, y, z + 0.06, 1.05, 1.05, 1), "#1c1c24");
+    add("disc", local(0, y, z + 0.08, 0.7, 0.7, 1), "#ffffff");
+    add("frame", local(0, H + 0.9, z - 0.1, 0.5, 1.4, 0.3), "#9aa7b4"); // its stand
+  }
+}
+
 const box = new BoxGeometry(1, 1, 1);
 const HOUSE_PARTS: Record<string, BufferGeometry> = {
   base: box,
@@ -152,6 +197,8 @@ const HOUSE_PARTS: Record<string, BufferGeometry> = {
   door: box,
   frame: box,
   glass: box,
+  disc: new CircleGeometry(0.5, 40),
+  half: new CircleGeometry(0.5, 40, 0, Math.PI),
 };
 
 /** An instanced layer: one geometry and material, one instance per piece. */
@@ -212,7 +259,7 @@ function FadeTracker() {
   return null;
 }
 
-const OFFICE_MODELS = [...new Set(buildings.filter((b) => b.model !== "house").map((b) => b.model as ModelId))];
+const OFFICE_MODELS = [...new Set(buildings.map((b) => b.model).filter((m): m is ModelId => m in MODELS))];
 const urls = OFFICE_MODELS.map((m) => `/models/${m}.glb`);
 
 /** The offices and towers: Kenney's city kit models, one instanced mesh per model. */
@@ -262,6 +309,17 @@ function Houses() {
   );
 }
 
+/** If the office models can't load (offline, blocked), the town goes on without them instead of the whole game failing. */
+class SkipOnError extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
 /**
  * The neighborhood: Pokémon-town houses built from parts, and offices and
  * towers from Kenney's city kit, all instanced. After dark, windows light up.
@@ -274,9 +332,11 @@ export function Buildings({ night }: { night: boolean }) {
     <>
       <FadeTracker />
       <Houses />
-      <Suspense fallback={null}>
-        <Offices />
-      </Suspense>
+      <SkipOnError>
+        <Suspense fallback={null}>
+          <Offices />
+        </Suspense>
+      </SkipOnError>
     </>
   );
 }

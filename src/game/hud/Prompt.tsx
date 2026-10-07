@@ -13,10 +13,22 @@ const never = () => () => {};
 function label(goal: string) {
   const w = findWild(goal);
   if (w) return { verb: "Catch", name: w.species.name, icon: <WildIcon dex={w.species.dex} /> };
+  if (goal === "place:center") return { verb: "Enter", name: "the Pokémon Center", icon: <BallIcon top="#e3342f" /> };
+  if (goal === "place:mart") return { verb: "Enter", name: "the Poké Mart", icon: <BallIcon top="#2f6fd6" /> };
   const o = bySlug.get(goal);
   if (!o) return null;
   const verb = o.kind === "spawn" ? "Catch" : o.kind === "stop" ? "Spin" : o.kind === "egg" ? "Check" : "Visit";
   return { verb, name: describe(o).name, icon: <ObjectIcon object={o} size={26} /> };
+}
+
+function BallIcon({ top }: { top: string }) {
+  return (
+    <svg viewBox="0 0 40 40" width="26" height="26" aria-hidden>
+      <circle cx="20" cy="20" r="16" fill="#fff" stroke="#1c1c24" strokeWidth="2.5" />
+      <path d="M4 20a16 16 0 0 1 32 0Z" fill={top} stroke="#1c1c24" strokeWidth="2.5" />
+      <circle cx="20" cy="20" r="4.5" fill="#fff" stroke="#1c1c24" strokeWidth="2.5" />
+    </svg>
+  );
 }
 
 function WildIcon({ dex }: { dex: number }) {

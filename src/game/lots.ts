@@ -8,8 +8,9 @@ import { pointInPolygon, random, type Vec2 } from "./geometry";
  * colored roofs, cream walls). Each faces its street or its gym. Footprints stay axis-aligned boxes,
  * so walking around them is a simple rectangle test.
  */
-export type BuildingKind = "tower" | "office" | "brick" | "house" | "shop";
-export type HouseModel = "house";
+export type BuildingKind = "tower" | "office" | "brick" | "house" | "shop" | "center" | "mart";
+/** Built in code instead of loaded: houses, the Pokémon Center, and the Poké Mart. */
+export type HouseModel = "house" | "center" | "mart";
 
 /** Every model's size (x, height, z) at scale 1, measured from the files in public/models. */
 export const MODELS = {
@@ -97,6 +98,16 @@ export function build(
   };
 }
 
+/**
+ * The Pokémon Center and Poké Mart, in the Let's Go / FireRed look: white
+ * walls on a grey-blue base, red roof for the Center, blue for the Mart.
+ */
+export function civic(kind: "center" | "mart", x: number, z: number, turn: number, slug: string): Building {
+  const [w, d, h] = kind === "center" ? [12, 8, 4.8] : [10, 7.5, 4.4];
+  const sideways = Math.round(turn / (Math.PI / 2)) % 2 !== 0;
+  return { kind, model: kind, scale: 1, turn, x, z, w: sideways ? d : w, d: sideways ? w : d, h, color: "#f4f1ea", slug };
+}
+
 /** Quarter turns that face a building's front toward a point. */
 export function facing(x: number, z: number, [tx, tz]: Vec2) {
   const dx = tx - x;
@@ -117,6 +128,9 @@ export const SIGNATURE: Building[] = [
   build("c-building-i", -74, -79, 8, Math.PI / 2, { kind: "office", color: "#f3e9d8", slug: "quartzy" }),
   // a big store at the north end of the avenue
   build("c-building-k", 0, -127, 12, 0, { kind: "shop", slug: "homegoods" }),
+  // the Pokémon Center and Poké Mart, either side of the avenue just north of home, like a Kanto town
+  civic("center", 12, -24, 0, "center"),
+  civic("mart", -12, -24, 0, "mart"),
   // Tyler's house, just south of the roundabout, facing it
   house(-10, 26, 9, 7.5, Math.PI, { color: "#fff6e6", roof: "#d8483c", slug: "home" }),
 ];

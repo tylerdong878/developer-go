@@ -1,4 +1,4 @@
-import { slots } from "./base";
+import { places, slots } from "./base";
 import { REACH } from "./scene/Rings";
 import { game } from "./state";
 import { goalId, wildStore } from "./wild";
@@ -28,8 +28,8 @@ export function updateFocus(x: number, z: number) {
     const d = Math.hypot(w.x - x, w.z - z) - 2; // a Pokémon in reach comes first, like GO
     if (d < bestD) [best, bestD] = [goalId(w), d];
   }
-  for (const slug in slots) {
-    const [sx, sz] = slots[slug];
+  for (const slug of [...Object.keys(slots), ...Object.keys(places)]) {
+    const [sx, sz] = slots[slug] ?? places[slug];
     const d = Math.hypot(sx - x, sz - z);
     if (d < bestD) [best, bestD] = [slug, d];
   }

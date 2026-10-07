@@ -225,6 +225,16 @@ export const buildings = placeBuildings({
   trees,
 });
 
+/**
+ * Places you can walk into that aren't map objects: the Pokémon Center and
+ * the Poké Mart, by their front doors. Goals for these are "place:<slug>".
+ */
+export const places: Record<string, Vec2> = Object.fromEntries(
+  buildings
+    .filter((b) => b.kind === "center" || b.kind === "mart")
+    .map((b) => [`place:${b.slug}`, [b.x + Math.sin(b.turn) * (b.d / 2 + 2), b.z + Math.cos(b.turn) * (b.d / 2 + 2)] as Vec2]),
+);
+
 /** Is this spot at least `margin` from every road's edge? */
 export function clearOfRoads(p: Vec2, margin: number) {
   return !roads.some((r) => nearLine(p, r.points, r.loop, r.width / 2 + margin));
