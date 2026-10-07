@@ -9,6 +9,11 @@ import { DASH_SPEED, game, RUN_SPEED, WALK_SPEED, ZOOM } from "../state";
 import type { PerspectiveCamera } from "three";
 import { goalPosition } from "../travel";
 import { updateFocus } from "../focus";
+import { readyStore } from "../ready";
+
+/** The opening shot: how high the camera starts, and how long it waits for the loading screen to clear. */
+const DROP_FROM = 140;
+const DROP_DELAY = 1.3;
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 /** Frame-rate independent easing: how far to close a gap this frame. */
@@ -31,6 +36,9 @@ export function Controller() {
   const focus = useRef<Vector3>(null);
   const facing = useRef<number | null>(null);
   const rushed = useRef(0);
+  // 1 up in the clouds, easing to 0 behind the trainer once the world has loaded.
+  const drop = useRef(1);
+  const waited = useRef(0);
 
   useFrame(({ camera }, frame) => {
     const dt = Math.min(frame, 0.05); // no leaps after a background tab wakes up
@@ -126,8 +134,13 @@ export function Controller() {
     // The camera: behind the trainer at the chosen yaw, looking a little ahead of him.
     focus.current ??= new Vector3(trainer.position.x, 1.4, trainer.position.z);
     const look = focus.current;
+    if (readyStore.get()) {
+      waited.current += dt;
+      if (waited.current > DROP_DELAY) drop.current += (0 - drop.current) * ease(1.5, dt);
+    }
+    const d = drop.current * drop.current * (3 - 2 * drop.current); // smoothstep, so it slows as it lands
     const t = (view.distance - ZOOM.min) / (ZOOM.max - ZOOM.min);
-    const pitch = lerp(0.2, 0.92, t);
+    const pitch = lerp(lerp(0.2, 0.92, t), 1.45, d);
     const lead = lerp(2.4, 1, t);
     const k = ease(12, dt);
     look.x += (trainer.position.x + fx * lead - look.x) * k;
@@ -135,7 +148,7 @@ export function Controller() {
     // Running pulls the camera back and widens the view a touch, so it feels faster.
     const rush = input.dash ? 0 : Math.max(0, Math.min(1, (trainer.speed - WALK_SPEED) / (RUN_SPEED - WALK_SPEED)));
     rushed.current += (rush - rushed.current) * ease(4, dt);
-    const back = view.distance + rushed.current * 2.5;
+    const back = view.distance + rushed.current * 2.5 + d * DROP_FROM;
     const flat = back * Math.cos(pitch);
     camera.position.set(look.x - fx * flat, look.y + back * Math.sin(pitch), look.z - fz * flat);
     camera.lookAt(look);
