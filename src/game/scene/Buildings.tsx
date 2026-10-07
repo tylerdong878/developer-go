@@ -1,64 +1,55 @@
 "use client";
 
-import { useFrame } from "@react-three/fiber";
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { useFrame, useLoader } from "@react-three/fiber";
+import { Suspense, useLayoutEffect, useMemo, useRef } from "react";
 import {
   BoxGeometry,
-  BufferGeometry,
+  type BufferGeometry,
   Color,
   Float32BufferAttribute,
+  BufferGeometry as Geometry,
   InstancedBufferAttribute,
   type InstancedMesh,
   Matrix4,
+  type Mesh,
   MeshLambertMaterial,
+  NearestFilter,
   Quaternion,
+  type Texture,
   Vector3,
 } from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { buildings } from "../base";
-import type { Building, BuildingKind } from "../lots";
-import { random } from "../geometry";
+import type { Building, ModelId } from "../lots";
 import { game } from "../state";
 
-/** Window patterns by kind, read by the wall shader: 0 house, 1 office, 2 glass tower, 3 brick, 4 shop. */
-const STYLE: Record<BuildingKind, number> = { house: 0, office: 1, tower: 2, brick: 3, shop: 4 };
-
-const ROOFS = ["#c0583f", "#6b7f99", "#8a5a3b", "#4f6d5a", "#a24d4d"];
-const CAP = "#d4d9df";
-
-/** Shared by every building material: 1 after dark, so lit windows glow. */
+/** Shared by every building material: 1 after dark, so windows glow. */
 const town = { uNight: { value: 0 } };
 
 /**
  * A Lambert material with two extras for the town: buildings fade out (as a
  * dither, so nothing needs sorting) when they stand between the camera and
- * the trainer, and walls get windows drawn by the shader, so one box per
- * building is all it takes.
+ * the trainer, and after dark, glass glows warm. On the Kenney models the
+ * glass is found by its color in the texture; house windows are marked glass.
  */
-function townMaterial(windows: boolean) {
+function townMaterial({ map, glass = false }: { map?: Texture; glass?: boolean }) {
   const material = new MeshLambertMaterial({ color: "#ffffff", alphaHash: true });
+  if (map) {
+    // Kenney's models share one small palette texture: sample it crisp, or colors bleed into gray.
+    map.minFilter = NearestFilter;
+    map.magFilter = NearestFilter;
+    map.generateMipmaps = false;
+    map.needsUpdate = true;
+    material.map = map;
+  }
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uNight = town.uNight;
     shader.vertexShader = shader.vertexShader
-      .replace(
-        "#include <common>",
-        `#include <common>
-attribute float aFade;
-attribute float aStyle;
-attribute float aHeight;
-varying float vFade;
-varying float vStyle;
-varying float vHeight;
-varying vec3 vTown;
-varying vec3 vTownNormal;`,
-      )
+      .replace("#include <common>", "#include <common>\nattribute float aFade;\nvarying float vFade;\nvarying vec3 vTown;")
       .replace(
         "#include <begin_vertex>",
-        `#include <begin_vertex>
-vFade = aFade;
-vStyle = aStyle;
-vHeight = aHeight;
-vTown = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;
-vTownNormal = normalize(mat3(modelMatrix * instanceMatrix) * objectNormal);`,
+        "#include <begin_vertex>\nvFade = aFade;\nvTown = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;",
       );
     shader.fragmentShader = shader.fragmentShader
       .replace(
@@ -66,55 +57,32 @@ vTownNormal = normalize(mat3(modelMatrix * instanceMatrix) * objectNormal);`,
         `#include <common>
 uniform float uNight;
 varying float vFade;
-varying float vStyle;
-varying float vHeight;
 varying vec3 vTown;
-varying vec3 vTownNormal;
-float townHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }`,
+float townHash(vec3 p) { return fract(sin(dot(floor(p * 0.4), vec3(127.1, 311.7, 74.7))) * 43758.5453); }`,
       )
       .replace("#include <color_fragment>", "#include <color_fragment>\ndiffuseColor.a *= vFade;")
       .replace(
         "#include <emissivemap_fragment>",
         `#include <emissivemap_fragment>
-${
-  windows
-    ? `if (abs(vTownNormal.y) < 0.5) {
-  float u = abs(vTownNormal.x) > 0.5 ? vTown.z : vTown.x;
-  float v = vTown.y;
-  int style = int(vStyle + 0.5);
-  // cell size and how much of each cell is glass, per style
-  vec2 cell = style == 2 ? vec2(1.7, 3.0) : style == 3 ? vec2(2.8, 3.4) : style == 0 ? vec2(2.4, 2.2) : vec2(2.6, 3.2);
-  vec2 glass = style == 2 ? vec2(0.86, 0.72) : style == 3 ? vec2(0.42, 0.56) : style == 0 ? vec2(0.4, 0.42) : vec2(0.62, 0.5);
-  vec2 id = floor(vec2(u, v - 0.9) / cell);
-  vec2 f = fract(vec2(u, v - 0.9) / cell);
-  bool inWindow = abs(f.x - 0.5) < glass.x * 0.5 && abs(f.y - 0.5) < glass.y * 0.5;
-  bool inWall = v > 1.1 && v < vHeight - (style == 0 ? 0.4 : 1.0);
-  if (style == 4) { inWindow = v > 0.5 && v < 3.0 && abs(fract(u / 4.0) - 0.5) < 0.45; inWall = true; }
-  if (inWindow && inWall) {
-    float lit = step(0.42, townHash(id + floor(vTown.xz * 0.05)));
-    vec3 day = mix(vec3(0.55, 0.72, 0.88), vec3(0.78, 0.89, 0.97), f.y);
-    vec3 dark = vec3(0.12, 0.17, 0.28);
-    diffuseColor.rgb = mix(day, dark, uNight);
-    totalEmissiveRadiance += uNight * lit * vec3(1.0, 0.78, 0.45) * 0.95;
-  }
-}`
-    : ""
+{
+  ${glass ? "float isGlass = 1.0;" : map ? "vec3 c = diffuseColor.rgb; float isGlass = step(0.5, c.b) * step(0.1, c.b - c.r);" : "float isGlass = 0.0;"}
+  float lit = step(0.35, townHash(vTown));
+  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.16, 0.2, 0.32), uNight * isGlass);
+  totalEmissiveRadiance += uNight * isGlass * lit * vec3(1.0, 0.78, 0.45);
 }`,
       );
   };
   return material;
 }
 
-/** A gable roof: a triangular prism one unit on each side, ridge along x, sitting on y = 0. */
+/** A gable: a triangular prism one unit on each side, ridge along x, sitting on y = 0. */
 function gableGeometry() {
-  const g = new BufferGeometry();
+  const g = new Geometry();
   const h = 0.5;
   // prettier-ignore
   const p = [
-    // two sloped faces
     -h, 0, -h,  h, 0, -h,  h, 1, 0,   -h, 0, -h,  h, 1, 0,  -h, 1, 0,
     -h, 0,  h, -h, 1, 0,   h, 1, 0,   -h, 0,  h,  h, 1, 0,   h, 0, h,
-    // gable ends
     -h, 0, -h, -h, 1, 0,  -h, 0, h,    h, 0, -h,  h, 0, h,   h, 1, 0,
   ];
   g.setAttribute("position", new Float32BufferAttribute(p, 3));
@@ -122,117 +90,193 @@ function gableGeometry() {
   return g;
 }
 
-/** One instanced layer of the town: bodies, roof caps, or gable roofs. */
-type Part = { geometry: BufferGeometry; items: { b: Building; i: number }[]; place: (b: Building, m: Matrix4) => void; color: (b: Building, i: number) => string };
+/** One instance of a part: which building it belongs to, where it sits, and its color. */
+type Piece = { b: number; m: Matrix4; color: string };
 
-const UP = new Vector3(0, 1, 0);
-const scratch = { q: new Quaternion().setFromAxisAngle(UP, 0), p: new Vector3(), s: new Vector3() };
+const Y = new Vector3(0, 1, 0);
+const X = new Vector3(1, 0, 0);
+const placeOf = (b: Building) => new Matrix4().compose(new Vector3(b.x, 0, b.z), new Quaternion().setFromAxisAngle(Y, b.turn), new Vector3(1, 1, 1));
+const local = (x: number, y: number, z: number, sx: number, sy: number, sz: number, tilt = 0) =>
+  new Matrix4().compose(new Vector3(x, y, z), new Quaternion().setFromAxisAngle(X, tilt), new Vector3(sx, sy, sz));
 
-function makeParts(): Record<"bodies" | "caps" | "roofs", Part> {
-  const rand = random(31);
-  const body = new BoxGeometry(1, 1, 1).translate(0, 0.5, 0);
-  const cap = new BoxGeometry(1, 1, 1).translate(0, 0.5, 0);
-  const all = buildings.map((b, i) => ({ b, i }));
-  const roofColor = buildings.map(() => ROOFS[Math.floor(rand() * ROOFS.length)]);
-  return {
-    bodies: {
-      geometry: body,
-      items: all,
-      place: (b, m) => m.compose(scratch.p.set(b.x, 0, b.z), scratch.q, scratch.s.set(b.w, b.h, b.d)),
-      color: (b) => b.color,
-    },
-    caps: {
-      geometry: cap,
-      items: all.filter(({ b }) => b.kind !== "house"),
-      place: (b, m) => m.compose(scratch.p.set(b.x, b.h, b.z), scratch.q, scratch.s.set(b.w + 0.3, 0.45, b.d + 0.3)),
-      color: (b) => (b.kind === "brick" ? "#efe9df" : CAP),
-    },
-    roofs: {
-      geometry: gableGeometry(),
-      items: all.filter(({ b }) => b.kind === "house"),
-      place: (b, m) => m.compose(scratch.p.set(b.x, b.h, b.z), scratch.q, scratch.s.set(b.w + 0.8, Math.min(b.w, b.d) * 0.42, b.d + 0.8)),
-      color: (_, i) => roofColor[i],
-    },
-  };
+/**
+ * A Pokémon-town house, part by part, front facing +z: a stone base, cream
+ * walls, a tall gable roof with deep eaves, a chimney, a door under a little
+ * awning, and framed windows on the front and sides.
+ */
+function housePieces(): Record<string, Piece[]> {
+  const out: Record<string, Piece[]> = { base: [], walls: [], gable: [], roof: [], chimney: [], door: [], frame: [], glass: [] };
+  buildings.forEach((b, i) => {
+    if (b.model !== "house") return;
+    const sideways = Math.round(b.turn / (Math.PI / 2)) % 2 !== 0;
+    const W = sideways ? b.d : b.w;
+    const D = sideways ? b.w : b.d;
+    const H = b.h;
+    const rise = D * 0.5;
+    const at = placeOf(b);
+    const add = (part: string, m: Matrix4, color: string) => out[part].push({ b: i, m: at.clone().multiply(m), color });
+    const roof = b.roof ?? "#d8483c";
+    add("base", local(0, 0.18, 0, W + 0.35, 0.36, D + 0.35), "#9aa1ab");
+    add("walls", local(0, H / 2, 0, W, H, D), b.color);
+    add("gable", local(0, H, 0, W, rise, D), b.color);
+    // two roof slabs from the ridge down past the walls
+    const run = D / 2 + 0.7;
+    const slope = Math.atan2(rise, D / 2);
+    for (const side of [-1, 1]) {
+      const y = H + rise - (run / 2) * Math.tan(slope) + 0.17 / Math.cos(slope);
+      add("roof", local(0, y, (side * run) / 2, W + 1.1, 0.34, run / Math.cos(slope) + 0.2, side * slope), roof);
+    }
+    add("chimney", local(W * 0.28, H + rise * 0.7, -D * 0.18, 0.75, rise * 0.9 + 0.8, 0.75), "#b5654a");
+    add("door", local(-W * 0.2, 1.35, D / 2 + 0.05, 1.15, 1.95, 0.14), "#7a4a2c");
+    add("roof", local(-W * 0.2, 2.6, D / 2 + 0.4, 1.9, 0.16, 0.85), roof); // awning over the door
+    const windows: [number, number, number, boolean][] = [
+      [W * 0.22, 1.95, D / 2 + 0.05, false],
+      [W / 2 + 0.05, 1.95, 0, true],
+      [-W / 2 - 0.05, 1.95, 0, true],
+    ];
+    for (const [x, y, z, side] of windows) {
+      add("frame", local(x, y, z, side ? 0.14 : 1.35, 1.15, side ? 1.35 : 0.14), "#ffffff");
+      add("glass", local(x, y, z, side ? 0.2 : 1.0, 0.82, side ? 1.0 : 0.2), "#9fd3f2");
+    }
+  });
+  return out;
 }
 
-function Layer({ part, windows }: { part: Part; windows: boolean }) {
+const box = new BoxGeometry(1, 1, 1);
+const HOUSE_PARTS: Record<string, BufferGeometry> = {
+  base: box,
+  walls: box,
+  gable: gableGeometry(),
+  roof: box,
+  chimney: box,
+  door: box,
+  frame: box,
+  glass: box,
+};
+
+/** An instanced layer: one geometry and material, one instance per piece. */
+function Layer({ geometry, material, pieces }: { geometry: BufferGeometry; material: MeshLambertMaterial; pieces: Piece[] }) {
   const mesh = useRef<InstancedMesh>(null);
-  const material = useMemo(() => townMaterial(windows), [windows]);
+  const geo = useMemo(() => geometry.clone(), [geometry]);
 
   useLayoutEffect(() => {
     const m = mesh.current;
     if (!m) return;
-    const matrix = new Matrix4();
-    const n = part.items.length;
-    const fade = new Float32Array(n).fill(1);
-    const style = new Float32Array(n);
-    const height = new Float32Array(n);
-    part.items.forEach(({ b, i }, k) => {
-      part.place(b, matrix);
-      m.setMatrixAt(k, matrix);
-      m.setColorAt(k, new Color(part.color(b, i)));
-      style[k] = STYLE[b.kind];
-      height[k] = b.h;
+    pieces.forEach((p, k) => {
+      m.setMatrixAt(k, p.m);
+      m.setColorAt(k, new Color(p.color));
     });
-    part.geometry.setAttribute("aFade", new InstancedBufferAttribute(fade, 1));
-    part.geometry.setAttribute("aStyle", new InstancedBufferAttribute(style, 1));
-    part.geometry.setAttribute("aHeight", new InstancedBufferAttribute(height, 1));
+    geo.setAttribute("aFade", new InstancedBufferAttribute(new Float32Array(pieces.length).fill(1), 1));
     m.instanceMatrix.needsUpdate = true;
     if (m.instanceColor) m.instanceColor.needsUpdate = true;
     m.computeBoundingSphere();
-  }, [part]);
+  }, [pieces, geo]);
 
   // Anything standing between the camera and the trainer fades to a ghost.
-  useFrame(({ camera }, dt) => {
-    const m = mesh.current;
-    const attr = m?.geometry.getAttribute("aFade") as InstancedBufferAttribute | undefined;
+  useFrame(() => {
+    const attr = mesh.current?.geometry.getAttribute("aFade") as InstancedBufferAttribute | undefined;
     if (!attr) return;
-    const { position } = game.player.trainer;
-    const cx = camera.position.x;
-    const cz = camera.position.z;
-    const sx = position.x - cx;
-    const sz = position.z - cz;
-    const k = 1 - Math.exp(-8 * dt);
     let changed = false;
-    part.items.forEach(({ b }, j) => {
-      // Sample the camera-to-trainer line; if it crosses the footprint, the building's in the way.
-      let blocking = false;
-      for (let t = 0.1; t <= 0.96 && !blocking; t += 0.08) {
-        const px = cx + sx * t;
-        const pz = cz + sz * t;
-        blocking = Math.abs(px - b.x) < b.w / 2 + 0.8 && Math.abs(pz - b.z) < b.d / 2 + 0.8;
-      }
-      const want = blocking ? 0.22 : 1;
-      const now = attr.array[j] as number;
-      if (Math.abs(want - now) > 0.004) {
-        attr.array[j] = now + (want - now) * k;
+    pieces.forEach((p, k) => {
+      const want = fade[p.b];
+      if (Math.abs((attr.array[k] as number) - want) > 0.004) {
+        attr.array[k] = want;
         changed = true;
       }
     });
     if (changed) attr.needsUpdate = true;
   });
 
+  return <instancedMesh ref={mesh} args={[geo, material, pieces.length]} castShadow receiveShadow />;
+}
+
+/** How visible each building is right now (1 solid, low when it's in the way), shared by all its parts. */
+const fade = new Float32Array(buildings.length).fill(1);
+
+function FadeTracker() {
+  useFrame(({ camera }, dt) => {
+    const { position } = game.player.trainer;
+    const cx = camera.position.x;
+    const cz = camera.position.z;
+    const sx = position.x - cx;
+    const sz = position.z - cz;
+    const k = 1 - Math.exp(-8 * dt);
+    buildings.forEach((b, i) => {
+      let blocking = false;
+      for (let t = 0.1; t <= 0.96 && !blocking; t += 0.08) {
+        blocking = Math.abs(cx + sx * t - b.x) < b.w / 2 + 0.8 && Math.abs(cz + sz * t - b.z) < b.d / 2 + 0.8;
+      }
+      fade[i] += ((blocking ? 0.22 : 1) - fade[i]) * k;
+    });
+  });
+  return null;
+}
+
+const OFFICE_MODELS = [...new Set(buildings.filter((b) => b.model !== "house").map((b) => b.model as ModelId))];
+const urls = OFFICE_MODELS.map((m) => `/models/${m}.glb`);
+
+/** The offices and towers: Kenney's city kit models, one instanced mesh per model. */
+function Offices() {
+  const gltfs = useLoader(GLTFLoader, urls, (loader) => loader.setMeshoptDecoder(MeshoptDecoder));
+  const layers = useMemo(
+    () =>
+      OFFICE_MODELS.map((model, j) => {
+        let mesh: Mesh | null = null;
+        gltfs[j].scene.traverse((o) => {
+          if (!mesh && (o as Mesh).isMesh) mesh = o as Mesh;
+        });
+        const found = mesh as Mesh | null;
+        const geometry = found ? found.geometry.clone().applyMatrix4(found.matrixWorld) : box;
+        const map = found ? ((found.material as MeshLambertMaterial).map ?? undefined) : undefined;
+        const pieces: Piece[] = [];
+        buildings.forEach((b, i) => {
+          if (b.model !== model) return;
+          pieces.push({ b: i, m: placeOf(b).multiply(new Matrix4().makeScale(b.scale, b.scale, b.scale)), color: b.color });
+        });
+        return { model, geometry, material: townMaterial({ map }), pieces };
+      }),
+    [gltfs],
+  );
   return (
-    <instancedMesh ref={mesh} args={[part.geometry, material, part.items.length]} castShadow receiveShadow />
+    <>
+      {layers.map((l) => (
+        <Layer key={l.model} geometry={l.geometry} material={l.material} pieces={l.pieces} />
+      ))}
+    </>
+  );
+}
+
+function Houses() {
+  const parts = useMemo(() => {
+    const pieces = housePieces();
+    const plain = townMaterial({});
+    const glass = townMaterial({ glass: true });
+    return Object.entries(pieces).map(([part, list]) => ({ part, list, material: part === "glass" ? glass : plain }));
+  }, []);
+  return (
+    <>
+      {parts.map(({ part, list, material }) => (
+        <Layer key={part} geometry={HOUSE_PARTS[part]} material={material} pieces={list} />
+      ))}
+    </>
   );
 }
 
 /**
- * The neighborhood: every building is a box with shader-drawn windows, with
- * flat roofs on the bigger ones and gables on the houses. Three draw calls
- * for the whole town. After dark, a scatter of windows lights up warm.
+ * The neighborhood: Pokémon-town houses built from parts, and offices and
+ * towers from Kenney's city kit, all instanced. After dark, windows light up.
  */
 export function Buildings({ night }: { night: boolean }) {
-  const parts = useMemo(() => makeParts(), []);
   useFrame(() => {
     town.uNight.value += ((night ? 1 : 0) - town.uNight.value) * 0.08;
   });
   return (
     <>
-      <Layer part={parts.bodies} windows />
-      <Layer part={parts.caps} windows={false} />
-      <Layer part={parts.roofs} windows={false} />
+      <FadeTracker />
+      <Houses />
+      <Suspense fallback={null}>
+        <Offices />
+      </Suspense>
     </>
   );
 }

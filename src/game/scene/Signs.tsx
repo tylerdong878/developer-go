@@ -25,7 +25,7 @@ function signFor(b: Building): Sign | null {
   const [tx, tz] = b.slug === "home" ? START : slots[b.slug];
   const dx = tx - b.x;
   const dz = tz - b.z;
-  const y = b.kind === "house" ? 2.6 : Math.min(b.h - 2, 7);
+  const y = b.kind === "house" ? b.h + 1.2 : Math.min(b.h - 2, 7); // houses: up on the gable
   if (Math.abs(dx) > Math.abs(dz)) {
     const side = Math.sign(dx);
     return { text: NAMES[b.slug], x: b.x + side * (b.w / 2 + 0.06), y, z: b.z, turn: (side * Math.PI) / 2, width: Math.min(b.d * 0.7, 7) };
