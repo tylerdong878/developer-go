@@ -45,7 +45,7 @@ export default function Game() {
           onCreated={() => requestAnimationFrame(() => requestAnimationFrame(markReady))}
         >
           <Controller />
-          <World palette={palettes[time]} night={time === "night"} shadowMap={budget.shadowMap} />
+          <World palette={palettes[time]} night={time === "night"} shadowMap={budget.shadowMap} light={budget.light} />
           <TapTarget />
           <CastShadows>
             <Objects grass={palettes[time].leaves[1]} />
@@ -56,7 +56,7 @@ export default function Game() {
           <CastShadows>
             <Trainer3D mover={game.player.trainer} />
             <Teddy3D mover={game.player.buddy} />
-            <Npcs />
+            <Npcs few={budget.light} />
           </CastShadows>
         </Canvas>
       </div>

@@ -1,6 +1,6 @@
 /**
- * Phones and small touch screens get a lighter render: fewer pixels and a
- * smaller shadow map. They look nearly the same on a small screen and keep
+ * Phones and small touch screens get a lighter render: fewer pixels, a
+ * smaller shadow map, no shadows from street furniture, and fewer walkers. They look nearly the same on a small screen and keep
  * the frame rate up and the battery cooler.
  */
 export function isLightDevice() {
@@ -11,4 +11,6 @@ export function isLightDevice() {
 }
 
 export const renderBudget = () =>
-  isLightDevice() ? { dpr: [1, 1.5] as [number, number], shadowMap: 1024 } : { dpr: [1, 2] as [number, number], shadowMap: 2048 };
+  isLightDevice()
+    ? { dpr: [1, 1.5] as [number, number], shadowMap: 1024, light: true }
+    : { dpr: [1, 2] as [number, number], shadowMap: 2048, light: false };

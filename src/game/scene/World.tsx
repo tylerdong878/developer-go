@@ -70,7 +70,7 @@ function CameraLight({ color, intensity }: { color: string; intensity: number })
   return <directionalLight ref={light} color={color} intensity={intensity} target={target} />;
 }
 
-export function World({ palette, night, shadowMap }: { palette: Palette; night: boolean; shadowMap: number }) {
+export function World({ palette, night, shadowMap, light }: { palette: Palette; night: boolean; shadowMap: number; light: boolean }) {
   const layers = useMemo(() => groundLayers(), []);
   return (
     <>
@@ -88,7 +88,7 @@ export function World({ palette, night, shadowMap }: { palette: Palette; night: 
       ))}
 
       <Buildings night={night} />
-      <Props night={night} />
+      <Props night={night} shadows={!light} />
       <Signs />
       <Trees trunk={palette.trunk} leaves={palette.leaves} />
       <Flora grass={palette.leaves[1]} />

@@ -38,7 +38,7 @@ function place(m: InstancedMesh | null, props: Prop[]) {
  * Street furniture: lampposts along the streets and benches by the paths.
  * After dark the lamps come on, with a warm pool of light under each one.
  */
-export function Props({ night }: { night: boolean }) {
+export function Props({ night, shadows }: { night: boolean; shadows: boolean }) {
   const poles = useRef<InstancedMesh>(null);
   const heads = useRef<InstancedMesh>(null);
   const pools = useRef<InstancedMesh>(null);
@@ -80,12 +80,12 @@ export function Props({ night }: { night: boolean }) {
 
   return (
     <>
-      <instancedMesh ref={poles} args={[geo.pole, undefined, lamps.length]} castShadow>
+      <instancedMesh ref={poles} args={[geo.pole, undefined, lamps.length]} castShadow={shadows}>
         <meshLambertMaterial color="#3d4a5c" />
       </instancedMesh>
       <instancedMesh ref={heads} args={[geo.head, lampGlass, lamps.length]} />
       <instancedMesh ref={pools} args={[geo.pool, lampPool, lamps.length]} renderOrder={-20} />
-      <instancedMesh ref={wood} args={[geo.seat, undefined, benches.length]} castShadow>
+      <instancedMesh ref={wood} args={[geo.seat, undefined, benches.length]} castShadow={shadows}>
         <meshLambertMaterial color="#b77b4a" />
       </instancedMesh>
       <instancedMesh ref={legs} args={[geo.leg, undefined, benches.length]}>

@@ -209,8 +209,9 @@ function Walker({ npc, seed }: { npc: Npc; seed: number }) {
   );
 }
 
-export function Npcs() {
-  const list = useMemo(() => NPCS, []);
+/** Everyone out walking (phones get the three nearest home). */
+export function Npcs({ few = false }: { few?: boolean }) {
+  const list = useMemo(() => (few ? NPCS.filter((_, i) => i === 0 || i >= 3) : NPCS), [few]);
   return (
     <>
       {list.map((npc, i) => (
