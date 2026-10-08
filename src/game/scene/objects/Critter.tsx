@@ -10,13 +10,38 @@ import { Shadow } from "../Shadow";
 import { hover } from "./tap";
 import { useSpriteTexture } from "./useSpriteTexture";
 
-/** Height on the map, by dex number. Big Pokémon are big; floaters hover. */
+/**
+ * Height on the map, by dex number, from Pokémon GO's own game data
+ * (modelHeight x modelScale, with Pikachu at 1.6). GO squeezes the range:
+ * tiny bugs come out about twice their real size and Snorlax well under it,
+ * which is why its map reads so well. Rotom is nudged up so it stays visible;
+ * Alcremie isn't in the data, so it keeps a hand-picked size.
+ */
 const SIZE: Record<number, number> = {
-  143: 4.6, 95: 5, 100: 1.2, 106: 2.8, 865: 2.6, 56: 2, 133: 1.9, 869: 1.9, 255: 1.8,
-  16: 1.6, 19: 1.4, 10: 1.3, 13: 1.3, 129: 1.9, 43: 1.5, 54: 1.9, 60: 1.6, 52: 1.7,
-  39: 1.5, 74: 1.7, 66: 2, 58: 2, 25: 1.6, 1: 1.7, 4: 1.7, 7: 1.7, 147: 2.4,
+  1: 2.06, 4: 2.03, 7: 1.78, 25: 1.6, 16: 1.36, 19: 1.43, 10: 1.05, 13: 1.02, 41: 2.46,
+  129: 2.46, 43: 1.82, 54: 2.36, 60: 2.03, 52: 1.73, 39: 1.94, 74: 3.24, 66: 2.38,
+  58: 2.21, 92: 2.7, 63: 2.33, 147: 2.34, 143: 4.0, 106: 3.23, 865: 2.55, 95: 7.3,
+  137: 2.38, 479: 1.2, 133: 1.36, 56: 1.92, 100: 1.82, 869: 1.9, 132: 1.44, 255: 1.6, 81: 1.56,
 };
-const HOVER: Record<number, number> = { 81: 1.1, 479: 1, 137: 0.45, 41: 1.4, 92: 1.2, 74: 0.5 };
+/** Floaters: how high they hover (Gastly at your eye level, Abra just off the ground). */
+const HOVER: Record<number, number> = { 81: 1.1, 479: 1, 137: 0.45, 41: 1.4, 92: 0.6, 74: 1, 63: 0.3 };
+/**
+ * GO's idle rhythm from its game data: seconds between moves, and how long
+ * a hop lasts. Most hop about once every 10 s and stand still in between;
+ * Charmander, Meowth and Mankey only every 29 s; Ditto and Magikarp never.
+ */
+const HOP: Record<number, readonly [every: number, lasts: number]> = {
+  4: [29, 1.25], 52: [29, 1], 56: [29, 1], 66: [23, 1], 106: [11, 0.8], 255: [11, 1.1],
+  1: [10, 1.15], 16: [10, 1.4], 19: [10, 0.9], 13: [10, 1.25], 147: [10, 0.85], 133: [10, 1.35],
+  865: [10, 0.9], 100: [10, 1.2], 39: [10, 1.4], 132: [Infinity, 1], 129: [Infinity, 1],
+};
+/** Height off the ground right now: one quick hop every so often, otherwise standing. */
+function hopAt(dex: number, t: number, size: number) {
+  const [every, lasts] = HOP[dex] ?? [10, 1];
+  if (!Number.isFinite(every)) return 0;
+  const phase = t % every;
+  return phase < lasts ? Math.sin((Math.PI * phase) / lasts) * 0.12 * size : 0;
+}
 
 /** GO's rustling grass: a few blades around a wild Pokémon's feet. */
 function useTuft() {
@@ -67,7 +92,7 @@ export function Critter({
     const t = clock.elapsedTime + seed * 0.37;
     const m = model.current;
     if (m) {
-      // 3D Pokémon turn to look at you, and hop like the sprites do
+      // 3D Pokémon turn to look at you, and hop now and then like GO's
       m.getWorldPosition(here);
       const { position } = game.player.trainer;
       const face = Math.atan2(position.x - here.x, position.z - here.z);
@@ -75,14 +100,14 @@ export function Critter({
       if (turn > Math.PI) turn -= Math.PI * 2;
       if (turn < -Math.PI) turn += Math.PI * 2;
       m.rotation.y += turn * Math.min(1, dt * (asleep ? 0.5 : 4));
-      m.position.y = lift ? lift + Math.sin(t * 2) * 0.18 : asleep ? 0 : Math.max(0, Math.sin(t * 2.4)) ** 2 * 0.22;
+      m.position.y = lift ? lift + Math.sin(t * 2) * 0.18 : asleep ? 0 : hopAt(dex, t + seed * 3.1, size);
     }
     if (body.current) {
       body.current.position.y = lift
         ? lift + Math.sin(t * 2) * 0.18
         : asleep
           ? 0
-          : Math.max(0, Math.sin(t * 2.4)) ** 2 * 0.22;
+          : hopAt(dex, t + seed * 3.1, size);
       if (asleep) body.current.scale.set(size * (1 + Math.sin(t * 1.3) * 0.015), size, 1);
     }
     if (tuft.current) tuft.current.rotation.set(Math.sin(t * 6) * 0.06, 0, Math.cos(t * 5) * 0.06);
