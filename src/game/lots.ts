@@ -99,11 +99,11 @@ export function build(
 }
 
 /**
- * The Pokémon Center and Poké Mart, in the Let's Go / FireRed look: white
- * walls on a grey-blue base, red roof for the Center, blue for the Mart.
+ * The Pokémon Center and Poké Mart, as they are in Let's Go Pikachu/Eevee
+ * (modeled in scene/civic/Civic.tsx): footprint and full height.
  */
 export function civic(kind: "center" | "mart", x: number, z: number, turn: number, slug: string): Building {
-  const [w, d, h] = kind === "center" ? [12, 8, 4.8] : [10, 7.5, 4.4];
+  const [w, d, h] = kind === "center" ? [10, 9, 9.6] : [10, 6.5, 7.3];
   const sideways = Math.round(turn / (Math.PI / 2)) % 2 !== 0;
   return { kind, model: kind, scale: 1, turn, x, z, w: sideways ? d : w, d: sideways ? w : d, h, color: "#f4f1ea", slug };
 }
