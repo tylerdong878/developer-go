@@ -47,14 +47,15 @@ export type Building = {
   h: number;
   /** A tint over the model's colors (white leaves them as they are). */
   color: string;
-  /** Houses only: the roof color. */
+  /** Houses only: the roof color, and whether it's the mirror twin (upper floor on the other side). */
   roof?: string;
+  flip?: boolean;
   /** The gym this building belongs to, or "home". */
   slug?: string;
 };
 
 /** A Pokémon-town house: w and d are its walls, h is the wall height (the roof sits on top). */
-export function house(x: number, z: number, w: number, d: number, turn: number, rest: { color: string; roof: string; slug?: string }): Building {
+export function house(x: number, z: number, w: number, d: number, turn: number, rest: { color: string; roof: string; slug?: string; flip?: boolean }): Building {
   const sideways = Math.round(turn / (Math.PI / 2)) % 2 !== 0;
   return {
     kind: "house",
@@ -65,9 +66,10 @@ export function house(x: number, z: number, w: number, d: number, turn: number, 
     z,
     w: sideways ? d : w,
     d: sideways ? w : d,
-    h: 3.4,
+    h: 3,
     color: rest.color,
     roof: rest.roof,
+    flip: rest.flip,
     slug: rest.slug,
   };
 }
@@ -132,7 +134,9 @@ export const SIGNATURE: Building[] = [
   civic("center", 12, -24, 0, "center"),
   civic("mart", -12, -24, 0, "mart"),
   // Tyler's house, just south of the roundabout, facing it
-  house(-10, 26, 9, 7.5, Math.PI, { color: "#fff6e6", roof: "#d8483c", slug: "home" }),
+  // Tyler's house and its blue twin across the avenue, like Pallet Town's player and rival houses
+  house(-10, 26, 9, 7.5, Math.PI, { color: "#e0d9c4", roof: "#b24c49", slug: "home" }),
+  house(10, 26, 9, 7.5, Math.PI, { color: "#e0d9c4", roof: "#2a6fa6", flip: true, slug: "rival" }),
 ];
 
 const OFFICES: ModelId[] = ["c-building-a", "c-building-b", "c-building-d", "c-building-f", "c-building-g", "c-building-h", "c-building-i", "c-building-l", "c-building-m"];
@@ -140,9 +144,9 @@ const TOWERS: ModelId[] = ["c-building-skyscraper-a", "c-building-skyscraper-c",
 const CAMPUS: ModelId[] = ["c-building-i", "c-building-l", "c-building-n", "c-building-k"];
 const OFFICE_TINT = ["#ffffff", "#f6f3ee", "#eef3f8", "#f4efe6"];
 const BRICK = ["#e59a82", "#e3a58c", "#d98f78"];
-/** Wall and roof colors from the games' towns: cream and white walls under red, blue, green, and orange roofs. */
-const WALLS = ["#fff6e6", "#ffffff", "#f6efe2", "#fdf3dc", "#eef2f5"];
-const ROOFS = ["#d8483c", "#3d6fc4", "#4aa35a", "#e0863a", "#8a5ac8", "#2f9bb0"];
+/** Let's Go's Kanto towns: cream plaster under each town's roof color (Pallet red and blue, Viridian green, Vermilion orange, Lavender purple). */
+const WALLS = ["#e0d9c4", "#e6dfca", "#dcd4bd"];
+const ROOFS = ["#b24c49", "#2a6fa6", "#4d745d", "#e88e47", "#63547f"];
 
 export type District = "downtown" | "harbor" | "campus" | "homes";
 
@@ -221,7 +225,7 @@ export function placeBuildings(site: Site): Building[] {
     if (district === "homes") {
       const w = 6.5 + rand() * 2.5;
       const d = 5.5 + rand() * 1.5;
-      const b = house(p[0], p[1], w, d, toStreet(p[0], p[1], Math.max(w, d)), { color: pick(WALLS), roof: pick(ROOFS) });
+      const b = house(p[0], p[1], w, d, toStreet(p[0], p[1], Math.max(w, d)), { color: pick(WALLS), roof: pick(ROOFS), flip: rand() < 0.5 });
       if (fits(b)) placed.push(b);
       continue;
     } else if (district === "campus") {

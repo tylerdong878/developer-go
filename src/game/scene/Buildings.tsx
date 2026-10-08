@@ -4,6 +4,8 @@ import { useFrame, useLoader } from "@react-three/fiber";
 import { Component, type ReactNode, Suspense, useLayoutEffect, useMemo, useRef } from "react";
 import {
   BoxGeometry,
+  CylinderGeometry,
+  Euler,
   type BufferGeometry,
   Color,
   Float32BufferAttribute,
@@ -92,64 +94,120 @@ function gableGeometry() {
 type Piece = { b: number; m: Matrix4; color: string };
 
 const Y = new Vector3(0, 1, 0);
-const X = new Vector3(1, 0, 0);
 const placeOf = (b: Building) => new Matrix4().compose(new Vector3(b.x, 0, b.z), new Quaternion().setFromAxisAngle(Y, b.turn), new Vector3(1, 1, 1));
-const local = (x: number, y: number, z: number, sx: number, sy: number, sz: number, tilt = 0) =>
-  new Matrix4().compose(new Vector3(x, y, z), new Quaternion().setFromAxisAngle(X, tilt), new Vector3(sx, sy, sz));
+
+/** A piece's own transform: position, size, then rotation (radians, XYZ order). */
+const euler = (x: number, y: number, z: number, sx: number, sy: number, sz: number, rx = 0, ry = 0, rz = 0) =>
+  new Matrix4().compose(new Vector3(x, y, z), new Quaternion().setFromEuler(new Euler(rx, ry, rz)), new Vector3(sx, sy, sz));
+
+/** A lighter tint of a roof color, for the bullnosed lower edge of the skirt. */
+function lighter(hex: string, k = 0.55) {
+  const c = new Color(hex);
+  return `#${c.lerp(new Color("#ffffff"), k).getHexString()}`;
+}
+
+const TIMBER = "#8e6a4e";
+const BASEBOARD = "#7a5c4e";
 
 /**
- * A Pokémon-town house, part by part, front facing +z: a stone base, cream
- * walls, a tall gable roof with deep eaves, a chimney, a door under a little
- * awning, and framed windows on the front and sides.
+ * A Let's Go town house, part by part (notes/research/kanto-buildings.md,
+ * Pallet Town): two storeys of cream plaster in a dark-brown timber frame on
+ * a brown base board; a sloped skirt roof in the town color wrapping round
+ * between the floors, with a pale bullnosed edge; a smaller upper floor set
+ * to one side under its own front-facing gable, with a wooden balcony and
+ * railing beside it; a brown door with two tall glass panes, a white-framed
+ * frosted window, a white mailbox on a post, and daisies along the front.
+ * Front faces +z; `flip` mirrors it (Pallet's two houses are mirror twins).
  */
 function housePieces(): Record<string, Piece[]> {
-  const out: Record<string, Piece[]> = { base: [], walls: [], gable: [], roof: [], chimney: [], door: [], frame: [], glass: [], };
+  const out: Record<string, Piece[]> = {
+    base: [], walls: [], timber: [], skirt: [], skirtEdge: [], gable: [], roof: [], door: [], frame: [], glass: [], white: [], bed: [], flower: [],
+  };
   buildings.forEach((b, i) => {
     if (b.model !== "house") return;
     const sideways = Math.round(b.turn / (Math.PI / 2)) % 2 !== 0;
     const W = sideways ? b.d : b.w;
     const D = sideways ? b.w : b.d;
-    const H = b.h;
-    const rise = D * 0.5;
+    const H = b.h; // ground floor wall height
+    const f = b.flip ? -1 : 1;
     const at = placeOf(b);
     const add = (part: string, m: Matrix4, color: string) => out[part].push({ b: i, m: at.clone().multiply(m), color });
-    const roof = b.roof ?? "#d8483c";
-    add("base", local(0, 0.18, 0, W + 0.35, 0.36, D + 0.35), "#9aa1ab");
-    add("walls", local(0, H / 2, 0, W, H, D), b.color);
-    add("gable", local(0, H, 0, W, rise, D), b.color);
-    // two roof slabs from the ridge down past the walls
-    const run = D / 2 + 0.7;
-    const slope = Math.atan2(rise, D / 2);
+    const roof = b.roof ?? "#b24c49";
+    const front = D / 2;
+
+    // ground floor: base board, plaster, timber posts and the beam on top
+    add("base", euler(0, 0.18, 0, W + 0.14, 0.36, D + 0.14), BASEBOARD);
+    add("walls", euler(0, H / 2, 0, W, H, D), b.color);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add("timber", euler((sx * W) / 2, H / 2, (sz * D) / 2, 0.3, H, 0.3), TIMBER);
+    for (const x of [-0.08, 0.1]) add("timber", euler(f * x * W, H / 2, front + 0.03, 0.24, H, 0.1), TIMBER);
+    add("timber", euler(0, H - 0.12, front + 0.04, W + 0.06, 0.24, 0.1), TIMBER);
+    add("timber", euler(0, H - 0.12, -front - 0.04, W + 0.06, 0.24, 0.1), TIMBER);
+
+    // the skirt roof between the floors, with its pale lower edge
+    add("skirt", euler(0, H - 0.2, 0, W + 1.3, 0.75, D + 1.3), roof);
+    add("skirtEdge", euler(0, H - 0.24, 0, W + 1.36, 0.16, D + 1.36), lighter(roof));
+
+    // the upper floor, set to one side, with its front gable
+    const Wu = W * 0.58;
+    const Du = D * 0.82;
+    const x0 = -f * W * 0.21;
+    const z0 = -D * 0.06;
+    const U0 = H + 0.45;
+    const H2 = 2.3;
+    add("walls", euler(x0, U0 + H2 / 2, z0, Wu, H2, Du), b.color);
+    for (const sx of [-1, 1]) add("timber", euler(x0 + (sx * Wu) / 2, U0 + H2 / 2, z0 + Du / 2, 0.26, H2, 0.26), TIMBER);
+    const rise = Wu * 0.42;
+    add("gable", euler(x0, U0 + H2, z0, Du, rise, Wu, 0, Math.PI / 2, 0), b.color);
+    const run = Wu / 2 + 0.45;
+    const slope = Math.atan2(rise, Wu / 2);
     for (const side of [-1, 1]) {
-      const y = H + rise - (run / 2) * Math.tan(slope) + 0.17 / Math.cos(slope);
-      add("roof", local(0, y, (side * run) / 2, W + 1.1, 0.34, run / Math.cos(slope) + 0.2, side * slope), roof);
+      const y = U0 + H2 + rise - (run / 2) * Math.tan(slope) + 0.15 / Math.cos(slope);
+      add("roof", euler(x0 + (side * run) / 2, y, z0, run / Math.cos(slope) + 0.15, 0.3, Du + 0.6, 0, 0, -side * slope), roof);
     }
-    add("chimney", local(W * 0.28, H + rise * 0.7, -D * 0.18, 0.75, rise * 0.9 + 0.8, 0.75), "#b5654a");
-    add("door", local(-W * 0.2, 1.35, D / 2 + 0.05, 1.15, 1.95, 0.14), "#7a4a2c");
-    add("roof", local(-W * 0.2, 2.6, D / 2 + 0.4, 1.9, 0.16, 0.85), roof); // awning over the door
-    const windows: [number, number, number, boolean][] = [
-      [W * 0.22, 1.95, D / 2 + 0.05, false],
-      [W / 2 + 0.05, 1.95, 0, true],
-      [-W / 2 - 0.05, 1.95, 0, true],
-    ];
-    for (const [x, y, z, side] of windows) {
-      add("frame", local(x, y, z, side ? 0.14 : 1.35, 1.15, side ? 1.35 : 0.14), "#ffffff");
-      add("glass", local(x, y, z, side ? 0.2 : 1.0, 0.82, side ? 1.0 : 0.2), "#9fd3f2");
-    }
+    add("frame", euler(x0, U0 + 1.25, z0 + Du / 2 + 0.03, 1.9, 1.15, 0.1), "#e8e4d4");
+    add("glass", euler(x0, U0 + 1.25, z0 + Du / 2 + 0.05, 1.6, 0.85, 0.1), "#e6f8f8");
+
+    // the balcony beside it: a wood deck and a railing on the open sides
+    const xb = f * (W / 2 - (W - Wu) / 4 - 0.05);
+    const Wb = W - Wu - 0.4;
+    add("timber", euler(xb, U0 + 0.05, z0, Wb, 0.12, Du), "#a07850");
+    add("timber", euler(xb, U0 + 0.75, z0 + Du / 2, Wb, 0.12, 0.12), TIMBER);
+    add("timber", euler(xb + (f * Wb) / 2, U0 + 0.75, z0, 0.12, 0.12, Du), TIMBER);
+    for (let k = 0; k <= 4; k++) add("timber", euler(xb - Wb / 2 + (k * Wb) / 4, U0 + 0.4, z0 + Du / 2, 0.1, 0.7, 0.1), TIMBER);
+
+    // the front: door with two glass panes, the frosted window, mailbox, daisies
+    const xd = -f * W * 0.25;
+    add("door", euler(xd, 1.35, front + 0.06, 1.3, 2.4, 0.1), "#a87a56");
+    for (const dx of [-0.22, 0.22]) add("glass", euler(xd + dx, 1.5, front + 0.12, 0.14, 1.7, 0.06), "#9fd3f2");
+    const xw = f * W * 0.27;
+    add("frame", euler(xw, 1.9, front + 0.06, 2.1, 1.35, 0.1), "#e8e4d4");
+    add("glass", euler(xw - 0.46, 1.9, front + 0.09, 0.82, 1.05, 0.1), "#e6f8f8");
+    add("glass", euler(xw + 0.46, 1.9, front + 0.09, 0.82, 1.05, 0.1), "#e6f8f8");
+    add("white", euler(xd - f * 1.35, 1.25, front + 0.9, 0.55, 0.42, 0.42), "#f4f4f2");
+    add("timber", euler(xd - f * 1.35, 0.55, front + 0.9, 0.1, 1.1, 0.1), "#9a9a92");
+    add("bed", euler(xw, 0.12, front + 0.75, 2.6, 0.24, 0.8), "#4f9a45");
+    for (let k = 0; k < 6; k++) add("flower", euler(xw - 1.1 + k * 0.44, 0.32, front + 0.6 + (k % 2) * 0.3, 0.2, 0.12, 0.2), "#ffffff");
   });
   return out;
 }
 
 const box = new BoxGeometry(1, 1, 1);
+/** The skirt roof's shape: a square frustum (a truncated pyramid), unit size, standing on y = 0. */
+const frustum = new CylinderGeometry(0.8 / Math.SQRT2, 1 / Math.SQRT2, 1, 4, 1).rotateY(Math.PI / 4).translate(0, 0.5, 0);
 const HOUSE_PARTS: Record<string, BufferGeometry> = {
   base: box,
   walls: box,
+  timber: box,
+  skirt: frustum,
+  skirtEdge: frustum,
   gable: gableGeometry(),
   roof: box,
-  chimney: box,
   door: box,
   frame: box,
   glass: box,
+  white: box,
+  bed: box,
+  flower: box,
 };
 
 /** An instanced layer: one geometry and material, one instance per piece. */

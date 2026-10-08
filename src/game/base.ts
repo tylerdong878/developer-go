@@ -77,7 +77,7 @@ export const areas: Area[] = [
   { kind: "grass", points: blob(-72, 19, 9, 0.25, 14) },
   { kind: "grass", points: blob(-108, -40, 8, 0.25, 15) },
   { kind: "lawn", points: rect(58, 67, 50, 40) },
-  { kind: "plaza", points: circle(0, 0, 10, 72) },
+  { kind: "lawn", points: circle(0, 0, 10, 72) },
   { kind: "plaza", points: rect(60, 0, 26, 26) },
   { kind: "water", points: pond },
   { kind: "water", points: harbor },
