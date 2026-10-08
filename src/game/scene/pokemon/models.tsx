@@ -2,12 +2,16 @@
 
 import type { ComponentType } from "react";
 import { Bulbasaur } from "./species/Bulbasaur";
+import { Caterpie } from "./species/Caterpie";
 import { Charmander } from "./species/Charmander";
 import { Jigglypuff } from "./species/Jigglypuff";
+import { Pidgey } from "./species/Pidgey";
 import { Pikachu } from "./species/Pikachu";
+import { Rattata } from "./species/Rattata";
 import { Snorlax } from "./species/Snorlax";
 import { Squirtle } from "./species/Squirtle";
 import { Voltorb } from "./species/Voltorb";
+import { Weedle } from "./species/Weedle";
 import type { ModelProps } from "./types";
 
 export type { ModelProps } from "./types";
@@ -23,6 +27,10 @@ export const POKEMON_3D: Record<number, ComponentType<ModelProps>> = {
   1: Bulbasaur,
   4: Charmander,
   7: Squirtle,
+  10: Caterpie,
+  13: Weedle,
+  16: Pidgey,
+  19: Rattata,
   25: Pikachu,
   39: Jigglypuff,
   100: Voltorb,

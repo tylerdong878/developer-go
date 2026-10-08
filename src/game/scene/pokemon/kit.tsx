@@ -8,10 +8,12 @@ import {
   ConeGeometry,
   ExtrudeGeometry,
   DataTexture,
+  Euler,
   LatheGeometry,
   MeshBasicMaterial,
   MeshToonMaterial,
   NearestFilter,
+  Object3D,
   RedFormat,
   Shape,
   SphereGeometry,
@@ -45,7 +47,8 @@ export function toon(color: string) {
   return m;
 }
 
-const outlineMaterial = new MeshBasicMaterial({ color: "#2a2230", side: BackSide });
+/** The dark outline, for shells built by hand (a fatter copy of a tube, drawn inside out). */
+export const outlineMaterial = new MeshBasicMaterial({ color: "#2a2230", side: BackSide });
 const outlines = new Map<string, MeshBasicMaterial>();
 const outlineIn = (color: string) => {
   let m = outlines.get(color);
@@ -206,4 +209,22 @@ export function cutout(outline: readonly (readonly [number, number])[], depth: n
   outline.forEach(([x, y], i) => (i ? s.lineTo(x, y) : s.moveTo(x, y)));
   s.closePath();
   return new ExtrudeGeometry(s, { depth, bevelEnabled: false }).translate(0, 0, -depth / 2);
+}
+
+/**
+ * A spot on a ball part (its center and radii) at a longitude (around from
+ * the front, toward +x) and a latitude (up), turned so +z points straight out
+ * of the surface and +x stays level, then rolled by `roll`. Where eyes, masks
+ * and markings go, so they sit on a curved head instead of floating off it.
+ */
+export function onBody(center: Xyz, radii: Xyz, lon: number, lat: number, lift = 0, roll = 0) {
+  const d = new Vector3(Math.cos(lat) * Math.sin(lon), Math.sin(lat), Math.cos(lat) * Math.cos(lon));
+  const p = new Vector3(d.x * radii[0], d.y * radii[1], d.z * radii[2]);
+  const n = new Vector3(p.x / radii[0] ** 2, p.y / radii[1] ** 2, p.z / radii[2] ** 2).normalize();
+  p.addScaledVector(n, lift).add(new Vector3(...center));
+  const o = new Object3D();
+  o.lookAt(n);
+  o.rotateZ(roll);
+  const e = new Euler().setFromQuaternion(o.quaternion);
+  return { at: [p.x, p.y, p.z] as Xyz, turn: [e.x, e.y, e.z] as Xyz };
 }
