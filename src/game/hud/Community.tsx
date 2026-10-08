@@ -123,7 +123,7 @@ export function CommunityPanel({ onClose }: { onClose: () => void }) {
                 <Sprite dex={s.dex} size={32} />
                 <span className="w-24 truncate text-sm font-semibold">{nameOf(s.dex)}</span>
                 <span className="h-2 flex-1 overflow-hidden rounded-full bg-ink/8">
-                  <span className="block h-full rounded-full bg-mystic-500" style={{ width: `${(s.count / top) * 100}%` }} />
+                  <span className="block h-full rounded-full bg-[#66ecb3]" style={{ width: `${(s.count / top) * 100}%` }} />
                 </span>
                 <span className="w-10 text-right text-sm font-semibold tabular-nums">{n(s.count)}</span>
               </li>

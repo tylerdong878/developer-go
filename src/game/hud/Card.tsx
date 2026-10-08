@@ -150,7 +150,7 @@ function spawnCard(s: Spawn, onAbout: () => void): View {
           <button
             type="button"
             onClick={onAbout}
-            className="rounded-full bg-mystic-500 px-5 py-2.5 font-display font-semibold text-white transition hover:brightness-110 active:scale-95"
+            className="go-pill rounded-full px-6 py-2.5 transition active:scale-95"
           >
             Wake it up
           </button>
@@ -222,7 +222,7 @@ function Links({ links }: { links: { label: string; href: string }[] }) {
           href={l.href}
           target="_blank"
           rel="noreferrer"
-          className="rounded-full bg-mystic-500 px-4 py-2 text-sm font-bold text-white transition hover:brightness-110 active:scale-95"
+          className="go-pill rounded-full px-5 py-2 text-sm transition active:scale-95"
         >
           {l.label}
         </a>

@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
-import { Fredoka, Nunito_Sans } from "next/font/google";
+import { Fredoka, Lato, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 
 const fredoka = Fredoka({
   variable: "--font-fredoka",
   subsets: ["latin"],
+});
+
+/** Pokémon GO's UI typeface, for every menu screen. */
+const lato = Lato({
+  variable: "--font-lato",
+  subsets: ["latin"],
+  weight: ["400", "700", "900"],
 });
 
 const nunitoSans = Nunito_Sans({
@@ -31,7 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       data-time="day"
       suppressHydrationWarning
-      className={`${fredoka.variable} ${nunitoSans.variable} h-full antialiased`}
+      className={`${fredoka.variable} ${lato.variable} ${nunitoSans.variable} h-full antialiased`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: timeOfDay }} />

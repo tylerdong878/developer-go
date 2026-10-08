@@ -94,7 +94,7 @@ export function SpinDisc({ slug, lured }: { slug: string; lured: boolean }) {
       ) : cooling ? (
         <p className="text-sm font-semibold text-ink-soft">Try again in a few minutes. This stop is refilling.</p>
       ) : (
-        <button type="button" onClick={spin} className="rounded-full bg-mystic-500 px-5 py-2 font-display font-semibold text-white transition hover:brightness-110 active:scale-95">
+        <button type="button" onClick={spin} className="go-pill rounded-full px-6 py-2.5 transition active:scale-95">
           Spin the disc
         </button>
       )}

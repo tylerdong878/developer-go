@@ -8,7 +8,6 @@ import { game } from "../state";
 import { goTo } from "../travel";
 import { goalId, wildStore } from "../wild";
 import { ObjectIcon } from "./icons";
-import { CloseButton } from "./Sheet";
 
 const TABS = [
   { id: "gym", label: "Gyms", hint: "Jobs", items: gyms },
@@ -104,23 +103,15 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
           role="dialog"
           aria-modal="true"
           aria-labelledby="nearby-title"
-          className="panel card-in fixed inset-x-0 bottom-0 z-40 flex max-h-[80dvh] flex-col rounded-t-3xl sm:inset-y-4 sm:right-4 sm:left-auto sm:max-h-none sm:w-[400px] sm:rounded-3xl"
+          className="go-sheet sheet-in fixed inset-0 z-40 flex flex-col sm:inset-y-4 sm:right-4 sm:left-auto sm:w-[430px] sm:rounded-[28px]"
         >
-          <div className="flex items-center justify-between px-6 pt-6 pb-3">
-            <h2 id="nearby-title" className="font-display text-2xl font-semibold">
+          <div className="px-6 pt-7 pb-3 text-center">
+            <h2 id="nearby-title" className="go-title text-[0.95rem]">
               Nearby
             </h2>
-            <CloseButton
-              ref={close}
-              label="Close Nearby"
-              onClick={() => {
-                setOpen(false);
-                button.current?.focus();
-              }}
-            />
           </div>
 
-          <div role="tablist" aria-label="What's nearby" className="flex gap-1.5 overflow-x-auto px-4 pb-3">
+          <div role="tablist" aria-label="What's nearby" className="flex justify-center gap-1 overflow-x-auto px-4 pb-3">
             {TABS.map((t) => (
               <button
                 key={t.id}
@@ -128,8 +119,8 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
                 role="tab"
                 aria-selected={tab === t.id}
                 onClick={() => setTab(t.id)}
-                className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
-                  tab === t.id ? "bg-mystic-500 text-white" : "bg-ink/6 text-ink-soft hover:bg-ink/12"
+                className={`go-title shrink-0 border-b-2 px-2.5 pt-1 pb-1.5 text-[0.7rem] transition ${
+                  tab === t.id ? "border-[#30555d] text-ink" : "border-transparent text-ink-soft hover:text-ink"
                 }`}
               >
                 {t.label}{" "}
@@ -137,9 +128,9 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
               </button>
             ))}
           </div>
-          <p className="px-5 pb-2 text-xs font-semibold tracking-wide text-ink-soft uppercase">{current.hint}</p>
+          <p className="go-title px-5 pb-2 text-center text-[0.62rem] text-ink-soft">{current.hint}</p>
 
-          <ul role="tabpanel" aria-label={current.label} className="flex-1 overflow-y-auto px-3 pb-4">
+          <ul role="tabpanel" aria-label={current.label} className="flex-1 overflow-y-auto px-3 pb-28">
             {tab === "spawn" && wildList.length ? (
               <>
                 <li className="px-2 pt-1 pb-1 text-xs font-bold tracking-wide text-ink-soft uppercase">Wild right now</li>
@@ -191,6 +182,22 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
               );
             })}
           </ul>
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bg-linear-to-t from-[#e9f8e6] via-[#e9f8e6]/80 to-transparent pt-8 pb-5">
+            <button
+              ref={close}
+              type="button"
+              aria-label="Close Nearby"
+              onClick={() => {
+                setOpen(false);
+                button.current?.focus();
+              }}
+              className="go-close pointer-events-auto grid size-14 place-items-center rounded-full transition active:scale-90"
+            >
+              <svg viewBox="0 0 16 16" className="size-[45%]" aria-hidden>
+                <path d="m3 3 10 10M13 3 3 13" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
         </div>
       ) : null}
     </>

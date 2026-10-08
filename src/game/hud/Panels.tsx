@@ -87,7 +87,7 @@ export function TrainerPanel({ onClose }: { onClose: () => void }) {
       <div className="mt-5 flex flex-wrap gap-2">
         <a
           href={`mailto:${trainer.email}`}
-          className="rounded-full bg-mystic-500 px-4 py-2 text-sm font-bold text-white transition hover:brightness-110"
+          className="go-pill rounded-full px-5 py-2 text-sm transition active:scale-95"
         >
           Email me
         </a>

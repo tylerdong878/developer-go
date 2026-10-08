@@ -49,7 +49,7 @@ function Detail({ c, onBack }: { c: Catch; onBack: () => void }) {
             releaseCatch(c.id);
             onBack();
           }}
-          className="rounded-full bg-mystic-500 px-5 py-2.5 font-display font-semibold text-white transition hover:brightness-110"
+          className="go-pill rounded-full px-6 py-2.5 transition active:scale-95"
         >
           Transfer
         </button>
@@ -80,7 +80,7 @@ export function PokemonPanel({ onClose }: { onClose: () => void }) {
                 aria-selected={by === id}
                 onClick={() => setBy(id)}
                 className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
-                  by === id ? "bg-mystic-500 text-white" : "bg-ink/6 text-ink-soft hover:bg-ink/12"
+                  by === id ? "go-chip-on" : "bg-ink/6 text-ink-soft hover:bg-ink/12"
                 }`}
               >
                 {label}
