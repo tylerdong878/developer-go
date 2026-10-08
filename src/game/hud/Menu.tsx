@@ -39,7 +39,7 @@ export function TrainerBadge({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-/** GO's Poké Ball menu button. While the menu's open it's the white × that closes it. */
+/** GO's Poké Ball menu button. While the menu's open it's the mint X that closes it. */
 export function MenuBall({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   return (
     <button
@@ -50,7 +50,7 @@ export function MenuBall({ open, onToggle }: { open: boolean; onToggle: () => vo
       className="grid size-16 place-items-center rounded-full drop-shadow-md transition hover:scale-105 active:scale-95"
     >
       {open ? (
-        <span className="panel grid size-14 place-items-center rounded-full text-mystic-500">
+        <span className="go-menu-button grid size-14 place-items-center rounded-full text-[#24828b]">
           <svg viewBox="0 0 16 16" className="size-5" aria-hidden>
             <path d="m3 3 10 10M13 3 3 13" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
           </svg>
@@ -69,112 +69,103 @@ export function MenuBall({ open, onToggle }: { open: boolean; onToggle: () => vo
   );
 }
 
-const DEX = (
-  <svg viewBox="0 0 40 40" width="34" height="34">
-    <rect x="7" y="4" width="26" height="32" rx="5" fill="#e3350d" />
-    <rect x="7" y="4" width="7" height="32" rx="3" fill="#b82a0a" />
-    <circle cx="23" cy="15" r="6" fill="#bfe9ff" stroke="#fff" strokeWidth="2.5" />
-    <rect x="17" y="26" width="12" height="3" rx="1.5" fill="#fff" opacity=".8" />
-  </svg>
-);
-const BAG = (
-  <svg viewBox="0 0 40 40" width="34" height="34">
-    <path d="M14 9a6 6 0 0 1 12 0v3h-3V9a3 3 0 0 0-6 0v3h-3Z" fill="#8a5a3b" />
-    <rect x="8" y="11" width="24" height="25" rx="7" fill="#e0a45a" />
-    <path d="M8 19c0-4 3-8 12-8s12 4 12 8v3H8Z" fill="#c9843c" />
-    <rect x="17" y="21" width="6" height="5" rx="1.5" fill="#f6c453" />
-  </svg>
-);
-const CARD = (
-  <svg viewBox="0 0 40 40" width="34" height="34">
-    <rect x="4" y="9" width="32" height="22" rx="4" fill="#0b84d6" />
-    <circle cx="13" cy="19" r="4.5" fill="#fff" />
-    <path d="M7.5 28c.8-3.4 3-5 5.5-5s4.7 1.6 5.5 5Z" fill="#fff" />
-    <rect x="21" y="15" width="11" height="2.6" rx="1.3" fill="#fff" />
-    <rect x="21" y="20" width="8" height="2.6" rx="1.3" fill="#bfe9ff" />
-  </svg>
-);
-const STAR = (
-  <svg viewBox="0 0 40 40" width="34" height="34">
-    <circle cx="20" cy="20" r="16" fill="#2fd3c6" />
-    <path d="m20 9 3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L20 25.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1Z" fill="#fff" />
-  </svg>
-);
-const MON = (
-  <svg viewBox="0 0 40 40" width="34" height="34">
-    <circle cx="20" cy="20" r="15" fill="#fff" stroke="#1c1c24" strokeWidth="2.5" />
-    <path d="M5 20a15 15 0 0 1 30 0Z" fill="#e3350d" stroke="#1c1c24" strokeWidth="2.5" />
-    <circle cx="20" cy="20" r="4.5" fill="#fff" stroke="#1c1c24" strokeWidth="2.5" />
-  </svg>
-);
+/** GO's menu icons: one-color teal line drawings. */
+const line = { fill: "none", stroke: "currentColor", strokeWidth: 2.4, strokeLinecap: "round", strokeLinejoin: "round" } as const;
+const ICON = {
+  pokedex: (
+    <svg viewBox="0 0 40 40" className="size-[46%]" aria-hidden>
+      <rect x="9" y="5" width="22" height="30" rx="4" {...line} />
+      <circle cx="20" cy="15" r="5" {...line} />
+      <path d="M14 26h12M14 30h7" {...line} />
+    </svg>
+  ),
+  community: (
+    <svg viewBox="0 0 40 40" className="size-[48%]" aria-hidden>
+      <circle cx="14" cy="15" r="5" {...line} />
+      <path d="M5 32c1-6 4.6-9 9-9s8 3 9 9" {...line} />
+      <circle cx="27" cy="13" r="4.5" {...line} />
+      <path d="M24.5 22.4c1-.3 1.6-.4 2.5-.4 4.4 0 8 3 9 9" {...line} />
+    </svg>
+  ),
+  about: (
+    <svg viewBox="0 0 40 40" className="size-[50%]" aria-hidden>
+      <rect x="4" y="9" width="32" height="23" rx="4" {...line} />
+      <circle cx="14" cy="18" r="4" {...line} />
+      <path d="M8.5 27.5c1-3 3-4.5 5.5-4.5s4.5 1.5 5.5 4.5M23 16h8M23 21h6" {...line} />
+    </svg>
+  ),
+  pokemon: (
+    <svg viewBox="0 0 40 40" className="size-[54%]" aria-hidden>
+      {/* a little round head with two tall pointed ears */}
+      <path d="M11 17 8 4l9 9M29 17l3-13-9 9" {...line} />
+      <circle cx="20" cy="23" r="11" {...line} />
+      <circle cx="15.5" cy="21.5" r="1.4" fill="currentColor" />
+      <circle cx="24.5" cy="21.5" r="1.4" fill="currentColor" />
+      <path d="M17.5 27c1.5 1.3 3.5 1.3 5 0" {...line} />
+    </svg>
+  ),
+  bag: (
+    <svg viewBox="0 0 40 40" className="size-[50%]" aria-hidden>
+      <path d="M14 11V9a6 6 0 0 1 12 0v2" {...line} />
+      <rect x="7" y="11" width="26" height="24" rx="7" {...line} />
+      <path d="M7 20h26M17 20v4h6v-4" {...line} />
+    </svg>
+  ),
+} as const;
 
-const PEOPLE = (
-  <svg viewBox="0 0 40 40" width="34" height="34">
-    <circle cx="14" cy="15" r="5" fill="#1ab6e8" />
-    <path d="M5 30c.8-5 4.4-8 9-8s8.2 3 9 8Z" fill="#1ab6e8" />
-    <circle cx="26" cy="13" r="5.5" fill="#0b84d6" />
-    <path d="M16 30c.9-5.5 4.8-9 10-9s9.1 3.5 10 9Z" fill="#0b84d6" />
-  </svg>
-);
-
-const GEAR = (
-  <svg viewBox="0 0 40 40" width="34" height="34">
-    <circle cx="20" cy="20" r="16" fill="#9aa5b4" />
-    <path d="M20 10.5 22 13l3.2-.6.9 3.1 3 1.3-.9 3.2 1.8 2.7-2.6 1.9.2 3.3-3.3.3-1.5 2.9-2.8-1.6-2.8 1.6-1.5-2.9-3.3-.3.2-3.3-2.6-1.9 1.8-2.7-.9-3.2 3-1.3.9-3.1 3.2.6Z" fill="#fff" />
-    <circle cx="20" cy="21" r="3.6" fill="#9aa5b4" />
-  </svg>
-);
-
-type Item = { id: Screen; label: string; icon: ReactNode };
-
-/** The small row along the top, and the two big ones beside the ball, like GO. */
-const TOP: Item[] = [
-  { id: "pokedex", label: "Pokédex", icon: DEX },
-  ...(communityOn ? [{ id: "community" as const, label: "Community", icon: PEOPLE }] : []),
-  { id: "profile", label: "Profile", icon: STAR },
-  { id: "about", label: "About Tyler", icon: CARD },
-  { id: "settings", label: "Settings", icon: GEAR },
-];
-const BIG: [Item, Item] = [
-  { id: "pokemon", label: "Pokémon", icon: MON },
-  { id: "bag", label: "Items", icon: BAG },
-];
-
-function MenuButton({ item, big = false, delay, onPick }: { item: Item; big?: boolean; delay: number; onPick: (s: Screen) => void }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onPick(item.id)}
-      className={`menu-pop group flex flex-col items-center gap-1.5 ${big ? "w-24" : "w-[72px]"}`}
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <span
-        aria-hidden
-        className={`panel grid place-items-center rounded-full transition group-hover:scale-105 group-active:scale-95 ${big ? "size-[76px] [&_svg]:size-11" : "size-14"}`}
-      >
-        {item.icon}
-      </span>
-      <span className={`text-center font-display font-semibold text-white ${big ? "text-base" : "text-sm"}`}>{item.label}</span>
-    </button>
-  );
-}
+type Item = { id: Screen; label: string; icon: ReactNode; x: number; y: number };
 
 /**
- * GO's main menu: a row of small buttons up top, and the two you use most,
- * Pokémon and Items, big on either side of the ball. They pop in one by one.
+ * GO's main menu layout (notes/research/pokemon-go-ui.md): five buttons in
+ * an X, labels above them. Pokédex and Community where GO has Pokédex and
+ * Battle, About Tyler in the middle where GO keeps its Shop, and Pokémon and
+ * Items along the bottom. Positions are shares of the screen.
+ */
+const QUINCUNX: Item[] = [
+  { id: "pokedex", label: "Pokédex", icon: ICON.pokedex, x: 22, y: 59 },
+  ...(communityOn ? [{ id: "community" as const, label: "Community", icon: ICON.community, x: 78, y: 59 }] : []),
+  { id: "about", label: "About Tyler", icon: ICON.about, x: 50, y: 72 },
+  { id: "pokemon", label: "Pokémon", icon: ICON.pokemon, x: 22, y: 85 },
+  { id: "bag", label: "Items", icon: ICON.bag, x: 78, y: 85 },
+];
+
+/** The text list in the top right, like GO's Settings / Tips / News. */
+const CORNER: { id: Screen; label: string }[] = [
+  { id: "settings", label: "Settings" },
+  { id: "profile", label: "Profile" },
+];
+
+/**
+ * GO's main menu: a full mint screen (a phone-width column on bigger
+ * screens) with the five big round buttons in an X and a short text list
+ * in the corner. The Poké Ball below turns into the X that closes it.
  */
 export function MainMenu({ onPick }: { onPick: (screen: Screen) => void }) {
   return (
-    <nav aria-label="Main menu" className="flex flex-col items-center gap-8 px-4 pb-3">
-      <div className="flex flex-wrap justify-center gap-x-4 gap-y-4">
-        {TOP.map((item, i) => (
-          <MenuButton key={item.id} item={item} delay={60 + i * 35} onPick={onPick} />
+    <nav aria-label="Main menu" className="go-menu sheet-in relative h-full w-full sm:max-w-[430px] sm:rounded-[28px]">
+      <ul className="absolute top-[7%] right-[7%] space-y-4 text-right">
+        {CORNER.map((c) => (
+          <li key={c.id}>
+            <button type="button" onClick={() => onPick(c.id)} className="go-title text-[0.8rem] text-[#24828b] transition hover:brightness-75">
+              {c.label}
+            </button>
+          </li>
         ))}
-      </div>
-      <div className="flex items-end gap-24">
-        <MenuButton item={BIG[0]} big delay={0} onPick={onPick} />
-        <MenuButton item={BIG[1]} big delay={30} onPick={onPick} />
-      </div>
+      </ul>
+      {QUINCUNX.map((item, i) => (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => onPick(item.id)}
+          className="menu-pop group absolute flex w-[30%] -translate-x-1/2 -translate-y-[62%] flex-col items-center gap-2"
+          style={{ left: `${item.x}%`, top: `${item.y}%`, animationDelay: `${i * 40}ms` }}
+        >
+          <span className="go-title text-[0.72rem] whitespace-nowrap text-[#24828b]">{item.label}</span>
+          <span aria-hidden className="go-menu-button grid aspect-square w-[54%] place-items-center rounded-full text-[#24828b] transition group-hover:scale-105 group-active:scale-95">
+            {item.icon}
+          </span>
+        </button>
+      ))}
     </nav>
   );
 }

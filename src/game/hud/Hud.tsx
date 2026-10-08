@@ -197,11 +197,9 @@ export function Hud() {
   return (
     <div className="pointer-events-none absolute inset-0 z-20">
       {menu ? (
-        <div className="scrim-in pointer-events-auto absolute inset-0 flex flex-col justify-end bg-linear-to-t from-mystic-900/70 via-mystic-900/30 to-transparent">
-          <button type="button" aria-label="Close menu" tabIndex={-1} className="absolute inset-0" onClick={() => setMenu(false)} />
-          <div className="relative">
-            <MainMenu onPick={pick} />
-          </div>
+        <div className="pointer-events-auto absolute inset-0 flex justify-center sm:p-4">
+          <button type="button" aria-label="Close menu" tabIndex={-1} className="scrim-in absolute inset-0 bg-[#0a2a4a]/30" onClick={() => setMenu(false)} />
+          <MainMenu onPick={pick} />
         </div>
       ) : null}
       <div className="pointer-events-none fixed inset-x-0 top-4 z-[60] flex flex-col items-center gap-2 px-4">
