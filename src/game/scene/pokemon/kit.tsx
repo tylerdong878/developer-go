@@ -5,12 +5,16 @@ import {
   BackSide,
   type BufferGeometry,
   CatmullRomCurve3,
+  ConeGeometry,
+  ExtrudeGeometry,
   DataTexture,
   LatheGeometry,
   MeshBasicMaterial,
   MeshToonMaterial,
   NearestFilter,
   RedFormat,
+  Shape,
+  SphereGeometry,
   Vector2,
   Vector3,
 } from "three";
@@ -188,4 +192,18 @@ export function ghost(color: string, opacity = 0.55) {
     ghosts.set(key, m);
   }
   return m;
+}
+
+/** Shared unit shapes every species is built from. */
+export const ball = new SphereGeometry(1, 28, 20);
+export const cone = new ConeGeometry(1, 1, 18);
+/** The top half of a ball (Voltorb's halves, domes). */
+export const half = new SphereGeometry(1, 28, 14, 0, Math.PI * 2, 0, Math.PI / 2);
+
+/** A flat shape from an outline, extruded to a thickness and centered on it (tails, fins, leaves). */
+export function cutout(outline: readonly (readonly [number, number])[], depth: number) {
+  const s = new Shape();
+  outline.forEach(([x, y], i) => (i ? s.lineTo(x, y) : s.moveTo(x, y)));
+  s.closePath();
+  return new ExtrudeGeometry(s, { depth, bevelEnabled: false }).translate(0, 0, -depth / 2);
 }
