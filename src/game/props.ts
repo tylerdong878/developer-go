@@ -64,3 +64,31 @@ export const benches: Prop[] = (() => {
   }
   return out;
 })();
+
+/**
+ * Signposts in the Let's Go style (notes/research/world-2.md), with our own
+ * words in the games' two-line format: the town sign at home (a wide board
+ * on two posts under an arched crest), route signs at the four roads out
+ * (a white plate with a blue header on one post), and Trainer Tips.
+ * `turn` is the way the sign faces (0 is +z).
+ */
+export type Signpost = { kind: "town" | "route" | "tips"; at: Vec2; turn: number; title: string; text: string };
+
+export const signposts: Signpost[] = [
+  { kind: "town", at: [0, -8.6], turn: 0, title: "DEVELOPER TOWN", text: "Where every gym is a job" },
+  { kind: "route", at: [4.6, -21], turn: 0, title: "ROUTE 1", text: "HOME - DOWNTOWN" },
+  { kind: "route", at: [22, 4.4], turn: -Math.PI / 2, title: "ROUTE 2", text: "HOME - HARBOR" },
+  { kind: "route", at: [-22, -4.4], turn: Math.PI / 2, title: "ROUTE 3", text: "HOME - PARK" },
+  { kind: "route", at: [-4.4, 20], turn: Math.PI, title: "ROUTE 4", text: "HOME - CAMPUS" },
+  { kind: "tips", at: [6.5, 7.5], turn: 0, title: "TRAINER TIPS", text: "Walk up to anything and press E, or tap the prompt, to open it." },
+  { kind: "tips", at: [-44.5, 4.5], turn: Math.PI / 2, title: "TRAINER TIPS", text: "Sparkly Pokémon know facts about Tyler. Catch one to find out!" },
+  { kind: "tips", at: [44.5, -4.5], turn: -Math.PI / 2, title: "TRAINER TIPS", text: "PokéStops are Tyler's projects. Spin one for items!" },
+];
+
+/** Kanto's white post-and-rail fences, round the yards of the two Pallet houses at home. */
+export const fences: [Vec2, Vec2][] = [
+  [[-15.5, 18.6], [-15.5, 30.8]],
+  [[-15.5, 30.8], [-5, 30.8]],
+  [[15.5, 18.6], [15.5, 30.8]],
+  [[15.5, 30.8], [5, 30.8]],
+];
