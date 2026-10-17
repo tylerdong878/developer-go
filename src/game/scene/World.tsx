@@ -7,7 +7,8 @@ import { areas, roads, type AreaKind } from "../base";
 import { circle } from "../geometry";
 import type { Palette } from "../palette";
 import { zebraCrossings } from "../streets";
-import { outlineGeometry, polygonGeometry, quadsGeometry, ribbonGeometry } from "./ground";
+import { polygonGeometry, quadsGeometry, ribbonGeometry } from "./ground";
+import { Water } from "./Water";
 import { Sky, skyLook } from "./Sky";
 import { Sun } from "./Sun";
 import { Flora } from "./Flora";
@@ -35,7 +36,7 @@ float vnoise(vec2 p) {
 float fbm3(vec2 p) { float s = 0.0, a = 0.5; for (int k = 0; k < 3; k++) { s += a * vnoise(p); p = p * 2.03 + 17.1; a *= 0.5; } return s / 0.875; }`;
 
 /** What a ground layer is, for its pattern (notes/research/gfx-nature-ground.md 2.4, 7.x). */
-type Surface = "area" | "road" | "curb" | "sidewalk" | "path" | "planks" | "radial" | "squares";
+type Surface = "area" | "road" | "curb" | "sidewalk" | "path" | "planks" | "deck" | "radial" | "squares";
 
 /** Patterns drawn in the shader, no textures: each one a brightness multiplier, so day and night colors still apply. */
 const PATTERNS = /* glsl */ `
@@ -54,10 +55,18 @@ const PATTERNS = /* glsl */ `
     diffuseColor.rgb *= mix(0.93, 1.0, smoothstep(0.0, 0.35, e)) * mix(1.0, 1.07, smoothstep(0.4, 0.75, e));
     diffuseColor.a *= 1.0 - smoothstep(0.72, 1.0, e); }
 #endif
-#ifdef GROUND_PLANKS
-  { float row = floor(vAlong / 0.3); float gap = smoothstep(0.82, 0.9, fract(vAlong / 0.3));
-    float board = floor((vAcross + 1.0) * 1.4 + nHash(vec2(row, 3.0)) * 2.0);
-    diffuseColor.rgb *= (0.93 + 0.12 * nHash(vec2(row, board))) * (1.0 - gap * 0.32); }
+#if defined( GROUND_PLANKS ) || defined( GROUND_DECK )
+  // planks across the walk (along the deck's x on the pier's end), the gaps fading out with distance so they never shimmer
+  {
+  #ifdef GROUND_PLANKS
+    float u = vAlong / 0.45; float v = (vAcross + 1.0) * 1.4;
+  #else
+    float u = vGround.x / 0.45; float v = vGround.y / 2.4;
+  #endif
+    float row = floor(u); float aa = fwidth(u);
+    float gap = smoothstep(0.86 - aa, 0.9 + aa, fract(u)) * (1.0 - smoothstep(0.25, 0.5, aa));
+    float board = floor(v + nHash(vec2(row, 3.0)) * 2.0);
+    diffuseColor.rgb *= (0.93 + 0.12 * nHash(vec2(row, board))) * (1.0 - gap * 0.3); }
 #endif
 #ifdef GROUND_RADIAL
   // radial pavers round the roundabout's island, odd rings offset half a tile
@@ -88,7 +97,7 @@ const PATTERNS = /* glsl */ `
  */
 function groundMaterial(mottle: number, surface: Surface) {
   const material = new MeshBasicMaterial({ side: DoubleSide, depthTest: false, depthWrite: false, alphaHash: surface === "path" });
-  const ribbon = surface !== "area" && surface !== "radial" && surface !== "squares";
+  const ribbon = surface !== "area" && surface !== "radial" && surface !== "squares" && surface !== "deck";
   material.defines = { [`GROUND_${surface.toUpperCase()}`]: "", ...(ribbon ? { GROUND_RIBBON: "" } : {}) };
   material.customProgramCacheKey = () => `ground-${surface}`;
   const uMottle = { value: mottle };
@@ -164,7 +173,6 @@ const streetLayers = () => [
  * ground draws over it.
  */
 const LAYERS: Layer[] = (() => {
-  const water = areas.filter((a) => a.kind === "water").map((a) => a.points);
   return [
     layer("land", polygonGeometry([circle(0, 0, 700, 64)]), (p) => p.land),
     areaLayer("park"),
@@ -172,15 +180,13 @@ const LAYERS: Layer[] = (() => {
     areaLayer("lawn"),
     // radial pavers round the roundabout's island
     layer("apron", new RingGeometry(10.6, 13.4, 96, 1).rotateX(-Math.PI / 2), (p) => p.apron, "radial"),
-    areaLayer("water"),
-    layer("shore", outlineGeometry(water, 1.4), (p) => p.shore),
     layer("path", ribbonGeometry(roads.filter((r) => r.kind === "path"), 0.45), (p) => p.roads.path[0], "path"),
     ...streetLayers(),
     // the plaza and the pier deck sit on top of the road ends that run into them
     areaLayer("plaza", "squares"),
     layer("boardwalk-edge", ribbonGeometry(roads.filter((r) => r.kind === "boardwalk"), 0.3), (p) => p.roads.boardwalk[1], "curb"),
     layer("boardwalk", ribbonGeometry(roads.filter((r) => r.kind === "boardwalk")), (p) => p.roads.boardwalk[0], "planks"),
-    areaLayer("deck"),
+    areaLayer("deck", "deck"),
   ];
 })();
 
@@ -232,6 +238,8 @@ export function World({ palette, night, shadowMap, light }: { palette: Palette; 
       {LAYERS.map((l, i) => (
         <mesh key={l.key} geometry={l.geometry} material={l.material} renderOrder={-50 + i} />
       ))}
+      {/* the water goes in the stack just under the paths and roads, which run over its edges */}
+      <Water renderOrder={-50 + LAYERS.findIndex((l) => l.key === "path") - 0.5} />
       {/* the ground layers write no depth, so this invisible floor does: nothing below ground shows through */}
       <mesh geometry={floor} renderOrder={-10}>
         <meshBasicMaterial colorWrite={false} side={DoubleSide} />

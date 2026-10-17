@@ -25,6 +25,7 @@ import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { buildings } from "../base";
 import { type Building, type ModelId, MODELS } from "../lots";
 import { PokeMart, PokemonCenter } from "./civic/Civic";
+import { skyLook } from "./Sky";
 import { fade, TownTracker, town } from "./fade";
 
 /**
@@ -46,7 +47,7 @@ function townMaterial({ map, glass = false }: { map?: Texture; glass?: boolean }
   // The glass branch is baked into the shader source, so each kind needs its own program.
   material.customProgramCacheKey = () => (glass ? "town-glass" : map ? "town-map" : "town");
   material.onBeforeCompile = (shader) => {
-    shader.uniforms.uNight = town.uNight;
+    Object.assign(shader.uniforms, { uNight: town.uNight, uTop: skyLook.uTop, uHaze: skyLook.uHaze, uFog: skyLook.uFog, uSunDir: skyLook.uSunDir });
     shader.vertexShader = shader.vertexShader
       .replace("#include <common>", "#include <common>\nattribute float aFade;\nvarying float vFade;\nvarying vec3 vTown;")
       .replace(
@@ -60,7 +61,28 @@ function townMaterial({ map, glass = false }: { map?: Texture; glass?: boolean }
 uniform float uNight;
 varying float vFade;
 varying vec3 vTown;
-float townHash(vec3 p) { return fract(sin(dot(floor(p * 0.4), vec3(127.1, 311.7, 74.7))) * 43758.5453); }`,
+float townHash(vec3 p) { return fract(sin(dot(floor(p * 0.4), vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+uniform vec3 uTop, uHaze, uFog, uSunDir;
+float paneHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+// Glass that reflects the sky the way it reads from GO's high camera (notes/research/gfx-reflections-water.md 3.2):
+// the reflection is tipped up toward the sky, each pane a touch different, with a sheen and the odd sun glint.
+vec3 glassShade(vec3 P, vec3 N, vec3 tint, vec3 inside) {
+  vec3 V = normalize(cameraPosition - P);
+  vec3 T = normalize(vec3(-N.z, 0.0, N.x) + 1e-5);
+  vec2 pane = floor(vec2(dot(P, T) / 1.6, P.y / 2.0));
+  float ph = paneHash(pane);
+  vec3 Np = normalize(N + T * (ph - 0.5) * 0.14 + vec3(0.0, (fract(ph * 7.7) - 0.5) * 0.06, 0.0));
+  vec3 R = reflect(-V, Np);
+  R.y = abs(R.y) * 0.8 + 0.2;
+  R = normalize(R);
+  vec3 refl = mix(uHaze, uTop, pow(clamp(R.y * 1.8, 0.0, 1.0), 0.7)) * mix(vec3(1.0), tint * 1.6, 0.3);
+  float sheen = smoothstep(0.93, 0.98, sin(dot(R, vec3(4.0, 1.7, 4.0)) * 2.0 + ph) * 0.5 + 0.5);
+  refl += sheen * 0.3 * (1.0 - uNight);
+  refl += vec3(1.0, 0.96, 0.85) * step(0.4, pow(max(dot(R, uSunDir), 0.0), 220.0)) * (1.0 - uNight);
+  float ndv = clamp(dot(N, V), 0.0, 1.0);
+  float F = mix(0.45, 1.0, pow(1.0 - ndv, 2.0)) * (1.0 - 0.8 * uNight);
+  return mix(inside, refl, F);
+}`,
       )
       .replace("#include <color_fragment>", "#include <color_fragment>\ndiffuseColor.a *= vFade;")
       .replace(
@@ -69,8 +91,13 @@ float townHash(vec3 p) { return fract(sin(dot(floor(p * 0.4), vec3(127.1, 311.7,
 {
   ${glass ? "float isGlass = 1.0;" : map ? "vec3 c = diffuseColor.rgb; float isGlass = step(0.5, c.b) * step(0.1, c.b - c.r);" : "float isGlass = 0.0;"}
   float lit = step(0.35, townHash(vTown));
-  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.16, 0.2, 0.32), uNight * isGlass);
-  totalEmissiveRadiance += uNight * isGlass * lit * vec3(1.0, 0.78, 0.45);
+  if (isGlass > 0.5) {
+    vec3 Nw = inverseTransformDirection(normal, viewMatrix);
+    vec3 tint = diffuseColor.rgb;
+    vec3 inside = mix(tint * 0.25, vec3(1.0, 0.78, 0.45) * lit, uNight);
+    totalEmissiveRadiance += glassShade(vTown, Nw, tint, inside);
+    diffuseColor.rgb *= 0.08;
+  }
 }`,
       );
   };

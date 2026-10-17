@@ -5,12 +5,14 @@ import { useLayoutEffect, useMemo, useRef } from "react";
 import {
   AdditiveBlending,
   BoxGeometry,
+  CanvasTexture,
   CircleGeometry,
   CylinderGeometry,
   type InstancedMesh,
   MeshBasicMaterial,
   MeshLambertMaterial,
   Object3D,
+  SRGBColorSpace,
 } from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { benches, lamps, type Prop } from "../props";
@@ -20,6 +22,23 @@ const POLE_H = 3.7;
 /** The lamp glass and the light pools, shared, so the time of day can turn them all up at once. */
 const lampGlass = new MeshLambertMaterial({ color: "#a5c9da", emissive: "#fff0c0", emissiveIntensity: 0.05 });
 const lampPool = new MeshBasicMaterial({ color: "#ffbf66", transparent: true, opacity: 0, depthWrite: false, blending: AdditiveBlending });
+
+/** A soft radial falloff for the light pools. */
+function poolTexture() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const g = c.getContext("2d")!;
+  const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grad.addColorStop(0, "rgba(255,255,255,1)");
+  grad.addColorStop(0.35, "rgba(255,255,255,0.62)");
+  grad.addColorStop(0.7, "rgba(255,255,255,0.2)");
+  grad.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 128, 128);
+  const t = new CanvasTexture(c);
+  t.colorSpace = SRGBColorSpace;
+  return t;
+}
 
 function place(m: InstancedMesh | null, props: Prop[]) {
   if (!m) return;
@@ -61,7 +80,7 @@ export function Props({ night, shadows }: { night: boolean; shadows: boolean }) 
       ...[-1, 1].flatMap((x) => [-1, 1].map((z) => new BoxGeometry(0.05, 0.5, 0.05).translate(x * 0.2, POLE_H + 0.25, z * 0.2))),
     ]);
     const head = new BoxGeometry(0.38, 0.46, 0.38).translate(0, POLE_H + 0.25, 0);
-    const pool = new CircleGeometry(2.8, 24).rotateX(-Math.PI / 2).translate(0, 0.03, 0);
+    const pool = new CircleGeometry(3.4, 32).rotateX(-Math.PI / 2).translate(0, 0.03, 0);
     const seat = mergeGeometries([
       new BoxGeometry(1.7, 0.1, 0.5).translate(0, 0.48, 0),
       new BoxGeometry(1.7, 0.42, 0.08).translate(0, 0.82, -0.24),
@@ -74,6 +93,11 @@ export function Props({ night, shadows }: { night: boolean; shadows: boolean }) 
   }, []);
 
   useLayoutEffect(() => {
+    // each pool falls off softly from under the lamp, warm in the middle, instead of a hard disc
+    if (!lampPool.map) {
+      lampPool.map = poolTexture();
+      lampPool.needsUpdate = true;
+    }
     for (const m of [poles.current, heads.current, pools.current]) place(m, lamps);
     for (const m of [wood.current, legs.current]) place(m, benches);
   }, []);
@@ -83,7 +107,7 @@ export function Props({ night, shadows }: { night: boolean; shadows: boolean }) 
   useFrame(() => {
     glow.current += ((night ? 1 : 0) - glow.current) * 0.06;
     lampGlass.emissiveIntensity = 0.05 + glow.current * 1.6;
-    lampPool.opacity = glow.current * 0.32;
+    lampPool.opacity = glow.current * 0.55;
     lampPool.visible = glow.current > 0.02;
   });
 
