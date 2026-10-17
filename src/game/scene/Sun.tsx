@@ -116,13 +116,20 @@ function ShadowCatcher() {
   );
 }
 
-/** Makes every solid mesh inside cast a shadow (not the see-through blob shadows and glows). */
+/**
+ * Makes every solid mesh inside cast a shadow (not the see-through blob
+ * shadows and glows, and not anything under a group marked `noShadow`, like
+ * Pokémon, which GO grounds with a soft blob instead).
+ */
 export function CastShadows({ children }: { children: React.ReactNode }) {
   const group = useRef<Group>(null);
   useLayoutEffect(() => {
-    group.current?.traverse((o) => {
+    const mark = (o: Object3D) => {
+      if (o.userData.noShadow) return;
       if ("isMesh" in o && o.isMesh && !((o as unknown as { material: Material }).material.transparent)) o.castShadow = true;
-    });
+      o.children.forEach(mark);
+    };
+    if (group.current) mark(group.current);
   });
   return <group ref={group}>{children}</group>;
 }

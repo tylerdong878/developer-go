@@ -33,8 +33,8 @@ export function FoeView({ dex, name, className = "" }: { dex: number; name: stri
   return (
     <div role="img" aria-label={name} className={className}>
       <Canvas flat dpr={[1, 2]} gl={{ alpha: true, antialias: true }} camera={{ position: [0, 0.62, 2.7], fov: 30 }} onCreated={({ camera }) => camera.lookAt(0, 0.48, 0)}>
-        <hemisphereLight args={["#ffffff", "#9fc98a", 1.7]} />
-        <directionalLight position={[2, 4, 3]} intensity={1.5} />
+        <hemisphereLight args={["#dfe7fb", "#cfe3b4", 1.35]} />
+        <directionalLight position={[-1.5, 3, 2.5]} intensity={1.15} />
         <Turning dex={dex} />
       </Canvas>
     </div>

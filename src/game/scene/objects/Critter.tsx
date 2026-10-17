@@ -124,7 +124,7 @@ export function Critter({
         </group>
       )}
       {Model ? (
-        <group ref={model} scale={size}>
+        <group ref={model} scale={size} userData={{ noShadow: true }}>
           <Model asleep={asleep} seed={seed} />
         </group>
       ) : art ? (

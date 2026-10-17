@@ -5,16 +5,14 @@ import {
   BackSide,
   type BufferGeometry,
   CatmullRomCurve3,
+  Color,
   ConeGeometry,
   ExtrudeGeometry,
-  DataTexture,
   Euler,
   LatheGeometry,
   MeshBasicMaterial,
   MeshToonMaterial,
-  NearestFilter,
   Object3D,
-  RedFormat,
   Shape,
   SphereGeometry,
   Vector2,
@@ -22,33 +20,102 @@ import {
 } from "three";
 
 /**
- * The shared toolkit for Pokémon built in code: GO-style toon shading (three
- * soft steps of light), a dark outline drawn as an inverted hull, and glossy
+ * The shared toolkit for Pokémon built in code: GO's own shading, and glossy
  * cartoon eyes. Every model is made of these, so they all match.
+ *
+ * GO's Pokémon (notes/research/gfx-characters.md, from its material files)
+ * have no outlines and no hard cel bands: a soft ramp that never gets darker
+ * than about half, a warm rim on the lit side, a faint sheen facing you, a
+ * cool rim on the shadow side, shadows that get richer instead of grayer,
+ * and a little darkening at the feet. It's MeshToonMaterial with its lighting
+ * swapped, so fog and lights still work, and every species shares one program.
  */
 
-/** Three bands of light, crisp, like GO's soft cel shading. */
-const steps = (() => {
-  const t = new DataTexture(new Uint8Array([110, 190, 255]), 3, 1, RedFormat);
-  t.minFilter = t.magFilter = NearestFilter;
-  t.generateMipmaps = false;
-  t.needsUpdate = true;
-  return t;
-})();
+/** Knobs shared by every Pokémon material, so time of day or the catch screen can retune them all at once. */
+export const goLight = {
+  goRimColor: { value: new Color("#fff4d8") },
+  goRimStrength: { value: 0.35 },
+  goBackColor: { value: new Color("#9fb6ff") },
+  goBackStrength: { value: 0.22 },
+  goSheen: { value: 0.1 },
+  goFloor: { value: 0.62 },
+  goShadowSat: { value: 0.35 },
+  goGroundAO: { value: 0.22 },
+  goExposure: { value: 0.86 },
+};
+
+const GO_LIGHTS = /* glsl */ `
+varying vec3 vViewPosition;
+varying float vGoY;
+uniform vec3 goRimColor; uniform float goRimStrength;
+uniform vec3 goBackColor; uniform float goBackStrength;
+uniform float goSheen; uniform float goFloor;
+uniform float goShadowSat; uniform float goGroundAO; uniform float goExposure;
+
+struct ToonMaterial { vec3 diffuseColor; };
+
+void RE_Direct_Toon( const in IncidentLight directLight, const in vec3 geometryPosition,
+    const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal,
+    const in ToonMaterial material, inout ReflectedLight reflectedLight ) {
+  float t = dot( geometryNormal, directLight.direction ) * 0.5 + 0.5;
+  float v = saturate( dot( geometryNormal, geometryViewDir ) );
+  float g = mix( goFloor, 1.0, smoothstep( 0.0, 0.68, t ) );
+  float rim = pow( 1.0 - v, 1.8 ) * pow( t, 1.8 );
+  float sheen = goSheen * pow( smoothstep( 0.4, 1.0, v ), 1.2 ) * pow( smoothstep( 0.4, 1.0, t ), 1.5 );
+  float back = pow( 1.0 - v, 2.0 ) * ( 1.0 - smoothstep( 0.0, 0.45, t ) );
+  // the town's lights are in "1 = show the albedo" units (see look.ts), so no 1 / PI here
+  vec3 light = directLight.color;
+  vec3 albedo = material.diffuseColor;
+  reflectedLight.directDiffuse += light * (
+      albedo * pow( g, 2.2 )
+    + goRimColor * ( rim * goRimStrength ) * ( 0.4 + 0.6 * albedo )
+    + vec3( sheen )
+    + goBackColor * ( back * goBackStrength ) * ( 0.3 + 0.7 * albedo ) );
+}
+
+void RE_IndirectDiffuse_Toon( const in vec3 irradiance, const in vec3 geometryPosition,
+    const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal,
+    const in ToonMaterial material, inout ReflectedLight reflectedLight ) {
+  reflectedLight.indirectDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );
+}
+#define RE_Direct RE_Direct_Toon
+#define RE_IndirectDiffuse RE_IndirectDiffuse_Toon`;
+
+const GO_FINISH = /* glsl */ `
+outgoingLight *= goExposure;
+float goLum = dot( outgoingLight, vec3( 0.2126, 0.7152, 0.0722 ) );
+float goBase = max( dot( diffuseColor.rgb, vec3( 0.2126, 0.7152, 0.0722 ) ), 1e-3 );
+float goShade = saturate( goLum / goBase );
+outgoingLight = max( mix( vec3( goLum ), outgoingLight, 1.0 + goShadowSat * ( 1.0 - goShade ) ), 0.0 );
+outgoingLight *= mix( 1.0 - goGroundAO, 1.0, smoothstep( 0.0, 0.3, vGoY ) );`;
 
 const toons = new Map<string, MeshToonMaterial>();
-/** One toon material per color, shared across every Pokémon. */
+/** GO's Pokémon material in one color, shared across every Pokémon. */
 export function toon(color: string) {
   let m = toons.get(color);
-  if (!m) {
-    m = new MeshToonMaterial({ color, gradientMap: steps });
-    toons.set(color, m);
-  }
+  if (m) return m;
+  m = new MeshToonMaterial({ color });
+  m.onBeforeCompile = (s) => {
+    Object.assign(s.uniforms, goLight);
+    s.vertexShader = s.vertexShader
+      .replace("#include <common>", "#include <common>\nvarying float vGoY;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvGoY = (modelMatrix * vec4(position, 1.0)).y;");
+    s.fragmentShader = s.fragmentShader
+      .replace("#include <lights_toon_pars_fragment>", GO_LIGHTS)
+      .replace("#include <opaque_fragment>", `${GO_FINISH}\n#include <opaque_fragment>`);
+  };
+  m.customProgramCacheKey = () => "go-pokemon";
+  toons.set(color, m);
   return m;
 }
 
-/** The dark outline, for shells built by hand (a fatter copy of a tube, drawn inside out). */
-export const outlineMaterial = new MeshBasicMaterial({ color: "#2a2230", side: BackSide });
+/**
+ * The dark outline, for shells built by hand. GO draws no outlines, so it's
+ * off: the shells stay in the scene graph but never draw.
+ */
+export const outlineMaterial = new MeshBasicMaterial({ color: "#2a2230", side: BackSide, visible: false });
+/** Whether Part draws its inverted-hull outline at all (GO: no). */
+const OUTLINES = false;
 const outlines = new Map<string, MeshBasicMaterial>();
 const outlineIn = (color: string) => {
   let m = outlines.get(color);
@@ -102,7 +169,7 @@ export function Part({
   return (
     <group position={at as [number, number, number]} rotation={turn as [number, number, number]} name={name}>
       <mesh geometry={geometry} material={unlit ? plain(color) : toon(color)} scale={scale as [number, number, number]} castShadow />
-      {outline > 0 ? (
+      {OUTLINES && outline > 0 ? (
         <mesh
           geometry={geometry}
           material={outlineColor ? outlineIn(outlineColor) : outlineMaterial}
