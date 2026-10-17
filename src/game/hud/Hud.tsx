@@ -19,6 +19,7 @@ import { Card } from "./Card";
 import { MainMenu, MenuBall, type Screen, TrainerBadge } from "./Menu";
 import { Nearby } from "./Nearby";
 import { Prompt } from "./Prompt";
+import { ResearchButton, ResearchPanel } from "./Research";
 import { Minimap } from "./Minimap";
 import { SettingsPanel } from "./Settings";
 import { PokemonPanel } from "./Storage";
@@ -99,6 +100,7 @@ export function Hud() {
       // The Pokémon Center is where you learn about Tyler; the Poké Mart is your bag.
       if (goal === "place:center" || goal === "place:mart") {
         sfx.open();
+        recordVisit(goal);
         return setScreen(goal === "place:center" ? "about" : "bag");
       }
       const w = findWild(goal);
@@ -225,7 +227,13 @@ export function Hud() {
           }}
         />
       </div>
-      <div className={`pointer-events-auto absolute right-4 bottom-4 transition-opacity ${menu ? "invisible opacity-0" : ""}`}>
+      <div className={`pointer-events-auto absolute right-4 bottom-4 flex flex-col items-end gap-3 transition-opacity ${menu ? "invisible opacity-0" : ""}`}>
+        <ResearchButton
+          onOpen={() => {
+            sfx.open();
+            setScreen("research");
+          }}
+        />
         <Nearby open={nearby} setOpen={setNearby} />
       </div>
 
@@ -233,6 +241,7 @@ export function Hud() {
         {object ? <Card object={object} onClose={closeCard} onAbout={openAbout} /> : null}
         {screen === "profile" ? <ProfilePanel onClose={closeScreen} /> : null}
         {screen === "about" ? <TrainerPanel onClose={closeScreen} /> : null}
+        {screen === "research" ? <ResearchPanel onClose={closeScreen} /> : null}
         {screen === "pokedex" ? (
           <PokedexPanel
             onClose={closeScreen}
