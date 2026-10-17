@@ -20,6 +20,7 @@ import { POKEMON_3D } from "../pokemon/models";
 import { Shadow } from "../Shadow";
 import { critterSize } from "./Critter";
 import { Nameplate } from "./Nameplate";
+import { useOutOfTheWay } from "./outOfTheWay";
 import { hover, tapObject } from "./tap";
 
 /*
@@ -286,6 +287,8 @@ export function Gym(props: Props) {
   const top = tall ? 0 : -1.13;
   const marker = (tall ? 3.9 : 2.9) + (raid ? 0.3 : 0);
 
+  const root = useRef<Group>(null);
+  useOutOfTheWay(root, x, z, 3.2);
   const spin = useRef<Group>(null);
   const counter = useRef<Group>(null);
   const gem = useRef<Group>(null);
@@ -327,7 +330,7 @@ export function Gym(props: Props) {
 
   return (
     <group position={[x, 0, z]}>
-      <group onClick={tapObject(slug)} {...hover}>
+      <group ref={root} onClick={tapObject(slug)} {...hover}>
         <Shadow size={4.6} opacity={0.55} />
         <group scale={G}>
           {/* the foot and the thin pole it all floats on */}

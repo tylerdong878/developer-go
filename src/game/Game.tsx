@@ -6,7 +6,6 @@ import { useControls } from "./controls";
 import { Hud } from "./hud/Hud";
 import { palettes } from "./palette";
 import { renderBudget } from "./device";
-import { markReady } from "./ready";
 import { Balls } from "./scene/Balls";
 import { Controller } from "./scene/Controller";
 import { Objects } from "./scene/objects/Objects";
@@ -16,6 +15,7 @@ import { Teddy3D } from "./scene/Teddy3D";
 import { Trainer3D } from "./scene/Trainer3D";
 import { Dust } from "./scene/Dust";
 import { Npcs } from "./scene/Npcs";
+import { AdaptiveDpr, WarmUp } from "./scene/Perf";
 import { CastShadows } from "./scene/Sun";
 import { patchLook } from "./scene/look";
 import { World } from "./scene/World";
@@ -46,8 +46,9 @@ export default function Game() {
           shadows="percentage"
           dpr={budget.dpr}
           camera={{ fov: 56, near: 0.3, far: 2500, position: [0, 6.5, 17] }}
-          onCreated={() => requestAnimationFrame(() => requestAnimationFrame(markReady))}
         >
+          <WarmUp />
+          <AdaptiveDpr range={budget.dpr} />
           <Controller />
           <World palette={palettes[time]} night={time === "night"} shadowMap={budget.shadowMap} light={budget.light} />
           <TapTarget />

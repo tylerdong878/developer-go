@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { BoxGeometry, CanvasTexture, SphereGeometry, SRGBColorSpace } from "three";
+import { useEffect, useRef, useState } from "react";
+import { BoxGeometry, CanvasTexture, type Group, SphereGeometry, SRGBColorSpace } from "three";
 import { gyms } from "@/content";
 import { buildings, slots } from "../base";
 import type { Vec2 } from "../geometry";
+import { useOutOfTheWay } from "./objects/outOfTheWay";
 
 /**
  * A pair of gym statues at every job's gym, as in the games: in Gens 1-6 two
@@ -77,8 +78,10 @@ function plaqueTexture(lines: string[]) {
 }
 
 function Statue({ at, face, plaque }: { at: Vec2; face: number; plaque: CanvasTexture | null }) {
+  const root = useRef<Group>(null);
+  useOutOfTheWay(root, at[0], at[1], 1.4);
   return (
-    <group position={[at[0], 0, at[1]]} rotation-y={face}>
+    <group ref={root} position={[at[0], 0, at[1]]} rotation-y={face}>
       <mesh geometry={box} position={[0, 0.65, 0]} scale={[1.3, 1.3, 1.3]} castShadow receiveShadow>
         <meshLambertMaterial color={STONE} />
       </mesh>
