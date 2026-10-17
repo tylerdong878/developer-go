@@ -3,18 +3,23 @@
 import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import {
+  CanvasTexture,
   Color,
+  type Group,
   InstancedBufferAttribute,
   type InstancedMesh,
+  type Mesh,
   Matrix4,
   MeshLambertMaterial,
   Quaternion,
+  SRGBColorSpace,
   Vector3,
 } from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { buildings } from "../base";
 import type { Building, Recipe } from "../lots";
 import { fade, town } from "./fade";
+import { type Box, drawDisc, HEROES, STYLE } from "./heroes";
 
 /*
  * Our own Pokémon-town building kit (notes/research/gfx-buildings.md 3.6,
@@ -29,23 +34,7 @@ import { fade, town } from "./fade";
  * with the facade painted on in the fragment shader. One draw call.
  */
 
-/** Facade styles: punched windows, a curtain wall, blank, tall punched windows, brick. */
-const PUNCHED = 0;
-const CURTAIN = 1;
-const BLANK = 2;
-const TALL = 3;
-const BRICK = 4;
-
-type Box = {
-  at: [number, number, number];
-  size: [number, number, number];
-  round: [number, number, number];
-  /** bay width, floor height, ground floor height, style */
-  facade: [number, number, number, number];
-  color: string;
-  glass?: string;
-  trim?: string;
-};
+const { punched: PUNCHED, curtain: CURTAIN, blank: BLANK, tall: TALL, brick: BRICK } = STYLE;
 
 const hash = (n: number) => {
   const s = Math.sin(n * 127.1 + 311.7) * 43758.5453;
@@ -60,6 +49,7 @@ const localSize = (b: Building) => (Math.round(b.turn / (Math.PI / 2)) % 2 !== 0
 function parts(b: Building, i: number): Box[] {
   const [W, D] = localSize(b);
   const H = b.h;
+  if (b.slug && HEROES[b.slug]) return HEROES[b.slug](W, D, H).boxes;
   const recipe: Recipe = b.recipe ?? "saffron";
   const blank = (size: Box["size"], at: Box["at"], color: string, round: Box["round"] = [0.12, 0.08, 0.12]): Box => ({
     at,
@@ -187,7 +177,7 @@ diffuseColor.a *= vFade;
   vec2 id = floor(c); vec2 f = fract(c);
   vec2 aa = fwidth(c) * 1.2;
   float far = smoothstep(0.12, 0.3, max(aa.x, aa.y));
-  float windows = step(style, 1.5) + step(2.5, style);
+  float windows = step(style, 1.5) + step(2.5, style) * step(style, 4.5);
   float cells = wallM * step(0.0, c.x) * step(c.x, nb) * step(0.0, c.y) * step(c.y, nf) * windows;
   vec2 lo = style > 0.5 && style < 1.5 ? vec2(0.06, 0.18) : style > 2.5 && style < 3.5 ? vec2(0.24, 0.12) : vec2(0.22, 0.2);
   vec2 hi = style > 0.5 && style < 1.5 ? vec2(0.94, 0.97) : style > 2.5 && style < 3.5 ? vec2(0.76, 0.9) : vec2(0.78, 0.84);
@@ -226,6 +216,8 @@ diffuseColor.a *= vFade;
   float cool = step(0.8, hash12(vec2(vSeed * 3.1, bLit + bWin)));
   diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.13, 0.17, 0.3), uNight * bWin * (1.0 - bLit));
   totalEmissiveRadiance += uNight * (bWin * bLit * mix(vec3(1.0, 0.8, 0.5), vec3(0.81, 0.88, 1.0), cool) + bShop * vec3(1.0, 0.86, 0.62) * 0.9);
+  // soffit strips, crown rings and fascias glow after dark
+  totalEmissiveRadiance += uNight * step(4.5, vFacade.w) * diffuseColor.rgb * 1.3;
 }`,
     );
 };
@@ -303,5 +295,52 @@ export function Blocks() {
     if (changed) attr.needsUpdate = true;
   });
 
-  return pieces.length ? <instancedMesh ref={mesh} args={[geo, material, pieces.length]} castShadow receiveShadow /> : null;
+  return pieces.length ? (
+    <>
+      <instancedMesh ref={mesh} args={[geo, material, pieces.length]} castShadow receiveShadow />
+      <HeroDiscs />
+    </>
+  ) : null;
+}
+
+/** The emblem discs on the job buildings, drawn once into textures, glowing after dark. */
+function HeroDiscs() {
+  const discs = useMemo(() => {
+    const out: { key: string; matrix: Matrix4; size: number; material: MeshLambertMaterial; b: number }[] = [];
+    buildings.forEach((b, i) => {
+      if (!b.slug || !HEROES[b.slug]) return;
+      const [W, D] = localSize(b);
+      HEROES[b.slug](W, D, b.h).discs.forEach((d, k) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = 512;
+        drawDisc(canvas.getContext("2d")!, d);
+        const map = new CanvasTexture(canvas);
+        map.colorSpace = SRGBColorSpace;
+        map.anisotropy = 4;
+        const material = new MeshLambertMaterial({ map, emissiveMap: map, emissive: "#ffffff", emissiveIntensity: 0, transparent: true });
+        const matrix = new Matrix4()
+          .compose(new Vector3(b.x, 0, b.z), new Quaternion().setFromAxisAngle(UP, b.turn), new Vector3(1, 1, 1))
+          .multiply(new Matrix4().makeTranslation(...d.at));
+        out.push({ key: `${b.slug}${k}`, matrix, size: d.size, material, b: i });
+      });
+    });
+    return out;
+  }, []);
+  const group = useRef<Group>(null);
+  useFrame(() => {
+    group.current?.children.forEach((o) => {
+      const m = (o as Mesh).material as MeshLambertMaterial;
+      m.emissiveIntensity = town.uNight.value * 0.85;
+      m.opacity = fade[o.userData.b as number];
+    });
+  });
+  return (
+    <group ref={group}>
+      {discs.map((d) => (
+        <mesh key={d.key} matrix={d.matrix} matrixAutoUpdate={false} material={d.material} userData={{ b: d.b }}>
+          <circleGeometry args={[d.size / 2, 64]} />
+        </mesh>
+      ))}
+    </group>
+  );
 }

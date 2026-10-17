@@ -1,7 +1,7 @@
 "use client";
 
-import { useFrame, useLoader } from "@react-three/fiber";
-import { Component, type ReactNode, Suspense, useLayoutEffect, useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import {
   BoxGeometry,
   CylinderGeometry,
@@ -13,40 +13,27 @@ import {
   InstancedBufferAttribute,
   type InstancedMesh,
   Matrix4,
-  type Mesh,
   MeshLambertMaterial,
-  NearestFilter,
   Quaternion,
-  type Texture,
   Vector3,
 } from "three";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { buildings } from "../base";
-import { type Building, type ModelId, MODELS } from "../lots";
+import type { Building } from "../lots";
 import { Blocks } from "./Blocks";
 import { PokeMart, PokemonCenter } from "./civic/Civic";
 import { skyLook } from "./Sky";
 import { fade, TownTracker, town } from "./fade";
 
 /**
- * A Lambert material with two extras for the town: buildings fade out (as a
+ * A Lambert material with two extras for the houses: they fade out (as a
  * dither, so nothing needs sorting) when they stand between the camera and
- * the trainer, and after dark, glass glows warm. On the Kenney models the
- * glass is found by its color in the texture; house windows are marked glass.
+ * the trainer, and their glass reflects the sky by day and glows warm after
+ * dark.
  */
-function townMaterial({ map, glass = false }: { map?: Texture; glass?: boolean }) {
+function townMaterial({ glass = false }: { glass?: boolean }) {
   const material = new MeshLambertMaterial({ color: "#ffffff", alphaHash: true });
-  if (map) {
-    // Kenney's models share one small palette texture: sample it crisp, or colors bleed into gray.
-    map.minFilter = NearestFilter;
-    map.magFilter = NearestFilter;
-    map.generateMipmaps = false;
-    map.needsUpdate = true;
-    material.map = map;
-  }
   // The glass branch is baked into the shader source, so each kind needs its own program.
-  material.customProgramCacheKey = () => (glass ? "town-glass" : map ? "town-map" : "town");
+  material.customProgramCacheKey = () => (glass ? "town-glass" : "town");
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, { uNight: town.uNight, uTop: skyLook.uTop, uHaze: skyLook.uHaze, uFog: skyLook.uFog, uSunDir: skyLook.uSunDir });
     shader.vertexShader = shader.vertexShader
@@ -90,7 +77,7 @@ vec3 glassShade(vec3 P, vec3 N, vec3 tint, vec3 inside) {
         "#include <emissivemap_fragment>",
         `#include <emissivemap_fragment>
 {
-  ${glass ? "float isGlass = 1.0;" : map ? "vec3 c = diffuseColor.rgb; float isGlass = step(0.5, c.b) * step(0.1, c.b - c.r);" : "float isGlass = 0.0;"}
+  ${glass ? "float isGlass = 1.0;" : "float isGlass = 0.0;"}
   float lit = step(0.35, townHash(vTown));
   if (isGlass > 0.5) {
     vec3 Nw = inverseTransformDirection(normal, viewMatrix);
@@ -276,57 +263,6 @@ function Layer({ geometry, material, pieces }: { geometry: BufferGeometry; mater
   return <instancedMesh ref={mesh} args={[geo, material, pieces.length]} castShadow receiveShadow />;
 }
 
-/**
- * A float copy of a model's geometry. The GLBs store positions as packed
- * 16-bit numbers in -1..1; moving them into place pushes some past 1, and
- * written back into 16 bits they'd wrap around and fold the building.
- */
-function unpacked(source: BufferGeometry) {
-  const g = new Geometry();
-  for (const [name, a] of Object.entries(source.attributes)) {
-    const out = new Float32Array(a.count * a.itemSize);
-    const get = [a.getX, a.getY, a.getZ, a.getW];
-    for (let i = 0; i < a.count; i++) for (let c = 0; c < a.itemSize; c++) out[i * a.itemSize + c] = get[c].call(a, i);
-    g.setAttribute(name, new Float32BufferAttribute(out, a.itemSize));
-  }
-  if (source.index) g.setIndex(source.index.clone());
-  return g;
-}
-
-const OFFICE_MODELS = [...new Set(buildings.map((b) => b.model).filter((m): m is ModelId => m in MODELS))];
-const urls = OFFICE_MODELS.map((m) => `/models/${m}.glb`);
-
-/** The offices and towers: Kenney's city kit models, one instanced mesh per model. */
-function Offices() {
-  const gltfs = useLoader(GLTFLoader, urls, (loader) => loader.setMeshoptDecoder(MeshoptDecoder));
-  const layers = useMemo(
-    () =>
-      OFFICE_MODELS.map((model, j) => {
-        let mesh: Mesh | null = null;
-        gltfs[j].scene.traverse((o) => {
-          if (!mesh && (o as Mesh).isMesh) mesh = o as Mesh;
-        });
-        const found = mesh as Mesh | null;
-        const geometry = found ? unpacked(found.geometry).applyMatrix4(found.matrixWorld) : box;
-        const map = found ? ((found.material as MeshLambertMaterial).map ?? undefined) : undefined;
-        const pieces: Piece[] = [];
-        buildings.forEach((b, i) => {
-          if (b.model !== model) return;
-          pieces.push({ b: i, m: placeOf(b).multiply(new Matrix4().makeScale(b.scale, b.scale, b.scale)), color: b.color });
-        });
-        return { model, geometry, material: townMaterial({ map }), pieces };
-      }),
-    [gltfs],
-  );
-  return (
-    <>
-      {layers.map((l) => (
-        <Layer key={l.model} geometry={l.geometry} material={l.material} pieces={l.pieces} />
-      ))}
-    </>
-  );
-}
-
 function Houses() {
   const parts = useMemo(() => {
     const pieces = housePieces();
@@ -343,20 +279,10 @@ function Houses() {
   );
 }
 
-/** If the office models can't load (offline, blocked), the town goes on without them instead of the whole game failing. */
-class SkipOnError extends Component<{ children: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-  render() {
-    return this.state.failed ? null : this.props.children;
-  }
-}
-
 /**
- * The neighborhood: Pokémon-town houses built from parts, and offices and
- * towers from Kenney's city kit, all instanced. After dark, windows light up.
+ * The neighborhood: Pokémon-town houses built from parts, the job buildings
+ * and the town's blocks from our own kit, the Center and the Mart, all
+ * instanced. After dark, windows light up.
  */
 export function Buildings({ night }: { night: boolean }) {
   return (
@@ -366,11 +292,6 @@ export function Buildings({ night }: { night: boolean }) {
       <Blocks />
       <PokemonCenter />
       <PokeMart />
-      <SkipOnError>
-        <Suspense fallback={null}>
-          <Offices />
-        </Suspense>
-      </SkipOnError>
     </>
   );
 }

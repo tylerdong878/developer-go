@@ -22,7 +22,7 @@ type Sign = { text: string; x: number; y: number; z: number; turn: number; width
 
 /** A sign goes on the wall facing its gym (or, for home, facing the roundabout). */
 function signFor(b: Building): Sign | null {
-  if (!b.slug || !(b.slug in NAMES)) return null;
+  if (!b.slug || !(b.slug in NAMES) || b.kind !== "house") return null;
   const [tx, tz] = b.slug === "home" ? START : slots[b.slug];
   const dx = tx - b.x;
   const dz = tz - b.z;

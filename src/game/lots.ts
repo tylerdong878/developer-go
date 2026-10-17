@@ -2,11 +2,11 @@ import { pointInPolygon, random, type Vec2 } from "./geometry";
 
 /**
  * The neighborhood's buildings: a signature one behind each job's gym, Tyler's
- * house by the roundabout, offices downtown like Saffron or Castelia, and
- * Pokémon-town houses everywhere else. Offices are Kenney's city kit models
- * (CC0), scaled up; houses are built in code in the style of the games (tall
- * colored roofs, cream walls). Each faces its street or its gym. Footprints stay axis-aligned boxes,
- * so walking around them is a simple rectangle test.
+ * house by the roundabout, blocks downtown like Saffron, Lumiose or Paldea,
+ * and Pokémon-town houses everywhere else, all built in code from our own
+ * kit (scene/Blocks.tsx, scene/heroes.ts). Each faces its street or its gym.
+ * Footprints stay axis-aligned boxes, so walking around them is a simple
+ * rectangle test.
  */
 export type BuildingKind = "tower" | "office" | "brick" | "house" | "shop" | "center" | "mart";
 /** Built in code instead of loaded: houses, the Pokémon Center, and the Poké Mart. */
@@ -14,30 +14,10 @@ export type HouseModel = "house" | "center" | "mart" | "block";
 /** The kit's block recipes (scene/Blocks.tsx): an LGPE Saffron block, a Paldea glass box, Lumiose stone, Back Bay brick. */
 export type Recipe = "saffron" | "glass" | "stone" | "brick";
 
-/** Every model's size (x, height, z) at scale 1, measured from the files in public/models. */
-export const MODELS = {
-  "c-building-a": [0.884, 1.293, 0.94],
-  "c-building-b": [0.97, 1.293, 0.94],
-  "c-building-d": [0.84, 1.293, 0.9],
-  "c-building-f": [0.84, 1.693, 1.03],
-  "c-building-g": [0.97, 1.693, 0.922],
-  "c-building-h": [0.884, 1.293, 1.008],
-  "c-building-i": [1.24, 1.68, 1.302],
-  "c-building-k": [2.084, 1.47, 0.942],
-  "c-building-l": [1.37, 2.27, 1.402],
-  "c-building-m": [1.24, 3.15, 1.242],
-  "c-building-n": [2.32, 2.48, 1.82],
-  "c-building-skyscraper-a": [1.36, 2.88, 1.36],
-  "c-building-skyscraper-b": [1.36, 4.48, 1.36],
-  "c-building-skyscraper-c": [1.28, 4.08, 1.388],
-  "c-building-skyscraper-d": [1.28, 5.47, 1.388],
-  "c-building-skyscraper-e": [1.295, 4.08, 1.242],
-} as const satisfies Record<string, readonly [number, number, number]>;
-export type ModelId = keyof typeof MODELS;
 
 export type Building = {
   kind: BuildingKind;
-  model: ModelId | HouseModel;
+  model: HouseModel;
   scale: number;
   /** Which way the front door faces: 0 is +z (south), in quarter turns. */
   turn: number;
@@ -107,30 +87,10 @@ export function house(x: number, z: number, w: number, d: number, turn: number, 
   };
 }
 
-/** A building from a model: its footprint follows from the model's size, scale, and turn. */
-export function build(
-  model: ModelId,
-  x: number,
-  z: number,
-  scale: number,
-  turn: number,
-  rest: { kind: BuildingKind; color?: string; slug?: string },
-): Building {
-  const [mw, mh, md] = MODELS[model];
+/** A job's own building, built by its hero design (scene/heroes.ts): w and d are its own width and depth, h its height. */
+export function hero(slug: string, x: number, z: number, w: number, d: number, h: number, turn: number, kind: BuildingKind): Building {
   const sideways = Math.round(turn / (Math.PI / 2)) % 2 !== 0;
-  return {
-    model,
-    scale,
-    turn,
-    x,
-    z,
-    w: (sideways ? md : mw) * scale,
-    d: (sideways ? mw : md) * scale,
-    h: mh * scale,
-    color: rest.color ?? "#ffffff",
-    kind: rest.kind,
-    slug: rest.slug,
-  };
+  return { kind, model: "block", scale: 1, turn, x, z, w: sideways ? d : w, d: sideways ? w : d, h, color: "#ffffff", slug };
 }
 
 /**
@@ -153,16 +113,16 @@ export function facing(x: number, z: number, [tx, tz]: Vec2) {
 
 /** The one behind each gym, and home. Hand-placed so each job gets its own look; each faces its gym. */
 export const SIGNATURE: Building[] = [
-  // AWS: the tallest glass tower in town
-  build("c-building-skyscraper-d", 29, -47, 8, -Math.PI / 2, { kind: "tower", slug: "aws" }),
-  build("c-building-l", -29, -47, 8, Math.PI / 2, { kind: "office", slug: "tetracorp" }),
-  build("c-building-skyscraper-b", 29, -79, 8, -Math.PI / 2, { kind: "tower", slug: "philips" }),
+  // AWS: the only tall tower in town, the skyline you see from everywhere
+  hero("aws", 29, -47, 12, 11, 34.6, -Math.PI / 2, "tower"),
+  hero("tetracorp", -29, -47, 11, 11, 13.8, Math.PI / 2, "office"),
+  hero("philips", 29, -79, 12, 11, 21.4, -Math.PI / 2, "tower"),
   // Northeastern's Khoury: tinted brick red
-  build("c-building-n", -29, -75, 6, Math.PI / 2, { kind: "brick", color: "#e59a82", slug: "khoury" }),
-  build("c-building-m", 71, -79, 7, -Math.PI / 2, { kind: "office", slug: "outamation" }),
-  build("c-building-i", -74, -79, 8, Math.PI / 2, { kind: "office", color: "#f3e9d8", slug: "quartzy" }),
+  hero("khoury", -29, -75, 14, 11, 15, Math.PI / 2, "brick"),
+  hero("outamation", 71, -79, 9, 9, 17.7, -Math.PI / 2, "office"),
+  hero("quartzy", -74, -79, 10.5, 10.5, 14.6, Math.PI / 2, "office"),
   // a big store at the north end of the avenue
-  build("c-building-k", 0, -127, 12, 0, { kind: "shop", slug: "homegoods" }),
+  hero("homegoods", 0, -127, 25, 11, 13, 0, "shop"),
   // the Pokémon Center and Poké Mart, either side of the avenue just north of home, like a Kanto town
   civic("center", 12, -24, 0, "center"),
   civic("mart", -12, -24, 0, "mart"),
