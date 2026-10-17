@@ -261,7 +261,11 @@ export function onLand(p: Vec2) {
 }
 
 /** Things you have to walk around, like the Snorlax asleep across the road to the park. */
-export const blockers: { at: Vec2; r: number }[] = [{ at: slots.snorlax, r: 2.8 }];
+export const blockers: { at: Vec2; r: number }[] = [
+  { at: slots.snorlax, r: 2.8 },
+  // the fountain in the middle of the roundabout
+  { at: [0, 0], r: 3.2 },
+];
 
 /** Can the trainer stand here? Not in the water, on Snorlax, or inside a building. */
 export function walkable(p: Vec2) {

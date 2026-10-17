@@ -13,6 +13,7 @@ import { Sky, skyLook } from "./Sky";
 import { Sun } from "./Sun";
 import { Flora } from "./Flora";
 import { Landmarks } from "./Landmarks";
+import { Sights } from "./Sights";
 import { Trees } from "./Trees";
 import { Buildings } from "./Buildings";
 import { Props } from "./Props";
@@ -254,6 +255,7 @@ export function World({ palette, night, shadowMap, light }: { palette: Palette; 
       <Trees trunk={palette.trunk} leaves={palette.leaves} />
       <Flora grass={palette.leaves[1]} />
       <Landmarks />
+      <Sights />
     </>
   );
 }

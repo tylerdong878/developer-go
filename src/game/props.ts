@@ -47,6 +47,9 @@ export const lamps: Prop[] = (() => {
       }
     }
   }
+  // harbor lamps along the quay, like Vermilion's, and two by the pier walk
+  for (let z = -126; z <= 126; z += 12) if (Math.abs(z) > 5) out.push({ at: [80.6, z], turn: Math.PI / 2 });
+  for (const x of [86, 95]) for (const z of [-2.6, 2.6]) out.push({ at: [x, z], turn: z > 0 ? Math.PI : 0 });
   return out;
 })();
 
