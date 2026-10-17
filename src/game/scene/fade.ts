@@ -24,11 +24,14 @@ export function TownTracker({ night }: { night: boolean }) {
     const k = 1 - Math.exp(-8 * dt);
     buildings.forEach((b, i) => {
       // Sample the camera-to-trainer line; if it crosses the footprint, the building's in the way.
-      let blocking = false;
-      for (let t = 0.1; t <= 0.96 && !blocking; t += 0.08) {
+      // The camera itself counts too (a wider pad), so it never sits inside a wall it can see.
+      let blocking = Math.abs(cx - b.x) < b.w / 2 + 1.5 && Math.abs(cz - b.z) < b.d / 2 + 1.5;
+      for (let t = 0; t <= 0.96 && !blocking; t += 0.08) {
         blocking = Math.abs(cx + sx * t - b.x) < b.w / 2 + 0.8 && Math.abs(cz + sz * t - b.z) < b.d / 2 + 0.8;
       }
       fade[i] += ((blocking ? 0.22 : 1) - fade[i]) * k;
+      // Snap the last bit, or the dither keeps eating a few pixels of a building that's back in full.
+      if (fade[i] > 0.99) fade[i] = 1;
     });
   });
   return null;

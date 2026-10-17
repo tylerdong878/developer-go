@@ -43,6 +43,8 @@ function townMaterial({ map, glass = false }: { map?: Texture; glass?: boolean }
     map.needsUpdate = true;
     material.map = map;
   }
+  // The glass branch is baked into the shader source, so each kind needs its own program.
+  material.customProgramCacheKey = () => (glass ? "town-glass" : map ? "town-map" : "town");
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uNight = town.uNight;
     shader.vertexShader = shader.vertexShader
@@ -246,6 +248,23 @@ function Layer({ geometry, material, pieces }: { geometry: BufferGeometry; mater
   return <instancedMesh ref={mesh} args={[geo, material, pieces.length]} castShadow receiveShadow />;
 }
 
+/**
+ * A float copy of a model's geometry. The GLBs store positions as packed
+ * 16-bit numbers in -1..1; moving them into place pushes some past 1, and
+ * written back into 16 bits they'd wrap around and fold the building.
+ */
+function unpacked(source: BufferGeometry) {
+  const g = new Geometry();
+  for (const [name, a] of Object.entries(source.attributes)) {
+    const out = new Float32Array(a.count * a.itemSize);
+    const get = [a.getX, a.getY, a.getZ, a.getW];
+    for (let i = 0; i < a.count; i++) for (let c = 0; c < a.itemSize; c++) out[i * a.itemSize + c] = get[c].call(a, i);
+    g.setAttribute(name, new Float32BufferAttribute(out, a.itemSize));
+  }
+  if (source.index) g.setIndex(source.index.clone());
+  return g;
+}
+
 const OFFICE_MODELS = [...new Set(buildings.map((b) => b.model).filter((m): m is ModelId => m in MODELS))];
 const urls = OFFICE_MODELS.map((m) => `/models/${m}.glb`);
 
@@ -260,7 +279,7 @@ function Offices() {
           if (!mesh && (o as Mesh).isMesh) mesh = o as Mesh;
         });
         const found = mesh as Mesh | null;
-        const geometry = found ? found.geometry.clone().applyMatrix4(found.matrixWorld) : box;
+        const geometry = found ? unpacked(found.geometry).applyMatrix4(found.matrixWorld) : box;
         const map = found ? ((found.material as MeshLambertMaterial).map ?? undefined) : undefined;
         const pieces: Piece[] = [];
         buildings.forEach((b, i) => {

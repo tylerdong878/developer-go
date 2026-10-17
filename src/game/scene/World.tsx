@@ -22,6 +22,8 @@ import { GymStatues } from "./GymStatues";
 /** Fog starts past what's around you and swallows the edge of the base. */
 export const FOG = { near: 60, far: 185 };
 
+const floor = polygonGeometry([circle(0, 0, 700, 64)]);
+
 type Layer = { key: string; geometry: BufferGeometry; color: (p: Palette) => string };
 
 const areaLayer = (kind: AreaKind): Layer => ({
@@ -50,13 +52,14 @@ function groundLayers(): Layer[] {
     areaLayer("park"),
     areaLayer("grass"),
     areaLayer("lawn"),
-    areaLayer("plaza"),
     areaLayer("water"),
     { key: "shore", geometry: outlineGeometry(water, 1.4), color: (p) => p.shore },
     ...roadLayers(["path"]),
     ...roadLayers(["avenue", "street"]),
-    areaLayer("deck"),
+    // the plaza and the pier deck sit on top of the road ends that run into them
+    areaLayer("plaza"),
     ...roadLayers(["boardwalk"]),
+    areaLayer("deck"),
   ];
 }
 
@@ -89,6 +92,10 @@ export function World({ palette, night, shadowMap, light }: { palette: Palette; 
           <meshBasicMaterial color={layer.color(palette)} side={DoubleSide} depthTest={false} depthWrite={false} />
         </mesh>
       ))}
+      {/* the ground layers write no depth, so this invisible floor does: nothing below ground shows through */}
+      <mesh geometry={floor} renderOrder={-10}>
+        <meshBasicMaterial colorWrite={false} side={DoubleSide} />
+      </mesh>
 
       <Buildings night={night} />
       <Props night={night} shadows={!light} />
