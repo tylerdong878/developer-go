@@ -21,19 +21,30 @@ type Line = { points: readonly Vec2[]; width: number; loop?: boolean };
 
 /**
  * Flat ribbons for roads and paths: one strip per line with mitered corners,
- * so curves stay smooth, and round caps on dead ends. `grow` widens every line
- * on both sides, for the darker edge drawn underneath.
+ * so curves stay smooth, and round caps on dead ends (`caps: false` for
+ * ribbons whose ends run under something else). `grow` widens every line on
+ * both sides, for the curb and sidewalk drawn underneath.
+ *
+ * Each vertex also gets `along` (meters from the line's start) and `across`
+ * (-1 on the left edge, 1 on the right, 0 in the middle; 0 to 1 out from a
+ * cap's center), so shaders can draw gutters, joints, planks and soft edges.
  */
-export function ribbonGeometry(lines: readonly Line[], grow = 0): BufferGeometry {
+export function ribbonGeometry(lines: readonly Line[], grow = 0, caps = true): BufferGeometry {
   const positions: number[] = [];
+  const along: number[] = [];
+  const across: number[] = [];
   const indices: number[] = [];
-  const cap = ([cx, cz]: Vec2, r: number) => {
+  const cap = ([cx, cz]: Vec2, r: number, at: number) => {
     const base = positions.length / 3;
     const steps = 32;
     positions.push(cx, 0, cz);
+    along.push(at);
+    across.push(0);
     for (let i = 0; i <= steps; i++) {
       const a = (i / steps) * Math.PI * 2;
       positions.push(cx + r * Math.cos(a), 0, cz + r * Math.sin(a));
+      along.push(at);
+      across.push(1);
       if (i > 0) indices.push(base, base + i, base + i + 1);
     }
   };
@@ -48,7 +59,9 @@ export function ribbonGeometry(lines: readonly Line[], grow = 0): BufferGeometry
     const n = pts.length;
     const loop = !!line.loop;
     const base = positions.length / 3;
+    let dist = 0;
     for (let i = 0; i < n; i++) {
+      if (i > 0) dist += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
       const prev = loop ? pts[(i - 1 + n) % n] : pts[Math.max(i - 1, 0)];
       const next = loop ? pts[(i + 1) % n] : pts[Math.min(i + 1, n - 1)];
       const into = i === 0 && !loop ? unit(pts[0], next) : unit(prev, pts[i]);
@@ -63,6 +76,8 @@ export function ribbonGeometry(lines: readonly Line[], grow = 0): BufferGeometry
       const stretch = r / Math.max(0.5, mx * -out[1] + mz * out[0]);
       const [x, z] = pts[i];
       positions.push(x + mx * stretch, 0, z + mz * stretch, x - mx * stretch, 0, z - mz * stretch);
+      along.push(dist, dist);
+      across.push(-1, 1);
     }
     const segments = loop ? n : n - 1;
     for (let i = 0; i < segments; i++) {
@@ -70,17 +85,42 @@ export function ribbonGeometry(lines: readonly Line[], grow = 0): BufferGeometry
       const b = base + 2 * ((i + 1) % n);
       indices.push(a, a + 1, b + 1, a, b + 1, b);
     }
-    if (!loop) {
-      cap(pts[0], r);
-      cap(pts[n - 1], r);
+    if (!loop && caps) {
+      cap(pts[0], r, 0);
+      cap(pts[n - 1], r, dist);
     }
   }
-  return build(positions, indices);
+  const geometry = build(positions, indices);
+  geometry.setAttribute("along", new Float32BufferAttribute(along, 1));
+  geometry.setAttribute("across", new Float32BufferAttribute(across, 1));
+  return geometry;
 }
 
 /** Outline ribbons that follow a polygon's edge (the foam line along the water). */
 export function outlineGeometry(polygons: readonly (readonly Vec2[])[], width: number): BufferGeometry {
   return ribbonGeometry(polygons.map((points) => ({ points, width, loop: true })));
+}
+
+/** Flat quads on the ground: each a center, a direction it runs (radians), its length along that and width across. */
+export function quadsGeometry(quads: readonly { at: Vec2; turn: number; length: number; width: number }[]): BufferGeometry {
+  const positions: number[] = [];
+  const indices: number[] = [];
+  for (const { at, turn, length, width } of quads) {
+    const base = positions.length / 3;
+    const dx = Math.cos(turn);
+    const dz = Math.sin(turn);
+    const l = length / 2;
+    const w = width / 2;
+    for (const [a, c] of [
+      [-l, -w],
+      [l, -w],
+      [l, w],
+      [-l, w],
+    ])
+      positions.push(at[0] + dx * a - dz * c, 0, at[1] + dz * a + dx * c);
+    indices.push(base, base + 2, base + 1, base, base + 3, base + 2);
+  }
+  return build(positions, indices);
 }
 
 function build(positions: number[], indices: number[]) {

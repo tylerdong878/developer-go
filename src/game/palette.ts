@@ -13,6 +13,10 @@ export type Palette = {
   areas: Record<AreaKind, string>;
   shore: string;
   roads: RoadColors;
+  /** Sidewalks beside the streets, the zebra stripes, the paving round the roundabout. */
+  sidewalk: string;
+  zebra: string;
+  apron: string;
   trunk: string;
   leaves: readonly [string, string];
   /** The sun (the moon at night): faces toward it show their own color. */
@@ -51,6 +55,9 @@ export const palettes: Record<TimeOfDay, Palette> = {
       path: ["#f1e2b2", "#ddc995"],
       boardwalk: ["#c9a36b", "#8f6d3f"],
     },
+    sidewalk: "#e3e1d8",
+    zebra: "#f4f7f4",
+    apron: "#d9d2c3",
     trunk: "#8a5a3b",
     leaves: ["#3f9a4b", "#52ad56"],
     sun: { color: "#fff2df", intensity: 1.1 },
@@ -76,6 +83,9 @@ export const palettes: Record<TimeOfDay, Palette> = {
       path: ["#6c7a84", "#59656e"],
       boardwalk: ["#5e5040", "#41372c"],
     },
+    sidewalk: "#566c8c",
+    zebra: "#9aa6d6",
+    apron: "#5f6f8e",
     trunk: "#8a5a3b",
     leaves: ["#3f9a4b", "#52ad56"],
     sun: { color: "#9fb3ff", intensity: 0.62 },
