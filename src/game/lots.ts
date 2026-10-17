@@ -10,7 +10,9 @@ import { pointInPolygon, random, type Vec2 } from "./geometry";
  */
 export type BuildingKind = "tower" | "office" | "brick" | "house" | "shop" | "center" | "mart";
 /** Built in code instead of loaded: houses, the Pokémon Center, and the Poké Mart. */
-export type HouseModel = "house" | "center" | "mart";
+export type HouseModel = "house" | "center" | "mart" | "block";
+/** The kit's block recipes (scene/Blocks.tsx): an LGPE Saffron block, a Paldea glass box, Lumiose stone, Back Bay brick. */
+export type Recipe = "saffron" | "glass" | "stone" | "brick";
 
 /** Every model's size (x, height, z) at scale 1, measured from the files in public/models. */
 export const MODELS = {
@@ -52,7 +54,38 @@ export type Building = {
   flip?: boolean;
   /** The gym this building belongs to, or "home". */
   slug?: string;
+  /** Kit blocks only: which recipe, and how many storeys. */
+  recipe?: Recipe;
+  floors?: number;
 };
+
+/** Ground floor, upper floors and the cap, per recipe (meters), so a block's height follows from its storeys. */
+const STOREY: Record<Recipe, [number, number, number]> = {
+  saffron: [4.2, 3, 0.6],
+  glass: [4.4, 3.2, 0.5],
+  stone: [4.6, 3.2, 0.4],
+  brick: [3.6, 3, 0.5],
+};
+
+/** A block from our own kit: w and d are its own width and depth (front first), floors its storeys. */
+export function block(x: number, z: number, w: number, d: number, turn: number, recipe: Recipe, floors: number, kind: BuildingKind): Building {
+  const sideways = Math.round(turn / (Math.PI / 2)) % 2 !== 0;
+  const [g0, fl, cap] = STOREY[recipe];
+  return {
+    kind,
+    model: "block",
+    scale: 1,
+    turn,
+    x,
+    z,
+    w: sideways ? d : w,
+    d: sideways ? w : d,
+    h: g0 + (floors - 1) * fl + cap,
+    color: "#ffffff",
+    recipe,
+    floors,
+  };
+}
 
 /** A Pokémon-town house: w and d are its walls, h is the wall height (the roof sits on top). */
 export function house(x: number, z: number, w: number, d: number, turn: number, rest: { color: string; roof: string; slug?: string; flip?: boolean }): Building {
@@ -139,11 +172,6 @@ export const SIGNATURE: Building[] = [
   house(10, 26, 9, 7.5, Math.PI, { color: "#e0d9c4", roof: "#2a6fa6", flip: true, slug: "rival" }),
 ];
 
-const OFFICES: ModelId[] = ["c-building-a", "c-building-b", "c-building-d", "c-building-f", "c-building-g", "c-building-h", "c-building-i", "c-building-l", "c-building-m"];
-const TOWERS: ModelId[] = ["c-building-skyscraper-a", "c-building-skyscraper-c", "c-building-skyscraper-e", "c-building-skyscraper-b"];
-const CAMPUS: ModelId[] = ["c-building-i", "c-building-l", "c-building-n", "c-building-k"];
-const OFFICE_TINT = ["#ffffff", "#f6f3ee", "#eef3f8", "#f4efe6"];
-const BRICK = ["#e59a82", "#e3a58c", "#d98f78"];
 /** Let's Go's Kanto towns: cream plaster under each town's roof color (Pallet red and blue, Viridian green, Vermilion orange, Lavender purple). */
 const WALLS = ["#e0d9c4", "#e6dfca", "#dcd4bd"];
 const ROOFS = ["#b24c49", "#2a6fa6", "#4d745d", "#e88e47", "#63547f"];
@@ -218,25 +246,21 @@ export function placeBuildings(site: Site): Building[] {
   for (let i = 0; i < 9000 && placed.length < 150; i++) {
     const p: Vec2 = [(rand() * 2 - 1) * site.radius, (rand() * 2 - 1) * site.radius];
     const district = districtAt(p);
-    let model: ModelId;
-    let scale: number;
-    let kind: BuildingKind;
-    let color: string;
     if (district === "homes") {
       const w = 6.5 + rand() * 2.5;
       const d = 5.5 + rand() * 1.5;
       const b = house(p[0], p[1], w, d, toStreet(p[0], p[1], Math.max(w, d)), { color: pick(WALLS), roof: pick(ROOFS), flip: rand() < 0.5 });
       if (fits(b)) placed.push(b);
       continue;
-    } else if (district === "campus") {
-      [model, scale, kind, color] = [pick(CAMPUS), 6 + rand() * 1.5, "brick", pick(BRICK)];
-    } else if (rand() < (district === "downtown" ? 0.3 : 0.12)) {
-      [model, scale, kind, color] = [pick(TOWERS), 6.5 + rand() * 1.5, "tower", "#ffffff"];
-    } else {
-      [model, scale, kind, color] = [pick(OFFICES), 7 + rand() * 2, "office", pick(OFFICE_TINT)];
     }
-    const size = Math.max(MODELS[model][0], MODELS[model][2]) * scale;
-    const b = build(model, p[0], p[1], scale, toStreet(p[0], p[1], size), { kind, color });
+    // our own kit: toy-scale blocks, 2 to 5 storeys, the recipe mixed by district (gfx-buildings.md 7.4)
+    const r = rand();
+    const recipe: Recipe =
+      district === "campus" ? (r < 0.8 ? "brick" : "glass") : district === "harbor" ? (r < 0.5 ? "glass" : r < 0.8 ? "stone" : "saffron") : r < 0.45 ? "saffron" : r < 0.8 ? "glass" : "stone";
+    const floors = recipe === "glass" ? 3 + Math.floor(rand() * 3) : recipe === "stone" ? 4 + Math.floor(rand() * 2) : recipe === "brick" ? 3 + Math.floor(rand() * 2) : 2 + Math.floor(rand() * 3);
+    const w = 10 + rand() * 6;
+    const d = 9 + rand() * 5;
+    const b = block(p[0], p[1], w, d, toStreet(p[0], p[1], Math.max(w, d)), recipe, floors, recipe === "brick" ? "brick" : "office");
     if (fits(b)) placed.push(b);
   }
   return placed;

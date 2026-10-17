@@ -24,6 +24,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { buildings } from "../base";
 import { type Building, type ModelId, MODELS } from "../lots";
+import { Blocks } from "./Blocks";
 import { PokeMart, PokemonCenter } from "./civic/Civic";
 import { skyLook } from "./Sky";
 import { fade, TownTracker, town } from "./fade";
@@ -362,6 +363,7 @@ export function Buildings({ night }: { night: boolean }) {
     <>
       <TownTracker night={night} />
       <Houses />
+      <Blocks />
       <PokemonCenter />
       <PokeMart />
       <SkipOnError>
