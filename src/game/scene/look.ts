@@ -24,6 +24,13 @@ export function patchLook() {
     /directLight\.color \*= (\( directLight\.visible && receiveShadow \) \? getShadow\( directionalShadowMap\[ i \][^;]*;)/,
     "sunLit = $1\n\t\tdirectLight.color *= sunLit;",
   );
+  // Fog by true distance, so its edge doesn't swing as the camera turns. It's
+  // measured per pixel: the ground is a few huge triangles, and a distance
+  // worked out at their far corners and blended across would fog the lot.
+  ShaderChunk.fog_pars_vertex = ShaderChunk.fog_pars_vertex.replace("varying float vFogDepth;", "varying vec3 vFogPosition;");
+  ShaderChunk.fog_vertex = ShaderChunk.fog_vertex.replace("vFogDepth = - mvPosition.z;", "vFogPosition = mvPosition.xyz;");
+  ShaderChunk.fog_pars_fragment = ShaderChunk.fog_pars_fragment.replace("varying float vFogDepth;", "varying vec3 vFogPosition;");
+  ShaderChunk.fog_fragment = ShaderChunk.fog_fragment.replace("#ifdef USE_FOG", "#ifdef USE_FOG\n\tfloat vFogDepth = length( vFogPosition );");
   ShaderChunk.opaque_fragment =
     /* glsl */ `
 #if defined( LAMBERT ) && NUM_DIR_LIGHTS > 0 && NUM_HEMI_LIGHTS > 0

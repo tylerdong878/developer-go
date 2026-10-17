@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import {
   AddEquation,
+  Color,
   CustomBlending,
   type DirectionalLight,
   DstColorFactor,
@@ -12,6 +13,7 @@ import {
   Matrix4,
   Object3D,
   OneMinusSrcAlphaFactor,
+  type ShadowMaterial,
   Vector3,
 } from "three";
 import { game } from "../state";
@@ -25,6 +27,9 @@ const HALF = 45;
 /** Where the shadow box sits: a little ahead of the trainer, where the camera looks. */
 const center = new Vector3();
 const ahead = new Vector3();
+const want = new Color();
+/** The catcher's material, eased toward the time of day like the light. */
+const catcher = { color: new Color(), opacity: 0, first: true };
 
 /**
  * The sun, casting real shadows. Its shadow box follows what the camera sees,
@@ -34,9 +39,16 @@ const ahead = new Vector3();
 export function Sun({ color, intensity, shadow, mapSize }: { color: string; intensity: number; shadow: { color: string; opacity: number }; mapSize: number }) {
   const light = useRef<DirectionalLight>(null);
   const target = useMemo(() => new Object3D(), []);
-  useFrame(({ camera }) => {
+  useFrame(({ camera }, dt) => {
     const l = light.current;
     if (!l) return;
+    // ease toward the time of day, so day and night glide
+    const k = catcher.first ? 1 : 1 - Math.exp(-2.4 * dt);
+    catcher.first = false;
+    l.color.lerp(want.set(color), k);
+    l.intensity += (intensity - l.intensity) * k;
+    catcher.color.lerp(want.set(shadow.color), k);
+    catcher.opacity += (shadow.opacity - catcher.opacity) * k;
     const { x, z } = game.player.trainer.position;
     camera.getWorldDirection(ahead);
     ahead.y = 0;
@@ -54,8 +66,6 @@ export function Sun({ color, intensity, shadow, mapSize }: { color: string; inte
     <>
       <directionalLight
         ref={light}
-        color={color}
-        intensity={intensity}
         target={target}
         castShadow
         shadow-mapSize={[mapSize, mapSize]}
@@ -69,7 +79,7 @@ export function Sun({ color, intensity, shadow, mapSize }: { color: string; inte
         shadow-normalBias={0.04}
         shadow-radius={4}
       />
-      <ShadowCatcher color={shadow.color} opacity={shadow.opacity} />
+      <ShadowCatcher />
     </>
   );
 }
@@ -79,21 +89,23 @@ export function Sun({ color, intensity, shadow, mapSize }: { color: string; inte
  * just above it that only draws the shadows. It multiplies, so shadow on
  * grass is a deeper blue-green and shadow on a road is pale blue, not gray.
  */
-function ShadowCatcher({ color, opacity }: { color: string; opacity: number }) {
+function ShadowCatcher() {
   const plane = useRef<Group>(null);
+  const material = useRef<ShadowMaterial>(null);
   useFrame(() => {
     plane.current?.position.set(center.x, 0.015, center.z);
+    material.current?.color.copy(catcher.color);
+    if (material.current) material.current.opacity = catcher.opacity;
   });
   return (
     <group ref={plane}>
       <mesh rotation-x={-Math.PI / 2} receiveShadow renderOrder={-25}>
         <planeGeometry args={[HALF * 2.4, HALF * 2.4]} />
         <shadowMaterial
+          ref={material}
           transparent
           premultipliedAlpha
           depthWrite={false}
-          color={color}
-          opacity={opacity}
           blending={CustomBlending}
           blendEquation={AddEquation}
           blendSrc={DstColorFactor}

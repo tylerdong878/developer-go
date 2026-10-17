@@ -6,7 +6,9 @@ export type TimeOfDay = "day" | "night";
 type RoadColors = Record<RoadKind, readonly [string, string]>;
 
 export type Palette = {
-  sky: { top: string; horizon: string };
+  /** Zenith, about 15 degrees up, the bright haze band on the horizon, and the fog line under it. */
+  sky: { top: string; mid: string; haze: string; fog: string };
+  clouds: { lit: string; shade: string };
   land: string;
   areas: Record<AreaKind, string>;
   shore: string;
@@ -21,24 +23,32 @@ export type Palette = {
   shadow: { color: string; opacity: number };
 };
 
-/** GO's look: green ground, white roads, bright water, a soft sky that fogs out the edges. */
+/**
+ * GO's map, sampled (notes/research/gfx-art-direction.md): yellow-green
+ * ground, teal-gray roads with a pale curb line, bright water, a blue sky with
+ * a glowing horizon. At night GO keeps the ground lighter than the roads:
+ * teal-green land, navy roads with a cream edge, a medium-blue sky. Lit
+ * things (buildings, trees, people) keep their colors; the sun, the shadow
+ * tint and the fog carry the time of day.
+ */
 export const palettes: Record<TimeOfDay, Palette> = {
   day: {
-    sky: { top: "#4fb2ea", horizon: "#d4f1ff" },
-    land: "#a6dd8f",
+    sky: { top: "#3fa4ee", mid: "#7cc0f2", haze: "#e4f6ff", fog: "#c6ecf6" },
+    clouds: { lit: "#ffffff", shade: "#bccde6" },
+    land: "#a3dc6e",
     areas: {
-      park: "#80ca6e",
-      grass: "#62b159",
-      lawn: "#94d57f",
+      park: "#86c965",
+      grass: "#2f8a45",
+      lawn: "#9ad86a",
       water: "#58c6ec",
-      plaza: "#ece6d4",
+      plaza: "#e8e9e2",
       deck: "#c9a36b",
     },
     shore: "#c4f1ff",
     roads: {
-      avenue: ["#ffffff", "#a7c8bf"],
-      street: ["#ffffff", "#a7c8bf"],
-      path: ["#f3e7c6", "#d9c89c"],
+      avenue: ["#7f9396", "#e9ede6"],
+      street: ["#7f9396", "#e9ede6"],
+      path: ["#f1e2b2", "#ddc995"],
       boardwalk: ["#c9a36b", "#8f6d3f"],
     },
     trunk: "#8a5a3b",
@@ -48,25 +58,26 @@ export const palettes: Record<TimeOfDay, Palette> = {
     shadow: { color: "#5d6bd0", opacity: 0.55 },
   },
   night: {
-    sky: { top: "#081231", horizon: "#27356a" },
-    land: "#2e4166",
+    sky: { top: "#24398a", mid: "#33509e", haze: "#5a77c8", fog: "#3d78b6" },
+    clouds: { lit: "#3d4f8e", shade: "#24326a" },
+    land: "#477a6c",
     areas: {
-      park: "#2b5553",
-      grass: "#224845",
-      lawn: "#2f5a58",
-      water: "#16295a",
-      plaza: "#4a557a",
-      deck: "#66553f",
+      park: "#3d7558",
+      grass: "#24503f",
+      lawn: "#4b8070",
+      water: "#1c4f8f",
+      plaza: "#5c6e8e",
+      deck: "#5e5040",
     },
-    shore: "#3e5f9a",
+    shore: "#3a7fa8",
     roads: {
-      avenue: ["#8292c9", "#56649c"],
-      street: ["#8292c9", "#56649c"],
-      path: ["#5d6890", "#48527a"],
-      boardwalk: ["#66553f", "#473a2c"],
+      avenue: ["#2b4f7c", "#b5ae84"],
+      street: ["#2b4f7c", "#b5ae84"],
+      path: ["#6c7a84", "#59656e"],
+      boardwalk: ["#5e5040", "#41372c"],
     },
-    trunk: "#4a3a32",
-    leaves: ["#22534b", "#2b6255"],
+    trunk: "#8a5a3b",
+    leaves: ["#3f9a4b", "#52ad56"],
     sun: { color: "#9fb3ff", intensity: 0.62 },
     shade: { tint: "#5463b0", bounce: "#477a6c" },
     shadow: { color: "#2c3a8a", opacity: 0.5 },
