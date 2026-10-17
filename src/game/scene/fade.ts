@@ -29,7 +29,7 @@ export function TownTracker({ night }: { night: boolean }) {
       for (let t = 0; t <= 0.96 && !blocking; t += 0.08) {
         blocking = Math.abs(cx + sx * t - b.x) < b.w / 2 + 0.8 && Math.abs(cz + sz * t - b.z) < b.d / 2 + 0.8;
       }
-      fade[i] += ((blocking ? 0.22 : 1) - fade[i]) * k;
+      fade[i] += ((blocking ? 0.07 : 1) - fade[i]) * k;
       // Snap the last bit, or the dither keeps eating a few pixels of a building that's back in full.
       if (fade[i] > 0.99) fade[i] = 1;
     });
