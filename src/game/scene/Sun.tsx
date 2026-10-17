@@ -2,29 +2,52 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
-import { type DirectionalLight, type Group, type Material, Object3D } from "three";
+import {
+  AddEquation,
+  CustomBlending,
+  type DirectionalLight,
+  DstColorFactor,
+  type Group,
+  type Material,
+  Matrix4,
+  Object3D,
+  OneMinusSrcAlphaFactor,
+  Vector3,
+} from "three";
 import { game } from "../state";
 
-/** Where the sun sits relative to the trainer: high, off to the south-east. */
-const OFFSET = { x: 30, y: 60, z: 20 };
+/** Which way the sun shines from: high, off to the south-east. */
+const DIR = new Vector3(30, 60, 20).normalize();
+/** The shadow camera's own axes, so its center can snap to whole shadow texels. */
+const BASIS = new Matrix4().lookAt(DIR, new Vector3(), new Vector3(0, 1, 0));
+const INVERSE = BASIS.clone().invert();
+const HALF = 45;
+/** Where the shadow box sits: a little ahead of the trainer, where the camera looks. */
+const center = new Vector3();
+const ahead = new Vector3();
 
 /**
- * The sun, casting real soft shadows. Its shadow box follows the trainer,
- * so shadows stay crisp wherever he walks instead of covering the whole base
- * at low resolution.
+ * The sun, casting real shadows. Its shadow box follows what the camera sees,
+ * snapped to whole texels in the light's own space, so edges stay still as
+ * he walks.
  */
-export function Sun({ color, intensity, night, mapSize }: { color: string; intensity: number; night: boolean; mapSize: number }) {
+export function Sun({ color, intensity, shadow, mapSize }: { color: string; intensity: number; shadow: { color: string; opacity: number }; mapSize: number }) {
   const light = useRef<DirectionalLight>(null);
   const target = useMemo(() => new Object3D(), []);
-  useFrame(() => {
+  useFrame(({ camera }) => {
     const l = light.current;
     if (!l) return;
     const { x, z } = game.player.trainer.position;
-    // Snap to a grid so shadow edges don't shimmer as he walks.
-    const sx = Math.round(x);
-    const sz = Math.round(z);
-    l.position.set(sx + OFFSET.x, OFFSET.y, sz + OFFSET.z);
-    target.position.set(sx, 0, sz);
+    camera.getWorldDirection(ahead);
+    ahead.y = 0;
+    ahead.normalize();
+    center.set(x, 0, z).addScaledVector(ahead, 14).applyMatrix4(INVERSE);
+    const texel = (2 * HALF) / mapSize;
+    center.x = Math.round(center.x / texel) * texel;
+    center.y = Math.round(center.y / texel) * texel;
+    center.applyMatrix4(BASIS);
+    l.position.copy(center).addScaledVector(DIR, 80);
+    target.position.copy(center);
     target.updateMatrixWorld();
   });
   return (
@@ -36,36 +59,46 @@ export function Sun({ color, intensity, night, mapSize }: { color: string; inten
         target={target}
         castShadow
         shadow-mapSize={[mapSize, mapSize]}
-        shadow-camera-left={-45}
-        shadow-camera-right={45}
-        shadow-camera-top={45}
-        shadow-camera-bottom={-45}
+        shadow-camera-left={-HALF}
+        shadow-camera-right={HALF}
+        shadow-camera-top={HALF}
+        shadow-camera-bottom={-HALF}
         shadow-camera-near={10}
         shadow-camera-far={160}
         shadow-bias={-0.0004}
         shadow-normalBias={0.04}
         shadow-radius={4}
       />
-      <ShadowCatcher opacity={night ? 0.22 : 0.32} />
+      <ShadowCatcher color={shadow.color} opacity={shadow.opacity} />
     </>
   );
 }
 
 /**
  * The ground is flat-colored and unlit, so shadows land on a clear layer
- * just above it that only draws the shadows.
+ * just above it that only draws the shadows. It multiplies, so shadow on
+ * grass is a deeper blue-green and shadow on a road is pale blue, not gray.
  */
-function ShadowCatcher({ opacity }: { opacity: number }) {
+function ShadowCatcher({ color, opacity }: { color: string; opacity: number }) {
   const plane = useRef<Group>(null);
   useFrame(() => {
-    const { x, z } = game.player.trainer.position;
-    plane.current?.position.set(x, 0.015, z);
+    plane.current?.position.set(center.x, 0.015, center.z);
   });
   return (
     <group ref={plane}>
       <mesh rotation-x={-Math.PI / 2} receiveShadow renderOrder={-25}>
-        <planeGeometry args={[110, 110]} />
-        <shadowMaterial transparent opacity={opacity} depthWrite={false} color="#0a2a4a" />
+        <planeGeometry args={[HALF * 2.4, HALF * 2.4]} />
+        <shadowMaterial
+          transparent
+          premultipliedAlpha
+          depthWrite={false}
+          color={color}
+          opacity={opacity}
+          blending={CustomBlending}
+          blendEquation={AddEquation}
+          blendSrc={DstColorFactor}
+          blendDst={OneMinusSrcAlphaFactor}
+        />
       </mesh>
     </group>
   );

@@ -69,16 +69,16 @@ function Soccer({ at: [x, z] }: { at: Vec2 }) {
             {[-3, 3].map((pz) => (
               <mesh key={pz} position={[0, 1.2, pz]}>
                 <cylinderGeometry args={[0.1, 0.1, 2.4, 8]} />
-                <meshStandardMaterial color="#ffffff" />
+                <meshLambertMaterial color="#ffffff" />
               </mesh>
             ))}
             <mesh position={[0, 2.4, 0]} rotation-x={Math.PI / 2}>
               <cylinderGeometry args={[0.1, 0.1, 6.2, 8]} />
-              <meshStandardMaterial color="#ffffff" />
+              <meshLambertMaterial color="#ffffff" />
             </mesh>
             <mesh position={[-0.9, 1.2, 0]}>
               <boxGeometry args={[1.8, 2.4, 6]} />
-              <meshStandardMaterial color="#e8f1f5" transparent opacity={0.35} />
+              <meshLambertMaterial color="#e8f1f5" transparent opacity={0.35} />
             </mesh>
           </group>
         ))}
@@ -97,16 +97,16 @@ function Tennis({ at: [x, z] }: { at: Vec2 }) {
       <CastShadows>
         <mesh position={[x, 0.5, z]}>
           <boxGeometry args={[12, 1, 0.08]} />
-          <meshStandardMaterial color="#1e2a38" transparent opacity={0.8} />
+          <meshLambertMaterial color="#1e2a38" transparent opacity={0.8} />
         </mesh>
         <mesh position={[x, 1, z]}>
           <boxGeometry args={[12, 0.12, 0.12]} />
-          <meshStandardMaterial color="#ffffff" />
+          <meshLambertMaterial color="#ffffff" />
         </mesh>
         {[-6, 6].map((px) => (
           <mesh key={px} position={[x + px, 0.55, z]}>
             <cylinderGeometry args={[0.08, 0.08, 1.1, 8]} />
-            <meshStandardMaterial color="#1e2a38" />
+            <meshLambertMaterial color="#1e2a38" />
           </mesh>
         ))}
       </CastShadows>
@@ -128,15 +128,15 @@ function Hoops({ at: [x, z] }: { at: Vec2 }) {
       <CastShadows>
         <mesh position={[x, 1.8, z + 7.6]}>
           <cylinderGeometry args={[0.14, 0.18, 3.6, 10]} />
-          <meshStandardMaterial color="#3a4250" />
+          <meshLambertMaterial color="#3a4250" />
         </mesh>
         <mesh position={[x, 3.4, z + 7.1]}>
           <boxGeometry args={[2.2, 1.4, 0.1]} />
-          <meshStandardMaterial color="#ffffff" />
+          <meshLambertMaterial color="#ffffff" />
         </mesh>
         <mesh position={[x, 3.0, z + 6.55]} rotation-x={Math.PI / 2}>
           <torusGeometry args={[0.42, 0.05, 8, 24]} />
-          <meshStandardMaterial color="#f28a2e" />
+          <meshLambertMaterial color="#f28a2e" />
         </mesh>
       </CastShadows>
     </group>
@@ -158,16 +158,16 @@ function Rock({ at: [x, z] }: { at: Vec2 }) {
       <group position={[x, 0, z]}>
         <mesh position-y={2} scale={[3.2, 2.4, 2.6]}>
           <dodecahedronGeometry args={[1, 0]} />
-          <meshStandardMaterial color="#9aa3ad" roughness={0.95} flatShading />
+          <meshLambertMaterial color="#9aa3ad" flatShading />
         </mesh>
         <mesh position={[2.6, 0.9, -1]} scale={[1.4, 1, 1.2]}>
           <dodecahedronGeometry args={[1, 0]} />
-          <meshStandardMaterial color="#8a939c" roughness={0.95} flatShading />
+          <meshLambertMaterial color="#8a939c" flatShading />
         </mesh>
         {holds.map(([hx, hy, hz, c], i) => (
           <mesh key={i} position={[hx, hy, hz]}>
             <sphereGeometry args={[0.2, 8, 6]} />
-            <meshStandardMaterial color={c} roughness={0.6} />
+            <meshLambertMaterial color={c} />
           </mesh>
         ))}
       </group>

@@ -17,10 +17,14 @@ import { Trainer3D } from "./scene/Trainer3D";
 import { Dust } from "./scene/Dust";
 import { Npcs } from "./scene/Npcs";
 import { CastShadows } from "./scene/Sun";
+import { patchLook } from "./scene/look";
 import { World } from "./scene/World";
 import { game } from "./state";
 import { useReducedMotion } from "./useReducedMotion";
 import { useTimeOfDay } from "./useTimeOfDay";
+
+// one sun, colored shadows: patched into three before anything compiles
+patchLook();
 
 export default function Game() {
   const time = useTimeOfDay();

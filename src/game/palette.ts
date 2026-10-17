@@ -13,10 +13,12 @@ export type Palette = {
   roads: RoadColors;
   trunk: string;
   leaves: readonly [string, string];
-  hemi: { sky: string; ground: string; intensity: number };
+  /** The sun (the moon at night): faces toward it show their own color. */
   sun: { color: string; intensity: number };
-  /** A soft light from the camera, so faces are never in shadow. */
-  fill: { color: string; intensity: number };
+  /** What the shadow side multiplies by (never gray), and the ground color bounced onto low faces. */
+  shade: { tint: string; bounce: string };
+  /** Cast shadows on the ground: a multiply toward this color. */
+  shadow: { color: string; opacity: number };
 };
 
 /** GO's look: green ground, white roads, bright water, a soft sky that fogs out the edges. */
@@ -41,9 +43,9 @@ export const palettes: Record<TimeOfDay, Palette> = {
     },
     trunk: "#8a5a3b",
     leaves: ["#3f9a4b", "#52ad56"],
-    hemi: { sky: "#ffffff", ground: "#e6dfcc", intensity: 1.5 },
-    sun: { color: "#fff4dc", intensity: 1.5 },
-    fill: { color: "#ffffff", intensity: 1.2 },
+    sun: { color: "#fff2df", intensity: 1.1 },
+    shade: { tint: "#a9b8e6", bounce: "#a3dc6e" },
+    shadow: { color: "#5d6bd0", opacity: 0.55 },
   },
   night: {
     sky: { top: "#081231", horizon: "#27356a" },
@@ -65,8 +67,8 @@ export const palettes: Record<TimeOfDay, Palette> = {
     },
     trunk: "#4a3a32",
     leaves: ["#22534b", "#2b6255"],
-    hemi: { sky: "#8ea3e6", ground: "#4a5a86", intensity: 1.1 },
-    sun: { color: "#b9c8ff", intensity: 0.7 },
-    fill: { color: "#c9d4ff", intensity: 0.8 },
+    sun: { color: "#9fb3ff", intensity: 0.62 },
+    shade: { tint: "#5463b0", bounce: "#477a6c" },
+    shadow: { color: "#2c3a8a", opacity: 0.5 },
   },
 };

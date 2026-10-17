@@ -168,7 +168,7 @@ export function Balls() {
           castShadow
         >
           <sphereGeometry args={[b.r, 24, 16]} />
-          <meshStandardMaterial map={textures[i]} roughness={b.look === "red" ? 0.3 : 0.6} />
+          <meshLambertMaterial map={textures[i]} />
         </mesh>
       ))}
     </>

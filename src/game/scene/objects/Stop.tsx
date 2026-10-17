@@ -50,19 +50,19 @@ export function Stop({ stop, x, z }: { stop: StopContent; x: number; z: number }
         <Shadow size={1.6} opacity={0.5} />
         <mesh position-y={0.05}>
           <cylinderGeometry args={[0.36, 0.42, 0.1, 16]} />
-          <meshStandardMaterial color="#d6e6f2" roughness={0.6} />
+          <meshLambertMaterial color="#d6e6f2" />
         </mesh>
         <mesh position-y={1.25}>
           <cylinderGeometry args={[0.06, 0.07, 2.4, 10]} />
-          <meshStandardMaterial color="#c9dcec" roughness={0.5} />
+          <meshLambertMaterial color="#c9dcec" />
         </mesh>
         <group ref={top} position-y={2.9}>
           <mesh ref={icon} geometry={cube}>
-            <meshStandardMaterial color={color} roughness={0.35} emissive={spun ? "#7b3fd6" : "#0b84d6"} emissiveIntensity={0.25} />
+            <meshLambertMaterial color={color} emissive={spun ? "#7b3fd6" : "#0b84d6"} emissiveIntensity={0.25} />
           </mesh>
           <mesh rotation-x={Math.PI / 2}>
             <torusGeometry args={[0.68, 0.05, 8, 40]} />
-            <meshStandardMaterial color="#ffffff" roughness={0.4} />
+            <meshLambertMaterial color="#ffffff" />
           </mesh>
         </group>
       </group>

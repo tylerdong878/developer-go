@@ -41,24 +41,24 @@ export function Egg({ egg, x, z }: { egg: EggContent; x: number; z: number }) {
         <Shadow size={1.9} />
         <mesh position-y={0.14}>
           <cylinderGeometry args={[0.66, 0.74, 0.28, 24]} />
-          <meshStandardMaterial color="#3a4250" roughness={0.6} />
+          <meshLambertMaterial color="#3a4250" />
         </mesh>
         <mesh position-y={0.34} rotation-x={Math.PI / 2}>
           <torusGeometry args={[0.58, 0.13, 12, 32]} />
-          <meshStandardMaterial color="#f28a2e" roughness={0.45} emissive="#f28a2e" emissiveIntensity={0.15} />
+          <meshLambertMaterial color="#f28a2e" emissive="#f28a2e" emissiveIntensity={0.15} />
         </mesh>
         <group ref={shell} position-y={0.36}>
           <group position-y={0.64}>
             <mesh scale={[1, 1.3, 1]}>
               <sphereGeometry args={[0.5, 28, 20]} />
-              <meshStandardMaterial color="#fbfbf6" roughness={0.45} />
+              <meshLambertMaterial color="#fbfbf6" />
             </mesh>
             {SPOT_AT.map(([dx, dy, dz], i) => {
               const k = 0.47 / Math.hypot(dx, dy, dz);
               return (
                 <mesh key={i} position={[dx * k, dy * k * 1.3, dz * k]}>
                   <sphereGeometry args={[0.1 + (i % 3) * 0.02, 12, 10]} />
-                  <meshStandardMaterial color={color} roughness={0.5} />
+                  <meshLambertMaterial color={color} />
                 </mesh>
               );
             })}

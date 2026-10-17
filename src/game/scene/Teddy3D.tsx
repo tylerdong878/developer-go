@@ -135,23 +135,23 @@ export function Teddy3D({ mover }: { mover: Mover }) {
             <group key={i} name={`leg${i}`} position={[x, 0.3, z]}>
               <mesh position-y={-0.14}>
                 <cylinderGeometry args={[0.09, 0.085, 0.28, 10]} />
-                <meshStandardMaterial color={CREAMS[1]} roughness={0.95} />
+                <meshLambertMaterial color={CREAMS[1]} />
               </mesh>
               <mesh position={[0, -0.25, 0.02]}>
                 <sphereGeometry args={[0.09, 12, 10]} />
-                <meshStandardMaterial color={CREAMS[0]} roughness={0.95} />
+                <meshLambertMaterial color={CREAMS[0]} />
               </mesh>
             </group>
           ))}
 
           <mesh position-y={0.44} scale={[0.27, 0.22, 0.4]}>
             <sphereGeometry args={[1, 20, 16]} />
-            <meshStandardMaterial color={CREAMS[0]} roughness={0.95} />
+            <meshLambertMaterial color={CREAMS[0]} />
           </mesh>
           {bodyCurls.map((curl, i) => (
             <mesh key={i} position={curl.p}>
               <sphereGeometry args={[curl.r, 10, 8]} />
-              <meshStandardMaterial color={curl.c} roughness={0.95} />
+              <meshLambertMaterial color={curl.c} />
             </mesh>
           ))}
 
@@ -164,7 +164,7 @@ export function Teddy3D({ mover }: { mover: Mover }) {
             ].map(([x, y, z, r], i) => (
               <mesh key={i} position={[x, y, z]}>
                 <sphereGeometry args={[r, 12, 10]} />
-                <meshStandardMaterial color={CREAMS[(i + 1) % 3]} roughness={0.95} />
+                <meshLambertMaterial color={CREAMS[(i + 1) % 3]} />
               </mesh>
             ))}
           </group>
@@ -172,7 +172,7 @@ export function Teddy3D({ mover }: { mover: Mover }) {
           <group position={[0, 0.74, 0.36]}>
             <mesh>
               <sphereGeometry args={[0.24, 20, 16]} />
-              <meshStandardMaterial color={CREAMS[1]} roughness={0.95} />
+              <meshLambertMaterial color={CREAMS[1]} />
             </mesh>
             {[
               [-0.11, 0.18, -0.02, 0.1],
@@ -183,33 +183,33 @@ export function Teddy3D({ mover }: { mover: Mover }) {
             ].map(([x, y, z, r], i) => (
               <mesh key={i} position={[x, y, z]}>
                 <sphereGeometry args={[r, 12, 10]} />
-                <meshStandardMaterial color={CREAMS[i % 3]} roughness={0.95} />
+                <meshLambertMaterial color={CREAMS[i % 3]} />
               </mesh>
             ))}
             {[-1, 1].map((s) => (
               <mesh key={s} position={[s * 0.22, -0.06, 0.01]} rotation-z={s * 0.28} scale={[0.55, 1.55, 0.8]}>
                 <sphereGeometry args={[0.1, 12, 10]} />
-                <meshStandardMaterial color={EARS} roughness={0.95} />
+                <meshLambertMaterial color={EARS} />
               </mesh>
             ))}
             <mesh position={[0, -0.075, 0.18]} scale={[1.1, 0.85, 0.9]}>
               <sphereGeometry args={[0.12, 14, 12]} />
-              <meshStandardMaterial color="#fbf6ec" roughness={0.95} />
+              <meshLambertMaterial color="#fbf6ec" />
             </mesh>
             <mesh position={[0, -0.035, 0.29]}>
               <sphereGeometry args={[0.045, 12, 10]} />
-              <meshStandardMaterial color={BLACK} roughness={0.3} />
+              <meshLambertMaterial color={BLACK} />
             </mesh>
             <mesh position={[0, -0.15, 0.25]} scale={[1, 0.55, 1]}>
               <sphereGeometry args={[0.04, 10, 8]} />
-              <meshStandardMaterial color="#ef8a8f" roughness={0.6} />
+              <meshLambertMaterial color="#ef8a8f" />
             </mesh>
             <group name="eyes" position={[0, 0.045, 0]}>
               {[-1, 1].map((s) => (
                 <group key={s} position={[s * 0.095, 0, 0.2]}>
                   <mesh>
                     <sphereGeometry args={[0.042, 12, 10]} />
-                    <meshStandardMaterial color={BLACK} roughness={0.25} />
+                    <meshLambertMaterial color={BLACK} />
                   </mesh>
                   <mesh position={[0.012, 0.015, 0.035]}>
                     <sphereGeometry args={[0.012, 8, 6]} />

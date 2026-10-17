@@ -58,65 +58,65 @@ export function Trainer3D({ mover }: { mover: Mover }) {
             <group key={name} name={name} position={[i ? -0.14 : 0.14, 0.95, 0]}>
               <mesh position-y={-0.43}>
                 <capsuleGeometry args={[0.13, 0.6, 4, 12]} />
-                <meshStandardMaterial color={i ? "#343c48" : "#2b323d"} roughness={0.85} />
+                <meshLambertMaterial color={i ? "#343c48" : "#2b323d"} />
               </mesh>
               <mesh geometry={shoe} position={[0, -0.88, 0.05]}>
-                <meshStandardMaterial color="#f7f7f5" roughness={0.6} />
+                <meshLambertMaterial color="#f7f7f5" />
               </mesh>
             </group>
           ))}
 
           <mesh geometry={torso} position-y={1.34}>
-            <meshStandardMaterial color={JACKET} roughness={0.6} />
+            <meshLambertMaterial color={JACKET} />
           </mesh>
           {/* the black tee showing through the open jacket, with light zipper edges */}
           <mesh position={[0, 1.33, 0.19]}>
             <boxGeometry args={[0.15, 0.62, 0.02]} />
-            <meshStandardMaterial color="#1e2227" roughness={0.9} />
+            <meshLambertMaterial color="#1e2227" />
           </mesh>
           {[-0.088, 0.088].map((x) => (
             <mesh key={x} position={[x, 1.33, 0.193]}>
               <boxGeometry args={[0.024, 0.62, 0.022]} />
-              <meshStandardMaterial color="#45a9ea" roughness={0.5} />
+              <meshLambertMaterial color="#45a9ea" />
             </mesh>
           ))}
           {/* hood */}
           <mesh position={[0, 1.71, -0.13]} scale={[1.25, 0.5, 0.7]}>
             <sphereGeometry args={[0.24, 16, 12]} />
-            <meshStandardMaterial color="#0a6fb3" roughness={0.7} />
+            <meshLambertMaterial color="#0a6fb3" />
           </mesh>
 
           {["armL", "armR"].map((name, i) => (
             <group key={name} name={name} position={[i ? -0.39 : 0.39, 1.63, 0]} rotation-z={i ? -0.08 : 0.08}>
               <mesh position-y={-0.3}>
                 <capsuleGeometry args={[0.09, 0.5, 4, 10]} />
-                <meshStandardMaterial color="#0a74bd" roughness={0.65} />
+                <meshLambertMaterial color="#0a74bd" />
               </mesh>
               <mesh position-y={-0.6}>
                 <cylinderGeometry args={[0.095, 0.095, 0.1, 12]} />
-                <meshStandardMaterial color="#0a5a98" roughness={0.7} />
+                <meshLambertMaterial color="#0a5a98" />
               </mesh>
               <mesh position-y={-0.72}>
                 <sphereGeometry args={[0.085, 12, 10]} />
-                <meshStandardMaterial color="#f0c8a6" roughness={0.8} />
+                <meshLambertMaterial color="#f0c8a6" />
               </mesh>
             </group>
           ))}
 
           <mesh position-y={1.76}>
             <cylinderGeometry args={[0.075, 0.085, 0.16, 12]} />
-            <meshStandardMaterial color="#e6b994" roughness={0.8} />
+            <meshLambertMaterial color="#e6b994" />
           </mesh>
 
           <group position-y={2.05}>
             <mesh>
               <sphereGeometry args={[0.28, 40, 28]} />
-              <meshStandardMaterial map={face} roughness={0.75} />
+              <meshLambertMaterial map={face} />
             </mesh>
             {[0.275, -0.275].map((x) => (
               <mesh key={x} position={[x, -0.02, 0]} scale={[0.55, 1, 0.8]}>
                 <sphereGeometry args={[0.065, 10, 8]} />
-                <meshStandardMaterial color="#ecc19e" roughness={0.8} />
+                <meshLambertMaterial color="#ecc19e" />
               </mesh>
             ))}
             <Hair />
@@ -137,22 +137,22 @@ function Hair() {
     <group>
       <mesh position={[0, 0.012, -0.006]} scale={[1.05, 1.13, 1.07]}>
         <sphereGeometry args={[0.3, 32, 8, 0, Math.PI * 2, 0, Math.PI * 0.3]} />
-        <meshStandardMaterial color={HAIR} roughness={0.5} side={DoubleSide} />
+        <meshLambertMaterial color={HAIR} side={DoubleSide} />
       </mesh>
       <mesh scale={[1.03, 1.08, 1.04]}>
         <sphereGeometry args={[0.3, 32, 8, front + 1.1, Math.PI * 2 - 2.2, Math.PI * 0.26, Math.PI * 0.26]} />
-        <meshStandardMaterial color={HAIR} roughness={0.5} side={DoubleSide} />
+        <meshLambertMaterial color={HAIR} side={DoubleSide} />
       </mesh>
       <mesh scale={[1.02, 1, 1.03]}>
         <sphereGeometry args={[0.3, 24, 8, front + 1.9, Math.PI * 2 - 3.8, Math.PI * 0.5, Math.PI * 0.2]} />
-        <meshStandardMaterial color={HAIR} roughness={0.5} side={DoubleSide} />
+        <meshLambertMaterial color={HAIR} side={DoubleSide} />
       </mesh>
       {[-1, 1].map((side) => (
         <mesh key={side} rotation-z={side * -0.24} scale={[1.04, 1.08, 1.06]}>
           <sphereGeometry
             args={[0.305, 16, 8, side > 0 ? front + 0.1 : front - 1.28, 1.18, Math.PI * 0.22, Math.PI * 0.23]}
           />
-          <meshStandardMaterial color={HAIR} roughness={0.5} side={DoubleSide} />
+          <meshLambertMaterial color={HAIR} side={DoubleSide} />
         </mesh>
       ))}
     </group>
