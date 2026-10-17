@@ -25,7 +25,7 @@ export function TownTracker({ night }: { night: boolean }) {
     buildings.forEach((b, i) => {
       // Sample the camera-to-trainer line; if it crosses the footprint, the building's in the way.
       // The camera itself counts too (a wider pad), so it never sits inside a wall it can see.
-      let blocking = Math.abs(cx - b.x) < b.w / 2 + 1.5 && Math.abs(cz - b.z) < b.d / 2 + 1.5;
+      let blocking = camera.position.y < b.h + 2 && Math.abs(cx - b.x) < b.w / 2 + 1.5 && Math.abs(cz - b.z) < b.d / 2 + 1.5;
       for (let t = 0; t <= 0.96 && !blocking; t += 0.08) {
         blocking = Math.abs(cx + sx * t - b.x) < b.w / 2 + 0.8 && Math.abs(cz + sz * t - b.z) < b.d / 2 + 0.8;
       }

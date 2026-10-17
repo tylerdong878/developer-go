@@ -19,9 +19,9 @@ export function Objects({ grass }: { grass: string }) {
         const [x, z] = slots[gym.slug];
         return <Gym key={gym.slug} gym={gym} x={x} z={z} />;
       })}
-      {raids.map((raid) => {
+      {raids.map((raid, i) => {
         const [x, z] = slots[raid.slug];
-        return <Gym key={raid.slug} raid={raid} x={x} z={z} />;
+        return <Gym key={raid.slug} raid={raid} x={x} z={z} index={i} />;
       })}
       {stops.map((stop) => {
         const [x, z] = slots[stop.slug];
