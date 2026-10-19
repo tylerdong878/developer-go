@@ -574,7 +574,7 @@ export function Npcs({ few = false }: { few?: boolean }) {
       ))}
       {/* Nurse Joy's Chansey, beside her at the door, like every anime Pokémon Center */}
       <group position={[centerDoor[0] + 3.9, 0, centerDoor[1] - 0.7]} rotation-y={-0.35} scale={1.9} userData={{ noShadow: true }}>
-        <SmoothModel dex={113} />
+        <SmoothModel dex="chansey-nurse" />
       </group>
     </>
   );

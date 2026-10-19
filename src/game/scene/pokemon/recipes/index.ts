@@ -29,14 +29,17 @@ import ditto from "./132-ditto.js";
 import eevee from "./133-eevee.js";
 import porygon from "./137-porygon.js";
 import snorlax from "./143-snorlax.js";
+import articuno from "./144-articuno.js";
 import dratini from "./147-dratini.js";
 import torchic from "./255-torchic.js";
 import wingull from "./278-wingull.js";
 import rotom from "./479-rotom.js";
+import cresselia from "./488-cresselia.js";
 import swanna from "./581-swanna.js";
 import sirfetchd from "./865-sirfetchd.js";
 import alcremie from "./869-alcremie.js";
 import swannaBoat from "./boat-swanna.js";
+import chanseyNurse from "./chansey-nurse.js";
 import npcAceTrainer from "./npc-ace-trainer.js";
 import npcBlackBelt from "./npc-black-belt.js";
 import npcBugCatcher from "./npc-bug-catcher.js";
@@ -85,14 +88,17 @@ export const RECIPES: Record<number | string, object> = {
   133: eevee,
   137: porygon,
   143: snorlax,
+  144: articuno,
   147: dratini,
   255: torchic,
   278: wingull,
   479: rotom,
+  488: cresselia,
   581: swanna,
   865: sirfetchd,
   869: alcremie,
   "boat-swanna": swannaBoat,
+  "chansey-nurse": chanseyNurse,
   "npc-ace-trainer": npcAceTrainer,
   "npc-black-belt": npcBlackBelt,
   "npc-bug-catcher": npcBugCatcher,

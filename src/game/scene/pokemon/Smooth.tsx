@@ -390,11 +390,15 @@ function rig(b: Built) {
 
 /** Idle life by bone name: breathing, a head that looks about, ears that twitch, tails that wag, wings that flap. */
 /** How each species' wings move at idle (bones named wing*): none unless listed. */
-const WINGS: Partial<Record<Key, "flap" | "glide" | "flutter" | "buzz">> = { 41: "flap", 16: "flutter", 278: "glide", 479: "buzz", 255: "flutter" };
+const WINGS: Partial<Record<Key, "flap" | "soar" | "glide" | "flutter" | "buzz">> = { 41: "flap", 16: "flutter", 278: "glide", 479: "buzz", 255: "flutter", 144: "soar", 488: "glide" };
+/** Long tails (bones tail1, tail2...) add up down their length, so these wag smaller and slower: [size, speed]. */
+const TAILS: Partial<Record<Key, [number, number]>> = { 144: [0.3, 0.5], 488: [0.25, 0.4] };
 
 function wingAngle(kind: string | undefined, t: number) {
   if (kind === "flap") return Math.sin(t * 9) * 0.35;
   if (kind === "buzz") return Math.sin(t * 14) * 0.08;
+  // big slow beats, for a big bird holding itself up
+  if (kind === "soar") return Math.sin(t * 2.6) * 0.32;
   // a few quick beats every few seconds, still in between
   const burst = (p: number) => (t % p < 0.5 ? Math.sin((t % p) * Math.PI * 6) : 0);
   if (kind === "glide") return Math.sin(t * 0.8) * 0.06 + burst(4.7) * 0.4;
@@ -404,6 +408,7 @@ function wingAngle(kind: string | undefined, t: number) {
 
 function animate(group: Group, t: number, asleep: boolean) {
   const wings = WINGS[group.userData.key as Key];
+  const [wag, pace] = TAILS[group.userData.key as Key] ?? [1, 1];
   const bones = group.userData.bones as Bone[];
   for (const bone of bones) {
     const n = bone.name;
@@ -411,7 +416,7 @@ function animate(group: Group, t: number, asleep: boolean) {
     if (n === "root") bone.scale.set(1, 1 + Math.sin(t * (asleep ? 1.3 : 2.4)) * (asleep ? 0.025 : 0.012), 1);
     else if (n === "head" && !asleep) bone.rotation.set(Math.sin(t * 0.7) * 0.04, Math.sin(t * 0.5) * 0.12, Math.sin(t * 0.9) * 0.03);
     else if (/^ear/.test(n)) bone.rotation.z = side * (Math.sin(t * 1.7 + side) * 0.06 + (t % 5.3 < 0.25 ? Math.sin((t % 5.3) * 25) * 0.25 : 0));
-    else if (/^tail/.test(n)) bone.rotation.y = Math.sin(t * (asleep ? 1 : 3)) * (asleep ? 0.06 : 0.22);
+    else if (/^tail/.test(n)) bone.rotation.y = Math.sin(t * (asleep ? 1 : 3 * pace)) * (asleep ? 0.06 : 0.22) * wag;
     else if (/^wing/.test(n)) bone.rotation.z = side * wingAngle(wings, t);
     else if (/^(arm|hand)/.test(n) && !asleep) bone.rotation.x = Math.sin(t * 1.3 + side) * 0.08;
   }

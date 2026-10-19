@@ -1,13 +1,13 @@
-// Chansey (#113). Nurse Joy's Chansey at the Pokémon Center door: the egg in its pouch, the anime's white nurse cap.
+// Chansey (#113), the egg in its pouch. Two versions: the plain species (wild, and as a raid boss), and `nurse`,
+// Nurse Joy's Chansey at the Pokémon Center door in the anime's white nurse cap.
 // Shape checked against art-113, home-113, the GO renders (Serebii go-113, PokeMiners pm113) and the Showdown 3D
 // front/back (ani-chansey, ani-back-chansey). Numbers: notes/research/species-4.md (Chansey), corrections in
 // notes/research/model-facts-2.md.
-// 1 tall (top of the cap to the soles; with CAP false, the top of the head), feet at y 0, facing +z,
+// 1 tall (the top of the head, or of the cap, to the soles), feet at y 0, facing +z,
 // +x = Chansey's own left (the viewer's right).
-// The cap is anime only (GO and the games never show it, wild Chansey don't wear one). CAP = false is the plain species.
+// The cap is anime only (GO and the games never show it, wild Chansey don't wear one). build(false) is the plain species.
 // Paint layers: 6 of the game's 8 (tuft tips L/R, pouch, egg, cap, cross).
 
-const CAP = true;
 
 const PINK = "#f5b9cf";
 const DEEP = "#f08ea4"; // tuft tips, pouch, feet
@@ -108,7 +108,7 @@ const place = (at, turn, v) => {
   return [at[0] + m[0] * v[0] + m[1] * v[1] + m[2] * v[2], at[1] + m[3] * v[0] + m[4] * v[1] + m[5] * v[2], at[2] + m[6] * v[0] + m[7] * v[1] + m[8] * v[2]];
 };
 
-function build() {
+function build(CAP) {
   const pieces = [
     { name: "body", kind: "lathe", profile: BODY, scale: [1, 1, DEPTH], color: PINK, bone: "root" },
     // tufts, flat front to back (about 0.08 tall x 0.05 deep)
@@ -203,5 +203,9 @@ function scaleRecipe(r, k) {
   };
 }
 
-const TOP = CAP ? 1.09 : 1; // the cap's top front corner, measured on the mesh
-export default scaleRecipe(build(), 1 / TOP);
+// Nurse Joy's, in the cap, built 1.09 tall (the cap's top front corner, measured on the mesh) and brought to 1
+export const nurse = scaleRecipe(build(true), 1 / 1.09);
+
+// the plain species: wild, and as a raid boss
+const recipe = build(false);
+export default recipe;
