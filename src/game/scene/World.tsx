@@ -1,11 +1,14 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { type BufferGeometry, Color, DoubleSide, Fog, type HemisphereLight, MeshBasicMaterial, RingGeometry, Vector3 } from "three";
 import { areas, roads, type AreaKind } from "../base";
 import { circle } from "../geometry";
 import { type Palette, palettes } from "../palette";
+import { useWeather } from "../weather";
+import { type Weathered, weatherize } from "../weatherLook";
+import { WeatherFx } from "./WeatherFx";
 import { sunDirection } from "../sun";
 import { clockNow, followingClock, type Phase } from "../useTimeOfDay";
 import { zebraCrossings } from "../streets";
@@ -199,7 +202,7 @@ const target = new Color();
  * Eases every time-of-day color toward the palette each frame: the sky, the
  * fog, the ground, the shadow tint. Switching day and night glides.
  */
-function Glide({ palette, stars, night }: { palette: Palette; stars: number; night: boolean }) {
+function Glide({ palette, stars, night }: { palette: Weathered; stars: number; night: boolean }) {
   const first = useRef(true);
   useFrame(({ scene }, dt) => {
     const k = first.current ? 1 : 1 - Math.exp(-2.4 * dt);
@@ -215,7 +218,12 @@ function Glide({ palette, stars, night }: { palette: Palette; stars: number; nig
     ease(skyLook.uCloudLit.value, palette.clouds.lit);
     ease(skyLook.uCloudShade.value, palette.clouds.shade);
     skyLook.uNight.value += (stars - skyLook.uNight.value) * k;
-    if (scene.fog) scene.fog.color.copy(skyLook.uFog.value);
+    skyLook.uCloudCover.value += (palette.cover - skyLook.uCloudCover.value) * k * 0.4;
+    if (scene.fog instanceof Fog) {
+      scene.fog.color.copy(skyLook.uFog.value);
+      scene.fog.near += (palette.fog[0] - scene.fog.near) * k * 0.4;
+      scene.fog.far += (palette.fog[1] - scene.fog.far) * k * 0.4;
+    }
     if (scene.background instanceof Color) scene.background.copy(skyLook.uFog.value);
     for (const l of LAYERS) ease(l.material.color, l.color(palette));
     const light = scene.getObjectByName("shade") as HemisphereLight | undefined;
@@ -234,7 +242,8 @@ const sunTarget = new Vector3();
 const STARS: Record<Phase, number> = { morning: 0, day: 0, dusk: 0.18, night: 1 };
 
 export function World({ phase, shadowMap, light }: { phase: Phase; shadowMap: number; light: boolean }) {
-  const palette = palettes[phase];
+  const weather = useWeather();
+  const palette = useMemo(() => weatherize(palettes[phase], weather, phase === "night"), [phase, weather]);
   const lit = phase === "night" || phase === "dusk";
   const [fog] = useState(() => new Fog(palette.sky.fog, FOG.near, FOG.far));
   const [background] = useState(() => new Color(palette.sky.fog));
@@ -268,6 +277,7 @@ export function World({ phase, shadowMap, light }: { phase: Phase; shadowMap: nu
       <Trees trunk={palette.trunk} leaves={palette.leaves} />
       <Flora grass={palette.leaves[1]} />
       <Landmarks />
+      <WeatherFx weather={weather} light={light} />
       <Sights />
     </>
   );
