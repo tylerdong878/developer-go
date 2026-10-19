@@ -17,12 +17,15 @@ import {
   Vector3,
 } from "three";
 import { game } from "../state";
+import { skyLook } from "./Sky";
 
-/** Which way the sun shines from: high, off to the south-east. */
-const DIR = new Vector3(30, 60, 20).normalize();
-/** The shadow camera's own axes, so its center can snap to whole shadow texels. */
-const BASIS = new Matrix4().lookAt(DIR, new Vector3(), new Vector3(0, 1, 0));
-const INVERSE = BASIS.clone().invert();
+/** Which way the sun shines from: it moves with the time of day (skyLook.uSunDir, eased in World). */
+const DIR = skyLook.uSunDir.value;
+/** The shadow camera's own axes, so its center can snap to whole shadow texels. Rebuilt as the sun moves. */
+const BASIS = new Matrix4();
+const INVERSE = new Matrix4();
+const UP = new Vector3(0, 1, 0);
+const ORIGIN = new Vector3();
 const HALF = 45;
 /** Where the shadow box sits: a little ahead of the trainer, where the camera looks. */
 const center = new Vector3();
@@ -49,6 +52,8 @@ export function Sun({ color, intensity, shadow, mapSize }: { color: string; inte
     l.intensity += (intensity - l.intensity) * k;
     catcher.color.lerp(want.set(shadow.color), k);
     catcher.opacity += (shadow.opacity - catcher.opacity) * k;
+    BASIS.lookAt(DIR, ORIGIN, UP);
+    INVERSE.copy(BASIS).invert();
     const { x, z } = game.player.trainer.position;
     camera.getWorldDirection(ahead);
     ahead.y = 0;

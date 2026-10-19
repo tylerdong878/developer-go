@@ -2,10 +2,12 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useRef, useState } from "react";
-import { type BufferGeometry, Color, DoubleSide, Fog, type HemisphereLight, MeshBasicMaterial, RingGeometry } from "three";
+import { type BufferGeometry, Color, DoubleSide, Fog, type HemisphereLight, MeshBasicMaterial, RingGeometry, Vector3 } from "three";
 import { areas, roads, type AreaKind } from "../base";
 import { circle } from "../geometry";
-import type { Palette } from "../palette";
+import { type Palette, palettes } from "../palette";
+import { sunDirection } from "../sun";
+import { clockNow, followingClock, type Phase } from "../useTimeOfDay";
 import { zebraCrossings } from "../streets";
 import { polygonGeometry, quadsGeometry, ribbonGeometry } from "./ground";
 import { Water } from "./Water";
@@ -197,11 +199,14 @@ const target = new Color();
  * Eases every time-of-day color toward the palette each frame: the sky, the
  * fog, the ground, the shadow tint. Switching day and night glides.
  */
-function Glide({ palette, night }: { palette: Palette; night: boolean }) {
+function Glide({ palette, stars, night }: { palette: Palette; stars: number; night: boolean }) {
   const first = useRef(true);
   useFrame(({ scene }, dt) => {
     const k = first.current ? 1 : 1 - Math.exp(-2.4 * dt);
     first.current = false;
+    // the sun follows the visitor's clock (or sits high in the south-east when they picked day; the moon's light by night)
+    const want = night ? NIGHT_LIGHT : !followingClock() ? DAY_LIGHT : sunDirection(clockNow());
+    skyLook.uSunDir.value.lerp(sunTarget.set(...want), first.current ? 1 : 1 - Math.exp(-0.8 * dt)).normalize();
     const ease = (c: Color, hex: string) => c.lerp(target.set(hex), k);
     ease(skyLook.uTop.value, palette.sky.top);
     ease(skyLook.uMid.value, palette.sky.mid);
@@ -209,7 +214,7 @@ function Glide({ palette, night }: { palette: Palette; night: boolean }) {
     ease(skyLook.uFog.value, palette.sky.fog);
     ease(skyLook.uCloudLit.value, palette.clouds.lit);
     ease(skyLook.uCloudShade.value, palette.clouds.shade);
-    skyLook.uNight.value += ((night ? 1 : 0) - skyLook.uNight.value) * k;
+    skyLook.uNight.value += (stars - skyLook.uNight.value) * k;
     if (scene.fog) scene.fog.color.copy(skyLook.uFog.value);
     if (scene.background instanceof Color) scene.background.copy(skyLook.uFog.value);
     for (const l of LAYERS) ease(l.material.color, l.color(palette));
@@ -222,7 +227,15 @@ function Glide({ palette, night }: { palette: Palette; night: boolean }) {
   return null;
 }
 
-export function World({ palette, night, shadowMap, light }: { palette: Palette; night: boolean; shadowMap: number; light: boolean }) {
+const DAY_LIGHT: [number, number, number] = [0.416, 0.832, 0.277];
+const NIGHT_LIGHT: [number, number, number] = [-0.3, 0.8, 0.52];
+const sunTarget = new Vector3();
+/** How much night is in the sky (stars, the moon, water and ground at night), and whether lamps and windows are on. */
+const STARS: Record<Phase, number> = { morning: 0, day: 0, dusk: 0.18, night: 1 };
+
+export function World({ phase, shadowMap, light }: { phase: Phase; shadowMap: number; light: boolean }) {
+  const palette = palettes[phase];
+  const lit = phase === "night" || phase === "dusk";
   const [fog] = useState(() => new Fog(palette.sky.fog, FOG.near, FOG.far));
   const [background] = useState(() => new Color(palette.sky.fog));
   const [start] = useState(palette);
@@ -230,7 +243,7 @@ export function World({ palette, night, shadowMap, light }: { palette: Palette; 
     <>
       <primitive attach="background" object={background} />
       <primitive attach="fog" object={fog} />
-      <Glide palette={palette} night={night} />
+      <Glide palette={palette} stars={STARS[phase]} night={phase === "night"} />
       <Sky />
       {/* not a light so much as the two colors the look patch reads: shadow tint and ground bounce */}
       <hemisphereLight name="shade" args={[start.shade.tint, start.shade.bounce, 1]} />
@@ -246,8 +259,8 @@ export function World({ palette, night, shadowMap, light }: { palette: Palette; 
         <meshBasicMaterial colorWrite={false} side={DoubleSide} />
       </mesh>
 
-      <Buildings night={night} />
-      <Props night={night} shadows={!light} />
+      <Buildings night={lit} />
+      <Props night={lit} shadows={!light} />
       <Signs />
       <Signposts />
       <TallGrass />

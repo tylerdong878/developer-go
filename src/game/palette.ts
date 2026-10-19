@@ -1,4 +1,5 @@
 import type { AreaKind, RoadKind } from "./base";
+import type { Phase } from "./sun";
 
 export type TimeOfDay = "day" | "night";
 
@@ -35,7 +36,50 @@ export type Palette = {
  * things (buildings, trees, people) keep their colors; the sun, the shadow
  * tint and the fog carry the time of day.
  */
-export const palettes: Record<TimeOfDay, Palette> = {
+export const palettes: Record<Phase, Palette> = {
+  // morning and dusk: the day's colors through warm low light (gfx-art-direction.md 2.1, 2.2)
+  morning: {
+    sky: { top: "#5ea8e4", mid: "#9fcdf0", haze: "#ffe6d2", fog: "#f2e4da" },
+    clouds: { lit: "#fff4ea", shade: "#c9bfd9" },
+    land: "#add476",
+    areas: { park: "#96c470", grass: "#5f915e", lawn: "#a6d173", water: "#75c2d5", plaza: "#e9dfcd", deck: "#cea574" },
+    shore: "#c9e6e5",
+    roads: {
+      avenue: ["#909892", "#eae3d0"],
+      street: ["#909892", "#eae3d0"],
+      path: ["#f1d9a7", "#dcc290"],
+      boardwalk: ["#cea574", "#8f6d3f"],
+    },
+    sidewalk: "#e5d9c5",
+    zebra: "#f4f0e6",
+    apron: "#ddd2bf",
+    trunk: "#8a5a3b",
+    leaves: ["#3f9a4b", "#52ad56"],
+    sun: { color: "#ffe2bd", intensity: 0.95 },
+    shade: { tint: "#a7a8e6", bounce: "#add476" },
+    shadow: { color: "#7c82d0", opacity: 0.5 },
+  },
+  dusk: {
+    sky: { top: "#4b5fb0", mid: "#b58fbf", haze: "#ffc08e", fog: "#f0b49a" },
+    clouds: { lit: "#ffd2b0", shade: "#a98bb5" },
+    land: "#abb35c",
+    areas: { park: "#96a558", grass: "#677a4a", lawn: "#a5b05a", water: "#79a3a6", plaza: "#e3bca0", deck: "#c98a5b" },
+    shore: "#c5c2b2",
+    roads: {
+      avenue: ["#918072", "#e3bfa2"],
+      street: ["#918072", "#e3bfa2"],
+      path: ["#eab782", "#d29f6c"],
+      boardwalk: ["#c98a5b", "#7e5a3a"],
+    },
+    sidewalk: "#deb69a",
+    zebra: "#f0dccb",
+    apron: "#d8b9a0",
+    trunk: "#8a5a3b",
+    leaves: ["#3f9a4b", "#52ad56"],
+    sun: { color: "#ffb27a", intensity: 0.85 },
+    shade: { tint: "#8f78c8", bounce: "#abb35c" },
+    shadow: { color: "#6a4fb0", opacity: 0.6 },
+  },
   day: {
     sky: { top: "#3fa4ee", mid: "#7cc0f2", haze: "#e4f6ff", fog: "#c6ecf6" },
     clouds: { lit: "#ffffff", shade: "#bccde6" },

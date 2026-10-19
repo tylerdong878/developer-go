@@ -21,13 +21,13 @@ import { patchLook } from "./scene/look";
 import { World } from "./scene/World";
 import { game } from "./state";
 import { useReducedMotion } from "./useReducedMotion";
-import { useTimeOfDay } from "./useTimeOfDay";
+import { usePhase } from "./useTimeOfDay";
 
 // one sun, colored shadows: patched into three before anything compiles
 patchLook();
 
 export default function Game() {
-  const time = useTimeOfDay();
+  const phase = usePhase();
   const still = useReducedMotion();
   const stage = useRef<HTMLDivElement>(null);
   const [budget] = useState(renderBudget);
@@ -50,10 +50,10 @@ export default function Game() {
           <WarmUp />
           <AdaptiveDpr range={budget.dpr} />
           <Controller />
-          <World palette={palettes[time]} night={time === "night"} shadowMap={budget.shadowMap} light={budget.light} />
+          <World phase={phase} shadowMap={budget.shadowMap} light={budget.light} />
           <TapTarget />
           <CastShadows>
-            <Objects grass={palettes[time].leaves[1]} />
+            <Objects grass={palettes[phase].leaves[1]} />
           </CastShadows>
           <Balls />
           <Rings mover={game.player.trainer} still={still} />

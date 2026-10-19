@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { muteStore, setMuted } from "../sound";
-import { setTimeOfDay, useTimeOfDay } from "../useTimeOfDay";
+import { followClock, followingClock, setTimeOfDay, usePhase, useTimeOfDay } from "../useTimeOfDay";
 import { Sheet } from "./Sheet";
 
 /** A row with a label and a switch. */
@@ -28,10 +28,14 @@ function Toggle({ label, on, onChange }: { label: string; on: boolean; onChange:
 export function SettingsPanel({ onClose }: { onClose: () => void }) {
   const muted = useSyncExternalStore(muteStore.subscribe, muteStore.get, muteStore.server);
   const time = useTimeOfDay();
+  // re-read on every phase change, so the clock switch shows the right state
+  usePhase();
+  const clock = followingClock();
   return (
     <Sheet title="Settings" onClose={onClose}>
       <div className="space-y-2">
         <Toggle label="Sound" on={!muted} onChange={(on) => setMuted(!on)} />
+        <Toggle label="Match my clock (sunrise, dusk, night)" on={clock} onChange={(on) => (on ? followClock() : setTimeOfDay(time))} />
         <Toggle label="Night" on={time === "night"} onChange={(on) => setTimeOfDay(on ? "night" : "day")} />
       </div>
       <Link href="/text" className="mt-5 block rounded-2xl bg-ink/5 px-4 py-3.5 font-semibold transition hover:bg-ink/8">
