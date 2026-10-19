@@ -1,4 +1,5 @@
-import type { MapObject } from "@/content";
+import { useId } from "react";
+import type { BadgeTier, MapObject } from "@/content";
 import { EGG_SPOTS, MYSTIC, MYSTIC_LIGHT, RAID_EGG } from "../colors";
 
 /* Small flat versions of the map objects, for lists, buttons, and cards. */
@@ -13,6 +14,42 @@ export function GymIcon({ size = 36 }: { size?: number }) {
       <rect x="18.5" y="35" width="11" height="3" fill={MYSTIC} />
       <ellipse cx="24" cy="20" rx="15" ry="5.5" fill={MYSTIC} stroke="#eafbff" strokeWidth="1.5" />
       <path d="M24 3c4.5 5.5 5.6 9.5 0 14-5.6-4.5-4.5-8.5 0-14Z" fill={MYSTIC_LIGHT} stroke="#eafbff" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
+/** GO's gym badge frames (`GymBadgeFrame_1/2/3`): light, mid, rim. */
+export const BADGE: Record<BadgeTier, { name: string; light: string; mid: string; rim: string }> = {
+  basic: { name: "Basic", light: "#ffffff", mid: "#dfe5ec", rim: "#a9b4c0" },
+  bronze: { name: "Bronze", light: "#f4c49c", mid: "#e4945c", rim: "#bc6434" },
+  silver: { name: "Silver", light: "#cce4e4", mid: "#9cbccc", rim: "#8cb4c4" },
+  gold: { name: "Gold", light: "#fcec54", mid: "#ecc43c", rim: "#c89a1c" },
+};
+
+/** A gym badge: GO's upright diamond, framed by its tier, with the gym inside where GO puts the gym's photo. */
+export function GymBadge({ tier, size = 34 }: { tier: BadgeTier; size?: number }) {
+  const id = useId().replace(/[^w-]/g, "");
+  const c = BADGE[tier];
+  return (
+    <svg viewBox="0 0 40 56" width={size} height={size * 1.4} aria-hidden>
+      <defs>
+        <linearGradient id={`${id}f`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor={c.light} />
+          <stop offset="1" stopColor={c.mid} />
+        </linearGradient>
+        <linearGradient id={`${id}p`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#8fd8ff" />
+          <stop offset="1" stopColor={MYSTIC} />
+        </linearGradient>
+      </defs>
+      <path d="M20 1.5 38.5 28 20 54.5 1.5 28Z" fill={`url(#${id}f)`} stroke={c.rim} strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M20 8 33.5 28 20 48 6.5 28Z" fill={`url(#${id}p)`} stroke="#fff" strokeWidth="1.6" strokeLinejoin="round" />
+      <g fill="#fff">
+        <path d="M14 38.5 15.8 35h8.4l1.8 3.5Z" opacity=".9" />
+        <rect x="17.7" y="24" width="4.6" height="11.5" rx="1" />
+        <ellipse cx="20" cy="24" rx="6.6" ry="2.3" />
+        <path d="M20 14.5c2.1 2.6 2.6 4.4 0 6.5-2.6-2.1-2.1-3.9 0-6.5Z" />
+      </g>
     </svg>
   );
 }

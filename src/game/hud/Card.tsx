@@ -1,10 +1,10 @@
 "use client";
 
 import { type ReactNode, useState } from "react";
-import { type Egg, type Gym, type MapObject, type Raid, type Role, skills, type SkillId, type Spawn, type Stop } from "@/content";
+import { badgeTier, type Egg, type Gym, type MapObject, monthsAt, type Raid, type Role, skills, type SkillId, type Spawn, type Stop, tenure } from "@/content";
 import { GOLD_INK, LURE, MYSTIC, RAID_EGG } from "../colors";
 import { Sheet } from "./Sheet";
-import { EggIcon, GymIcon, RaidIcon, StopIcon } from "./icons";
+import { BADGE, EggIcon, GymBadge, GymIcon, RaidIcon, StopIcon } from "./icons";
 import { SpinDisc } from "./SpinDisc";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -54,6 +54,7 @@ function gymCard(g: Gym): View {
     subtitle: g.location,
     body: (
       <>
+        <Badge gym={g} />
         {g.roles.map((r) => (
           <div key={r.title + r.start}>
             <h3 className="font-display text-lg font-semibold">{r.title}</h3>
@@ -68,6 +69,22 @@ function gymCard(g: Gym): View {
       </>
     ),
   };
+}
+
+/** The gym's badge, like GO's badge screen: its tier is how long Tyler was there. */
+function Badge({ gym }: { gym: Gym }) {
+  const tier = badgeTier(gym);
+  return (
+    <div className="flex items-center gap-3.5 rounded-2xl bg-ink/5 px-3.5 py-2.5">
+      <span className="item-pop shrink-0">
+        <GymBadge tier={tier} size={34} />
+      </span>
+      <div>
+        <p className="font-display text-base font-semibold">{BADGE[tier].name} Gym Badge</p>
+        <p className="text-sm text-ink-soft">{tenure(monthsAt(gym))} here</p>
+      </div>
+    </div>
+  );
 }
 
 function stopCard(s: Stop): View {
