@@ -6,7 +6,8 @@ import { bySlug } from "../objects";
 import { slots } from "../base";
 import { game, ZOOM } from "../state";
 import { goTo } from "../travel";
-import { gainXp, progressStore, recordCatch, recordVisit } from "../progress";
+import { gainXp, progressStore, recordCatch, recordHatch, recordVisit } from "../progress";
+import { HATCH_MS, RAID_BOSS } from "../raidBosses";
 import { buddyStore } from "../buddy";
 import { count } from "../community";
 import { catchRewards, cpFor } from "../cp";
@@ -26,6 +27,19 @@ import { SettingsPanel } from "./Settings";
 import { PokemonPanel } from "./Storage";
 import { CommunityPanel } from "./Community";
 import { BagPanel, BuddyPanel, PokedexPanel, ProfilePanel, TrainerPanel } from "./Panels";
+
+/** Swings the camera round to put a map object ahead of the trainer. */
+function face(slug: string) {
+  const at = slots[slug];
+  if (!at) return;
+  const { view } = game;
+  const { x, z } = game.player.trainer.position;
+  const want = Math.atan2(at[0] - x, -(at[1] - z));
+  let d = (want - view.yawTo) % (Math.PI * 2);
+  if (d > Math.PI) d -= Math.PI * 2;
+  if (d < -Math.PI) d += Math.PI * 2;
+  view.yawTo += d;
+}
 
 /**
  * GO's on-screen controls, laid over the 3D base: the trainer badge, the
@@ -108,6 +122,14 @@ export function Hud() {
       const w = findWild(goal);
       if (w) return setFoe({ dex: w.species.dex, name: w.species.name, rare: false, cp: cpFor(w.species.dex, false, Math.random()), goal });
       const o = bySlug.get(goal);
+      // the first time you walk up to a raid, its egg hatches (scene/objects/Gym.tsx), then the raid opens
+      if (o?.kind === "raid" && RAID_BOSS[goal] && !progressStore.get().hatched.includes(goal)) {
+        recordHatch(goal);
+        sfx.hatch();
+        face(goal);
+        window.setTimeout(() => game.onArrive?.(goal), HATCH_MS);
+        return;
+      }
       if (o?.kind === "spawn") return setFoe({ dex: o.pokemon.dex, name: o.pokemon.name, rare: true, cp: cpFor(o.pokemon.dex, true, Math.random()), goal });
       setCard(goal);
       sfx.open();
@@ -132,15 +154,9 @@ export function Hud() {
   // Opening a card frames its object: the camera swings around to put it
   // ahead of the trainer and moves in a little, then eases back on close.
   useEffect(() => {
-    const at = card ? slots[card] : undefined;
-    if (!at) return;
+    if (!card || !slots[card]) return;
+    face(card);
     const { view } = game;
-    const { x, z } = game.player.trainer.position;
-    const want = Math.atan2(at[0] - x, -(at[1] - z));
-    let d = (want - view.yawTo) % (Math.PI * 2);
-    if (d > Math.PI) d -= Math.PI * 2;
-    if (d < -Math.PI) d += Math.PI * 2;
-    view.yawTo += d;
     const before = view.distanceTo;
     view.distanceTo = Math.max(ZOOM.min, Math.min(before, 16));
     return () => {

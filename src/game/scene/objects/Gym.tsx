@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   AdditiveBlending,
   CanvasTexture,
@@ -9,13 +9,19 @@ import {
   DoubleSide,
   type Group,
   LatheGeometry,
+  type Mesh,
+  type MeshBasicMaterial,
+  type MeshLambertMaterial,
   OctahedronGeometry,
   SRGBColorSpace,
+  type Sprite,
   TorusGeometry,
   Vector2,
 } from "three";
 import type { Gym as GymContent, Raid as RaidContent } from "@/content";
 import { INSTINCT, MYSTIC, MYSTIC_GLOW, RAID_EGG as EGG, VALOR } from "../../colors";
+import { progressStore } from "../../progress";
+import { HATCH, RAID_BOSS } from "../../raidBosses";
 import { POKEMON_3D } from "../pokemon/models";
 import { Shadow } from "../Shadow";
 import { critterSize } from "./Critter";
@@ -35,7 +41,8 @@ import { hover, tapObject } from "./tap";
  *
  * Jobs are Team Mystic gyms (Tyler's team) with a defender on top. Raids
  * (hackathons) sit on gyms of all three teams: the egg stands on the platform
- * where the defender would, with a round orange raid badge over it.
+ * where the defender would, with a round orange raid badge over it. The first
+ * time you walk up, it hatches, and its boss stays on the platform after.
  */
 
 const G = 2.3;
@@ -262,6 +269,9 @@ const badgeTexture = (label: string) =>
     }),
   );
 
+/** GO's pop: overshoots a little and settles. */
+const backOut = (k: number) => (k <= 0 ? 0 : k >= 1 ? 1 : 1 + 2.70158 * (k - 1) ** 3 + 1.70158 * (k - 1) ** 2);
+
 /** "1st of 49" reads "1ST", "Best Design" reads "WIN", "top 5" reads "TOP 5"; otherwise the stars. */
 function placing(raid: RaidContent) {
   const r = raid.result ?? "";
@@ -283,6 +293,11 @@ export function Gym(props: Props) {
   const tall = !raid && TALL.has(slug);
   const dex = raid ? null : (DEFENDER[slug] ?? 25);
   const Defender = dex ? POKEMON_3D[dex] : null;
+  const boss = raid ? RAID_BOSS[raid.slug] : undefined;
+  const Boss = boss ? POKEMON_3D[boss.dex] : null;
+  // bosses stand bigger than defenders, like GO's, with a floor so small ones still read as bosses and a cap so the camera still sees the top
+  const bossScale = boss ? Math.min(Math.max(critterSize(boss.dex) * 1.5, 3.4), 4.6) / G : 1;
+  const bossBadge = Math.max(3.75, 2.45 + (boss?.hover ?? 0) + bossScale + 0.45);
   /** How far the top (platform, crown, rings, marker) sits above the drum. */
   const top = tall ? 0 : -1.13;
   const marker = (tall ? 3.9 : 2.9) + (raid ? 0.3 : 0);
@@ -295,6 +310,14 @@ export function Gym(props: Props) {
   const defender = useRef<Group>(null);
   const symbol = useRef<Group>(null);
   const egg = useRef<Group>(null);
+  const shell = useRef<MeshLambertMaterial>(null);
+  const flash = useRef<Mesh>(null);
+  const bossRef = useRef<Group>(null);
+  const badge = useRef<Sprite>(null);
+  /** When this raid hatched (on the clock), or -Infinity if it already had before this visit. */
+  const hatch = useRef<{ from: number | null; seen: boolean | null }>({ from: null, seen: null });
+  // the boss only loads once its egg hatches, so the map doesn't mesh eight bosses nobody's seen yet
+  const [hatched, setHatched] = useState(false);
 
   const textures = useMemo(
     () => ({
@@ -319,10 +342,38 @@ export function Gym(props: Props) {
     const k = showSymbol ? 1 : 0;
     if (defender.current) defender.current.scale.setScalar(1 - k);
     if (symbol.current) symbol.current.scale.setScalar(Defender ? k : 1);
-    if (egg.current) {
-      egg.current.rotation.y = t * 0.4;
-      egg.current.position.y = 2.45 + Math.abs(Math.sin(t * 1.3)) * 0.04;
+    // GO's hatch (notes/research/gfx-go-gyms-stops.md 4.4): the egg shakes harder and glows, a white flash, the boss pops up
+    const h = hatch.current;
+    const done = !!Boss && progressStore.get().hatched.includes(slug);
+    if (h.seen !== done) {
+      h.from = done ? (h.seen === null ? -Infinity : clock.elapsedTime) : null;
+      h.seen = done;
+      if (done) setHatched(true);
     }
+    const since = h.from === null ? -1 : clock.elapsedTime - h.from;
+    const shake = since >= 0 && since < HATCH.shake ? since / HATCH.shake : 0;
+    if (egg.current) {
+      egg.current.visible = since < HATCH.shake;
+      const s = shake > 0 ? since : 0;
+      egg.current.rotation.set(Math.sin(s * 26) * 0.18 * shake, t * 0.4, Math.cos(s * 21) * 0.14 * shake);
+      egg.current.position.y = 2.45 + Math.abs(Math.sin(t * 1.3)) * 0.04 + shake * 0.06;
+    }
+    if (shell.current) shell.current.emissiveIntensity = 0.12 + shake * shake * 1.4;
+    const f = (since - HATCH.shake) / HATCH.flash;
+    if (flash.current) {
+      flash.current.visible = f > 0 && f < 1;
+      if (flash.current.visible) {
+        flash.current.scale.setScalar(0.5 + f * 1.8);
+        (flash.current.material as MeshBasicMaterial).opacity = 1 - f * f;
+      }
+    }
+    const rise = Math.min(1, Math.max(0, (since - HATCH.shake - HATCH.flash * 0.3) / HATCH.rise));
+    if (bossRef.current) {
+      bossRef.current.visible = rise > 0;
+      bossRef.current.scale.setScalar(backOut(rise));
+      bossRef.current.position.y = 2.45 + (boss?.hover ? boss.hover + Math.sin(t * 1.4) * 0.05 : 0);
+    }
+    if (badge.current) badge.current.position.y = 3.75 + (bossBadge - 3.75) * rise;
   });
 
   const name = raid ? `${"★".repeat(raid.stars)} ${raid.event}` : "gym" in props ? (SHORT[props.gym.org] ?? props.gym.org) : "";
@@ -455,12 +506,27 @@ export function Gym(props: Props) {
             {raid && textures.egg ? (
               <group ref={egg} position-y={2.45}>
                 <mesh geometry={eggGeometry} scale={[0.82, 0.82, 0.82]}>
-                  <meshLambertMaterial map={textures.egg} emissive={EGG[raid.stars]} emissiveIntensity={0.12} />
+                  <meshLambertMaterial ref={shell} map={textures.egg} emissive={EGG[raid.stars]} emissiveIntensity={0.12} />
                 </mesh>
               </group>
             ) : null}
+            {Boss ? (
+              <>
+                <mesh ref={flash} position-y={2.8} visible={false}>
+                  <sphereGeometry args={[0.6, 24, 16]} />
+                  <meshBasicMaterial color="#ffffff" transparent depthWrite={false} />
+                </mesh>
+                {hatched ? (
+                  <group ref={bossRef} position-y={2.45} visible={false}>
+                    <group scale={bossScale} userData={{ noShadow: true }}>
+                      <Boss seed={x} />
+                    </group>
+                  </group>
+                ) : null}
+              </>
+            ) : null}
             {raid && textures.badge ? (
-              <sprite position-y={3.75} scale={[0.62, 0.775, 1]}>
+              <sprite ref={badge} position-y={3.75} scale={[0.62, 0.775, 1]}>
                 <spriteMaterial map={textures.badge} transparent depthWrite={false} />
               </sprite>
             ) : null}
@@ -475,7 +541,7 @@ export function Gym(props: Props) {
           ) : null}
         </group>
       </group>
-      <Nameplate text={name} accent={raid ? EGG[raid.stars] : MYSTIC} x={x} z={z} y={(raid ? 4.5 + top : marker + 0.55) * G} />
+      <Nameplate text={name} accent={raid ? EGG[raid.stars] : MYSTIC} x={x} z={z} y={(raid ? bossBadge + 0.75 + top : marker + 0.55) * G} />
     </group>
   );
 }

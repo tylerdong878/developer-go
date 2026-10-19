@@ -96,4 +96,9 @@ export const sfx = {
     [880, 1175, 1568].forEach((f, i) => tone("sine", f, f, 0.25, 0.07, 0.25 + i * 0.07));
   },
   xp: () => tone("sine", 1318, 1760, 0.15, 0.05),
+  hatch: () => {
+    [0, 0.5, 0.85, 1.1, 1.3, 1.45].forEach((d) => tone("square", 210, 150, 0.05, 0.04, d));
+    window.setTimeout(() => whoosh(0.7, 500, 4200, 0.12), 1550);
+    [784, 988, 1175, 1568].forEach((f, i) => tone("triangle", f, f, 0.3, 0.08, 1.62 + i * 0.07));
+  },
 };

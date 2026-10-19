@@ -3,7 +3,7 @@ import { gyms, raids, spawns, stops } from "@/content";
 import type { Progress } from "./progress";
 import { researchState, STEPS } from "./research";
 
-const fresh: Progress = { caught: {}, history: [], spun: [], visited: [], xp: 0, items: { ball: 20, great: 0, razz: 2 } };
+const fresh: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], xp: 0, items: { ball: 20, great: 0, razz: 2 } };
 
 describe("Tyler's Special Research", () => {
   it("starts on step 1 with nothing done", () => {

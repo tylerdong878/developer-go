@@ -6,6 +6,7 @@ import { GOLD_INK, LURE, MYSTIC, RAID_EGG } from "../colors";
 import { Sheet } from "./Sheet";
 import { BADGE, EggIcon, GymBadge, GymIcon, RaidIcon, StopIcon } from "./icons";
 import { SpinDisc } from "./SpinDisc";
+import { RAID_BOSS } from "../raidBosses";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const month = (m: string) => {
@@ -122,9 +123,15 @@ function stopCard(s: Stop): View {
 
 function raidCard(r: Raid): View {
   const egg = RAID_EGG[r.stars];
+  const boss = RAID_BOSS[r.slug];
   return {
     accent: egg === RAID_EGG[3] ? GOLD_INK : egg,
-    art: <RaidIcon stars={r.stars} size={38} />,
+    art: boss ? (
+      // eslint-disable-next-line @next/next/no-img-element -- tiny local portrait
+      <img src={`/portraits/${boss.dex}.webp`} alt={boss.name} width={60} height={60} className="object-contain" />
+    ) : (
+      <RaidIcon stars={r.stars} size={38} />
+    ),
     kicker: `${"★".repeat(r.stars)} Raid`,
     title: r.event,
     subtitle: `${r.dates}, ${r.venue}`,
@@ -134,6 +141,11 @@ function raidCard(r: Raid): View {
           <p className="inline-flex items-center gap-2 rounded-full bg-gold/25 px-3.5 py-1.5 text-sm font-bold text-ink">
             <span aria-hidden className="size-2.5 rounded-full bg-gold ring-2 ring-gold/40" />
             {r.result}
+          </p>
+        ) : null}
+        {boss ? (
+          <p className="text-sm text-ink-soft">
+            Raid boss: <span className="font-semibold text-ink">{boss.name}</span>, {boss.nod}
           </p>
         ) : null}
         <div>

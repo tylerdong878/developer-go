@@ -4,7 +4,7 @@ import { sfx } from "./sound";
 
 /**
  * What this visitor has done, kept in their browser: Pokémon caught (by dex
- * number, plus a history of each catch), stops spun, places visited, XP,
+ * number, plus a history of each catch), stops spun, places visited, raid eggs hatched, XP,
  * and the items in their bag. It's
  * only a convenience; if storage is blocked, everything still works for the visit.
  */
@@ -22,6 +22,7 @@ export type Progress = {
   history: Catch[];
   spun: string[];
   visited: string[];
+  hatched: string[];
   xp: number;
   items: Items;
 };
@@ -30,7 +31,7 @@ export type Progress = {
 export const STARTER_ITEMS: Items = { ball: 20, great: 0, razz: 2 };
 
 const KEY = "developer-go:progress";
-const empty: Progress = { caught: {}, history: [], spun: [], visited: [], xp: 0, items: STARTER_ITEMS };
+const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], xp: 0, items: STARTER_ITEMS };
 
 function load(): Progress {
   try {
@@ -91,6 +92,11 @@ export function releaseCatch(id: number) {
 export function recordVisit(slug: string) {
   const p = current();
   if (!p.visited.includes(slug)) save({ ...p, visited: [...p.visited, slug] });
+}
+
+export function recordHatch(slug: string) {
+  const p = current();
+  if (!p.hatched.includes(slug)) save({ ...p, hatched: [...p.hatched, slug] });
 }
 
 export function recordSpin(slug: string) {
