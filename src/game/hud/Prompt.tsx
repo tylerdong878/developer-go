@@ -15,6 +15,7 @@ function label(goal: string) {
   if (w) return { verb: "Catch", name: w.species.name, icon: <WildIcon dex={w.species.dex} /> };
   if (goal === "place:center") return { verb: "Enter", name: "the Pokémon Center", icon: <BallIcon top="#e3342f" /> };
   if (goal === "place:mart") return { verb: "Enter", name: "the Poké Mart", icon: <BallIcon top="#2f6fd6" /> };
+  if (goal === "place:lab") return { verb: "Enter", name: "Northeastern's lab", icon: <BallIcon top="#c8323a" /> };
   const o = bySlug.get(goal);
   if (!o) return null;
   const verb = o.kind === "spawn" ? "Catch" : o.kind === "stop" ? "Spin" : o.kind === "egg" ? "Check" : "Visit";

@@ -18,6 +18,7 @@ import { Sky, skyLook } from "./Sky";
 import { Sun } from "./Sun";
 import { Flora } from "./Flora";
 import { Landmarks } from "./Landmarks";
+import { Lab } from "./Lab";
 import { Sights } from "./Sights";
 import { Trees } from "./Trees";
 import { Buildings } from "./Buildings";
@@ -279,6 +280,7 @@ export function World({ phase, shadowMap, light }: { phase: Phase; shadowMap: nu
       <Landmarks />
       <WeatherFx weather={weather} light={light} />
       <Sights />
+      <Lab />
     </>
   );
 }

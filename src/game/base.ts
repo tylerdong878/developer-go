@@ -161,7 +161,7 @@ export const slots: Record<string, Vec2> = {
   "civic-tech-2025": [70, 67],
   "hackillinois-2025": [58, 53],
   "sthacks-2025": [58, 81],
-  "hack-at-brown-2025": [58, 110],
+  "hack-at-brown-2025": [44, 110],
   "babson-buildathon-2026": [22, 110],
 
   // wild Pokémon (fun facts): Snorlax naps across the road to the park
@@ -210,8 +210,15 @@ export const trees: Vec2[] = (() => {
   return out;
 })();
 
+/**
+ * Northeastern's lab: an anime Oak's lab with its wind turbine, on a hill
+ * past the campus (scene/Lab.tsx). The trainer can't climb the hill; the
+ * gate at the bottom is where you go in.
+ */
+export const LAB = { at: [64, 127] as Vec2, scale: 0.9, hill: 12, gate: [64, 109.9] as Vec2 };
+
 /** Courts and fields, with a little room around them, so nothing gets built on them. */
-const landmarkLots: Vec2[][] = [rect(-54, 62, 48, 32), rect(-16, 62, 18, 17), rect(4, 64, 18, 33), rect(-10, 98, 14, 14)];
+const landmarkLots: Vec2[][] = [rect(-54, 62, 48, 32), rect(-16, 62, 18, 17), rect(4, 64, 18, 33), rect(-10, 98, 14, 14), rect(LAB.at[0], LAB.at[1] - 3, 26, 32)];
 
 /** The neighborhood's buildings, placed once from the layout above (see lots.ts). */
 export const buildings = placeBuildings({
@@ -229,11 +236,15 @@ export const buildings = placeBuildings({
  * Places you can walk into that aren't map objects: the Pokémon Center and
  * the Poké Mart, by their front doors. Goals for these are "place:<slug>".
  */
-export const places: Record<string, Vec2> = Object.fromEntries(
-  buildings
-    .filter((b) => b.kind === "center" || b.kind === "mart")
-    .map((b) => [`place:${b.slug}`, [b.x + Math.sin(b.turn) * (b.d / 2 + 2), b.z + Math.cos(b.turn) * (b.d / 2 + 2)] as Vec2]),
-);
+export const places: Record<string, Vec2> = {
+  ...Object.fromEntries(
+    buildings
+      .filter((b) => b.kind === "center" || b.kind === "mart")
+      .map((b) => [`place:${b.slug}`, [b.x + Math.sin(b.turn) * (b.d / 2 + 2), b.z + Math.cos(b.turn) * (b.d / 2 + 2)] as Vec2]),
+  ),
+  // just outside the lab's gate
+  "place:lab": [LAB.gate[0], LAB.gate[1] - 2.6],
+};
 
 /** Is this spot at least `margin` from every road's edge? */
 export function clearOfRoads(p: Vec2, margin: number) {
@@ -265,6 +276,9 @@ export const blockers: { at: Vec2; r: number }[] = [
   { at: slots.snorlax, r: 2.8 },
   // the fountain in the middle of the roundabout
   { at: [0, 0], r: 3.2 },
+  // the lab's hill, and its gate
+  { at: LAB.at, r: LAB.hill * LAB.scale + 0.3 },
+  { at: [LAB.gate[0], LAB.gate[1] + 1.2], r: 2.6 },
 ];
 
 /** Can the trainer stand here? Not in the water, on Snorlax, or inside a building. */
