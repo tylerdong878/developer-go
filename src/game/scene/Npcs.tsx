@@ -18,6 +18,7 @@ import {
 import { places } from "../base";
 import { circle, ellipse, type Vec2 } from "../geometry";
 import { game } from "../state";
+import { RECIPES } from "./pokemon/recipes";
 import { SmoothModel } from "./pokemon/Smooth";
 
 /*
@@ -41,6 +42,8 @@ type Look = {
   body?: ReactNode;
   hand?: ReactNode;
   tall?: number;
+  /** Its smooth model (pokemon/recipes), in Let's Go's trainer-class style. */
+  model: string;
 };
 
 type Npc = { route: Vec2[]; loop: boolean; line: string; look: Look; speed: number; staff?: { at: Vec2; turn: number } };
@@ -74,6 +77,7 @@ const cap = (c: string, brim: string) => (
 
 const LOOKS = {
   youngster: {
+    model: "npc-youngster",
     skin: "#f6cdae",
     hair: "#4d504b",
     torso: "#f3f6f2",
@@ -84,6 +88,7 @@ const LOOKS = {
     body: <M g={cyl} c="#c9a978" p={[0, 0.72, 0]} s={[0.3, 0.3, 0.24]} />,
   },
   bugCatcher: {
+    model: "npc-bug-catcher",
     skin: "#f2cdb1",
     hair: "#6b4a2e",
     torso: "#708e53",
@@ -115,6 +120,7 @@ const LOOKS = {
     ),
   },
   fisherman: {
+    model: "npc-fisherman",
     skin: "#f3cbaf",
     hair: "#5a4a3a",
     torso: "#f4714d",
@@ -144,6 +150,7 @@ const LOOKS = {
     ),
   },
   ace: {
+    model: "npc-ace-trainer",
     skin: "#f6cab3",
     hair: "#b6706b",
     torso: "#4f556e",
@@ -153,6 +160,7 @@ const LOOKS = {
     tall: 1.06,
   },
   blackBelt: {
+    model: "npc-black-belt",
     skin: "#f4c9a9",
     hair: "#4d4d48",
     torso: "#f7f5f0",
@@ -176,6 +184,7 @@ const LOOKS = {
     hand: <M g={cyl} c="#973c34" p={[0, -0.5, 0]} s={[0.1, 0.08, 0.1]} />,
   },
   joy: {
+    model: "npc-nurse-joy",
     skin: "#f5d0c0",
     hair: "#f39cbf",
     torso: "#fad7ec",
@@ -200,6 +209,7 @@ const LOOKS = {
     ),
   },
   clerk: {
+    model: "npc-mart-clerk",
     skin: "#f2c39c",
     hair: "#4b4d4f",
     torso: "#bedeee",
@@ -371,6 +381,63 @@ function along(route: Vec2[], loop: boolean, d: number): { at: Vec2; dir: Vec2 }
   return { at: route[0], dir: [0, 1] };
 }
 
+/** How tall a model stands, in meters (its recipe is 1 tall). */
+const heightOf = (look: Look) => (RECIPES[look.model] as { height: number }).height;
+
+/** The part-by-part person, while the smooth one meshes (named limbs, so the same walk drives it). */
+function OldPerson({ look }: { look: Look }) {
+  const tall = look.tall ?? 1;
+  return (
+    <group scale={1 / heightOf(look)}>
+        <group scale={[1, tall, 1]}>
+          {(["legL", "legR"] as const).map((name, i) => (
+            <group key={name} name={name} position={[i ? -0.13 : 0.13, 0.9, 0]}>
+              <mesh geometry={leg} position-y={-0.42}>
+                <meshLambertMaterial color={look.legs} />
+              </mesh>
+              <mesh geometry={ball} position={[0, -0.86, 0.05]} scale={[0.12, 0.07, 0.17]}>
+                <meshLambertMaterial color={look.shoes} />
+              </mesh>
+            </group>
+          ))}
+          <mesh geometry={torsoGeo} position-y={1.28} castShadow>
+            <meshLambertMaterial color={look.torso} />
+          </mesh>
+          {look.body}
+          {(["armL", "armR"] as const).map((name, i) => (
+            <group key={name} name={name} position={[i ? -0.38 : 0.38, 1.55, 0]}>
+              <mesh geometry={armGeo} position-y={-0.3}>
+                <meshLambertMaterial color={look.arms} />
+              </mesh>
+              <mesh geometry={ball} position-y={-0.6} scale={0.09}>
+                <meshLambertMaterial color={look.skin} />
+              </mesh>
+              {name === "armR" ? look.hand : null}
+            </group>
+          ))}
+          <group position-y={2.02}>
+            <mesh geometry={ball} scale={0.3} castShadow>
+              <meshLambertMaterial color={look.skin} />
+            </mesh>
+            <mesh geometry={ball} position={[0, 0.11, -0.03]} scale={[0.32, 0.24, 0.32]}>
+              <meshLambertMaterial color={look.hair} />
+            </mesh>
+            {look.head}
+          </group>
+        </group>
+    </group>
+  );
+}
+
+const STAND_IN = new Map<Look, () => ReactNode>(
+  Object.values(LOOKS).map((look) => {
+    function StandIn() {
+      return <OldPerson look={look} />;
+    }
+    return [look, StandIn];
+  }),
+);
+
 function Person({ npc, seed }: { npc: Npc; seed: number }) {
   const root = useRef<Group>(null);
   const bubble = useRef<Sprite>(null);
@@ -383,7 +450,7 @@ function Person({ npc, seed }: { npc: Npc; seed: number }) {
   const phase = useRef(0);
   const [plate, setPlate] = useState<{ texture: CanvasTexture; aspect: number } | null>(null);
   const { look } = npc;
-  const tall = look.tall ?? 1;
+  const height = heightOf(look);
 
   useEffect(() => {
     const id = window.setTimeout(() => setPlate(bubbleTexture(npc.line)), 400 + seed * 120);
@@ -469,7 +536,7 @@ function Person({ npc, seed }: { npc: Npc; seed: number }) {
     if (bubble.current) {
       bubble.current.visible = shown.current > 0.02;
       bubble.current.material.opacity = shown.current;
-      bubble.current.position.y = 3.3 * tall + shown.current * 0.3;
+      bubble.current.position.y = height + 1.15 + shown.current * 0.3;
     }
     if (mark.current) {
       const k = !met.current && alertFor.current > 0 ? Math.min(1, (0.7 - alertFor.current) * 8 + 0.2) : 0;
@@ -480,44 +547,11 @@ function Person({ npc, seed }: { npc: Npc; seed: number }) {
 
   return (
     <group ref={root}>
-      <group scale={[1, tall, 1]}>
-        {(["legL", "legR"] as const).map((name, i) => (
-          <group key={name} name={name} position={[i ? -0.13 : 0.13, 0.9, 0]}>
-            <mesh geometry={leg} position-y={-0.42}>
-              <meshLambertMaterial color={look.legs} />
-            </mesh>
-            <mesh geometry={ball} position={[0, -0.86, 0.05]} scale={[0.12, 0.07, 0.17]}>
-              <meshLambertMaterial color={look.shoes} />
-            </mesh>
-          </group>
-        ))}
-        <mesh geometry={torsoGeo} position-y={1.28} castShadow>
-          <meshLambertMaterial color={look.torso} />
-        </mesh>
-        {look.body}
-        {(["armL", "armR"] as const).map((name, i) => (
-          <group key={name} name={name} position={[i ? -0.38 : 0.38, 1.55, 0]}>
-            <mesh geometry={armGeo} position-y={-0.3}>
-              <meshLambertMaterial color={look.arms} />
-            </mesh>
-            <mesh geometry={ball} position-y={-0.6} scale={0.09}>
-              <meshLambertMaterial color={look.skin} />
-            </mesh>
-            {name === "armR" ? look.hand : null}
-          </group>
-        ))}
-        <group position-y={2.02}>
-          <mesh geometry={ball} scale={0.3} castShadow>
-            <meshLambertMaterial color={look.skin} />
-          </mesh>
-          <mesh geometry={ball} position={[0, 0.11, -0.03]} scale={[0.32, 0.24, 0.32]}>
-            <meshLambertMaterial color={look.hair} />
-          </mesh>
-          {look.head}
-        </group>
+      <group scale={height}>
+        <SmoothModel dex={look.model} idle={false} fallback={STAND_IN.get(look)} />
       </group>
       {npc.staff ? null : (
-        <sprite ref={mark} position={[0, 2.95 * tall, 0]} visible={false} renderOrder={7}>
+        <sprite ref={mark} position={[0, height + 0.7, 0]} visible={false} renderOrder={7}>
           <spriteMaterial map={spottedTexture()} transparent depthWrite={false} />
         </sprite>
       )}
@@ -539,7 +573,7 @@ export function Npcs({ few = false }: { few?: boolean }) {
         <Person key={npc.line} npc={npc} seed={i} />
       ))}
       {/* Nurse Joy's Chansey, beside her at the door, like every anime Pokémon Center */}
-      <group position={[centerDoor[0] + 4.1, 0, centerDoor[1] - 0.7]} rotation-y={-0.35} scale={1.55} userData={{ noShadow: true }}>
+      <group position={[centerDoor[0] + 3.9, 0, centerDoor[1] - 0.7]} rotation-y={-0.35} scale={1.9} userData={{ noShadow: true }}>
         <SmoothModel dex={113} />
       </group>
     </>

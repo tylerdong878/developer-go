@@ -37,6 +37,15 @@ import swanna from "./581-swanna.js";
 import sirfetchd from "./865-sirfetchd.js";
 import alcremie from "./869-alcremie.js";
 import swannaBoat from "./boat-swanna.js";
+import npcAceTrainer from "./npc-ace-trainer.js";
+import npcBlackBelt from "./npc-black-belt.js";
+import npcBugCatcher from "./npc-bug-catcher.js";
+import npcFisherman from "./npc-fisherman.js";
+import npcMartClerk from "./npc-mart-clerk.js";
+import npcNurseJoy from "./npc-nurse-joy.js";
+import npcYoungster from "./npc-youngster.js";
+import teddy from "./teddy.js";
+import trainerTyler from "./trainer-tyler.js";
 
 /**
  * Species built as smooth models (notes/research/gfx-characters.md 3): each
@@ -84,4 +93,13 @@ export const RECIPES: Record<number | string, object> = {
   865: sirfetchd,
   869: alcremie,
   "boat-swanna": swannaBoat,
+  "npc-ace-trainer": npcAceTrainer,
+  "npc-black-belt": npcBlackBelt,
+  "npc-bug-catcher": npcBugCatcher,
+  "npc-fisherman": npcFisherman,
+  "npc-mart-clerk": npcMartClerk,
+  "npc-nurse-joy": npcNurseJoy,
+  "npc-youngster": npcYoungster,
+  "teddy": teddy,
+  "trainer-tyler": trainerTyler,
 };

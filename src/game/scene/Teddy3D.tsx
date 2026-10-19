@@ -6,8 +6,9 @@ import { CanvasTexture, type Group, type Sprite, SRGBColorSpace } from "three";
 import { lastPetAt, pet } from "../buddy";
 import { random } from "../geometry";
 import type { Mover } from "../player";
-import { parts } from "./parts";
 import { hover } from "./objects/tap";
+import { RECIPES } from "./pokemon/recipes";
+import { SmoothModel } from "./pokemon/Smooth";
 import { Shadow } from "./Shadow";
 
 let heartTexture: CanvasTexture | null = null;
@@ -64,7 +65,6 @@ const onPet = (e: ThreeEvent<MouseEvent>) => {
   pet();
 };
 
-const PARTS = ["body", "tail", "eyes", "leg0", "leg1", "leg2", "leg3"] as const;
 
 const CREAMS = ["#f3e8d3", "#f6eddc", "#efe2c8"];
 const EARS = "#e6cfa9";
@@ -87,45 +87,60 @@ const bodyCurls = (() => {
   return curls;
 })();
 
+/** Teddy's real height (his recipe is 1 tall), shown about twice life size so he reads on the map, like a GO buddy. */
+const HEIGHT = (RECIPES.teddy as { height: number }).height * 2.1;
+
 /**
- * Teddy, Tyler's Shih-Poo: a cream curly body, floppy apricot ears, black
- * button eyes and nose, and a plume of a tail curled over his back. He wags
- * every few seconds and blinks. Faces +z; `mover` places him.
+ * Teddy, Tyler's Shih-Poo, as one fluffy smooth model (notes/research/model-people-items.md 3):
+ * a cream curly coat, floppy apricot ears, black button eyes and nose, a plume of a tail. He trots,
+ * wags every few seconds and blinks. Faces +z; `mover` places him. Until his mesh is ready, the
+ * part-by-part Teddy stands in.
  */
 export function Teddy3D({ mover }: { mover: Mover }) {
   const root = useRef<Group>(null);
-  const rig = useRef<ReturnType<typeof parts<(typeof PARTS)[number]>>>(null);
   const phase = useRef(0);
 
   useFrame(({ clock }, dt) => {
-    if (!root.current) return;
-    rig.current ??= parts(root.current, PARTS);
-    const p = rig.current;
-    if (!p) return;
+    const r = root.current;
+    if (!r) return;
     const t = clock.elapsedTime;
-    root.current.position.copy(mover.position);
-    root.current.rotation.y = mover.heading;
+    r.position.copy(mover.position);
+    r.rotation.y = mover.heading;
     const trot = Math.min(mover.speed / 5, 1);
     phase.current += dt * (3 + mover.speed * 2.2);
     // diagonal pairs move together, like a trot
     const step = Math.sin(phase.current) * 0.6 * trot;
-    p.leg0.rotation.x = step;
-    p.leg3.rotation.x = step;
-    p.leg1.rotation.x = -step;
-    p.leg2.rotation.x = -step;
-    p.body.position.y = Math.abs(Math.sin(phase.current)) * 0.04 * trot;
+    const legs = ["legFL", "legBR", "legFR", "legBL"].map((n, i) => r.getObjectByName(n) ?? r.getObjectByName(`leg${[0, 3, 1, 2][i]}`));
+    legs.forEach((l, i) => l && (l.rotation.x = i < 2 ? step : -step));
+    const body = r.getObjectByName("body");
+    if (body) body.position.y = Math.abs(Math.sin(phase.current)) * 0.04 * trot;
     // A happy burst of wagging every few seconds, and nonstop while walking.
     const burst = t % 3.4 < 1.1 ? 1 : 0;
-    p.tail.rotation.y = Math.sin(t * 16) * 0.45 * Math.max(burst, trot);
-    p.eyes.scale.y = t % 4.6 > 4.45 ? 0.12 : 1;
+    const tail = r.getObjectByName("tail");
+    if (tail) tail.rotation.y = Math.sin(t * 16) * 0.45 * Math.max(burst, trot);
+    const ears = ["earL", "earR"].map((n) => r.getObjectByName(n));
+    ears.forEach((e, i) => e && (e.rotation.z = (i ? -1 : 1) * Math.sin(phase.current) * 0.12 * trot));
+    const eyes = r.getObjectByName("eyes");
+    if (eyes) eyes.scale.y = t % 4.6 > 4.45 ? 0.12 : 1;
   });
 
   return (
     <group ref={root} onClick={onPet} {...hover}>
       <Hearts />
       <Shadow size={1.2} opacity={0.5} />
+      <group name="body" scale={HEIGHT}>
+        <SmoothModel dex="teddy" idle={false} fallback={OldTeddy} />
+      </group>
+    </group>
+  );
+}
+
+/** The part-by-part Teddy, while the smooth one meshes. */
+function OldTeddy() {
+  return (
+    <group scale={1 / HEIGHT}>
       <group scale={0.85}>
-        <group name="body">
+        <group name="oldBody">
           {[
             [0.13, 0.24],
             [-0.13, 0.24],

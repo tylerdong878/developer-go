@@ -470,8 +470,14 @@ function AuraCloud({ aura, seed }: { aura: Aura; seed: number }) {
   );
 }
 
-/** One smooth Pokémon, 1 tall, feet at y 0, facing +z. Until its mesh is ready, the fallback (the old model) stands in. */
-export function SmoothModel({ dex, seed = 0, asleep = false, fallback: Fallback }: ModelProps & { dex: Key; fallback?: ComponentType<ModelProps> }) {
+/** One smooth model, 1 tall (people and Teddy too, with `idle={false}` so their own code walks them), feet at y 0, facing +z. Until its mesh is ready, the fallback (the old model) stands in. */
+export function SmoothModel({
+  dex,
+  seed = 0,
+  asleep = false,
+  idle = true,
+  fallback: Fallback,
+}: ModelProps & { dex: Key; idle?: boolean; fallback?: ComponentType<ModelProps> }) {
   const b = useBuilt(dex);
   const object = useMemo(() => {
     if (!b) return null;
@@ -482,7 +488,7 @@ export function SmoothModel({ dex, seed = 0, asleep = false, fallback: Fallback 
   const holder = useRef<Group>(null);
   useFrame(({ clock }) => {
     const g = holder.current?.children[0] as Group | undefined;
-    if (g?.userData.bones) animate(g, clock.elapsedTime + seed * 1.7, asleep);
+    if (idle && g?.userData.bones) animate(g, clock.elapsedTime + seed * 1.7, asleep);
   });
   if (!object) return Fallback ? <Fallback seed={seed} asleep={asleep} /> : null;
   const aura = (RECIPES[dex] as { aura?: Aura }).aura;

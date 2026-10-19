@@ -2,6 +2,8 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
+import { RECIPES } from "./pokemon/recipes";
+import { SmoothModel } from "./pokemon/Smooth";
 import { CanvasTexture, DoubleSide, type Group, SRGBColorSpace } from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import type { Mover } from "../player";
@@ -14,27 +16,27 @@ const SKIN = "#f2cfb0";
 const HAIR = "#1c1818";
 const JACKET = "#0b84d6";
 
+/** How tall Tyler stands, in meters (his recipe is 1 tall). */
+const HEIGHT = (RECIPES["trainer-tyler"] as { height: number }).height;
+
 /**
- * Tyler, built from simple shapes and matched to his photo: black hair parted
- * in the middle with the fringe down to his brows, a black tee under a Team
- * Mystic jacket, dark pants, white sneakers. He faces +z; `mover` places him.
+ * Tyler, as a smooth model in Let's Go's trainer style (notes/research/model-people-items.md),
+ * built from his photo: black hair parted in the middle, a Team Mystic jacket, dark pants, white sneakers.
+ * He faces +z; `mover` places him, and his walk swings the model's bones. Until it's meshed, the
+ * part-by-part model stands in.
  */
 export function Trainer3D({ mover }: { mover: Mover }) {
   const root = useRef<Group>(null);
-  const rig = useRef<ReturnType<typeof parts<(typeof PARTS)[number]>>>(null);
   const phase = useRef(0);
 
-  const face = useMemo(() => faceTexture(), []);
-  const torso = useMemo(() => new RoundedBoxGeometry(0.62, 0.74, 0.38, 3, 0.14), []);
-  const shoe = useMemo(() => new RoundedBoxGeometry(0.2, 0.14, 0.34, 2, 0.06), []);
-
   useFrame((_, dt) => {
-    if (!root.current) return;
-    rig.current ??= parts(root.current, PARTS);
-    const p = rig.current;
+    const r = root.current;
+    if (!r) return;
+    r.position.copy(mover.position);
+    r.rotation.y = mover.heading;
+    // the bones (or the stand-in's limbs), looked up by name each frame: whichever is showing
+    const p = parts(r, PARTS);
     if (!p) return;
-    root.current.position.copy(mover.position);
-    root.current.rotation.y = mover.heading;
     // Stride grows with speed; standing still, he just breathes.
     const stride = Math.min(mover.speed / 6, 1);
     phase.current += dt * (2.2 + mover.speed * 1.35);
@@ -52,8 +54,22 @@ export function Trainer3D({ mover }: { mover: Mover }) {
   return (
     <group ref={root}>
       <Shadow size={1.7} opacity={0.5} />
+      <group name="body" scale={HEIGHT}>
+        <SmoothModel dex="trainer-tyler" idle={false} fallback={OldTrainer} />
+      </group>
+    </group>
+  );
+}
+
+/** The part-by-part Tyler, while the smooth one meshes. */
+function OldTrainer() {
+  const face = useMemo(() => faceTexture(), []);
+  const torso = useMemo(() => new RoundedBoxGeometry(0.62, 0.74, 0.38, 3, 0.14), []);
+  const shoe = useMemo(() => new RoundedBoxGeometry(0.2, 0.14, 0.34, 2, 0.06), []);
+  return (
+    <group scale={1 / HEIGHT}>
       <group scale={0.9}>
-        <group name="body">
+        <group name="oldBody">
           {["legL", "legR"].map((name, i) => (
             <group key={name} name={name} position={[i ? -0.14 : 0.14, 0.95, 0]}>
               <mesh position-y={-0.43}>
