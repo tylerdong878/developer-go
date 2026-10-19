@@ -5,15 +5,21 @@ import weedle from "./013-weedle.js";
 import pidgey from "./016-pidgey.js";
 import rattata from "./019-rattata.js";
 import pikachu from "./025-pikachu.js";
+import zubat from "./041-zubat.js";
 import oddish from "./043-oddish.js";
 import meowth from "./052-meowth.js";
 import growlithe from "./058-growlithe.js";
+import poliwag from "./060-poliwag.js";
+import abra from "./063-abra.js";
 import machop from "./066-machop.js";
 import geodude from "./074-geodude.js";
 import magnemite from "./081-magnemite.js";
+import gastly from "./092-gastly.js";
 import chansey from "./113-chansey.js";
+import magikarp from "./129-magikarp.js";
 import ditto from "./132-ditto.js";
 import snorlax from "./143-snorlax.js";
+import dratini from "./147-dratini.js";
 
 /**
  * Species built as smooth models (notes/research/gfx-characters.md 3): each
@@ -29,13 +35,19 @@ export const RECIPES: Record<number, object> = {
   16: pidgey,
   19: rattata,
   25: pikachu,
+  41: zubat,
   43: oddish,
   52: meowth,
   58: growlithe,
+  60: poliwag,
+  63: abra,
   66: machop,
   74: geodude,
   81: magnemite,
+  92: gastly,
   113: chansey,
+  129: magikarp,
   132: ditto,
   143: snorlax,
+  147: dratini,
 };

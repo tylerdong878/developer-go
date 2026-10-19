@@ -8,12 +8,16 @@ import {
   BufferGeometry,
   CanvasTexture,
   Color,
+  DoubleSide,
   Group,
   MeshBasicMaterial,
   MeshToonMaterial,
+  Quaternion,
   Skeleton,
   SkinnedMesh,
+  SphereGeometry,
   SRGBColorSpace,
+  Vector3,
 } from "three";
 import { renderBudget } from "../../device";
 import { goPatch } from "./kit";
@@ -43,6 +47,16 @@ type Meshed = {
   paint: { layers: { color: string; soft: number }[]; dist: Float32Array };
   bones: BoneDef[];
   decals: { lit: DecalSet; unlit: DecalSet; cells: Cell[]; rows: number };
+  /** See-through parts (Poliwag's tail fin), meshed apart on the same bones. */
+  glass: {
+    positions: Float32Array;
+    normals: Float32Array;
+    colors: Float32Array;
+    skinIndex: Uint8Array;
+    skinWeight: Float32Array;
+    indices: Uint32Array;
+    opacity: number;
+  } | null;
 };
 type Built = {
   body: BufferGeometry;
@@ -51,6 +65,8 @@ type Built = {
   unlit: BufferGeometry | null;
   litMaterial: MeshToonMaterial | null;
   unlitMaterial: MeshBasicMaterial | null;
+  glass: BufferGeometry | null;
+  glassMaterial: MeshToonMaterial | null;
   bones: BoneDef[];
 };
 
@@ -82,13 +98,8 @@ function getWorker() {
 }
 
 async function meshOnMain(dex: number, grid: number): Promise<Meshed | null> {
-  const [{ buildMesh }, { buildDecals }] = await Promise.all([import("./sdf/mesh.js"), import("./sdf/decals.js")]);
-  const mesh = buildMesh(RECIPES[dex], { grid });
-  return {
-    ...mesh,
-    paint: { layers: mesh.paint.layers.map((l: { colorHex: string; soft: number }) => ({ color: l.colorHex, soft: l.soft })), dist: mesh.paint.dist },
-    decals: buildDecals(mesh),
-  } as unknown as Meshed;
+  const { meshSpecies } = await import("./sdf/species.js");
+  return meshSpecies(RECIPES[dex], grid) as unknown as Meshed;
 }
 
 function mesh(dex: number, grid: number): Promise<Meshed | null> {
@@ -169,30 +180,82 @@ function decalGeometry(set: DecalSet) {
   return g;
 }
 
-/** Up to 8 paint layers (markings), each a crisp edge where its distance crosses zero. */
+/** Paint (markings) in up to 16 groups, each a crisp edge where its distance crosses zero. */
+const LAYERS = 16;
 const PAINT = /* glsl */ `
-  for (int i = 0; i < 8; i++) {
-    float d = i < 4 ? vPaintA[i] : vPaintB[i - 4];
+  for (int i = 0; i < ${LAYERS}; i++) {
+    vec4 q = i < 4 ? vPaint0 : i < 8 ? vPaint1 : i < 12 ? vPaint2 : vPaint3;
+    float d = q[i % 4];
     float aa = max(fwidth(d), 1e-4);
     float k = 1.0 - smoothstep(-aa, aa, d);
     diffuseColor.rgb = mix(diffuseColor.rgb, paintColor[i], k * step(float(i), float(paintCount) - 0.5));
   }`;
+const PAINT_ATTRS = [0, 1, 2, 3].map((i) => `attribute vec4 paint${i};\nvarying vec4 vPaint${i};`).join("\n");
+const PAINT_VARYINGS = [0, 1, 2, 3].map((i) => `varying vec4 vPaint${i};`).join("\n");
+const PAINT_COPY = [0, 1, 2, 3].map((i) => `vPaint${i} = paint${i};`).join("\n");
 
-function bodyMaterial(layers: { color: string }[]) {
+/**
+ * The recipe's paint layers, grouped by color: layers of one color are one
+ * union (the nearer distance wins), placed where that color last appears, so
+ * a dozen spots cost one slot.
+ */
+function paintGroups(d: Meshed) {
+  const np = d.paint.layers.length;
+  const groups: { color: string; layers: number[] }[] = [];
+  d.paint.layers.forEach((l, i) => {
+    const at = groups.findIndex((g) => g.color.toLowerCase() === l.color.toLowerCase());
+    if (at >= 0) {
+      const [g] = groups.splice(at, 1);
+      g.layers.push(i);
+      groups.push(g);
+    } else groups.push({ color: l.color, layers: [i] });
+  });
+  const kept = groups.slice(-LAYERS);
+  const nv = d.positions.length / 3;
+  const attrs = [0, 1, 2, 3].map(() => new Float32Array(nv * 4).fill(0.1));
+  for (let q = 0; q < nv; q++)
+    kept.forEach((g, slot) => {
+      let best = 0.1;
+      for (const l of g.layers) best = Math.min(best, d.paint.dist[q * np + l]);
+      attrs[slot >> 2][q * 4 + (slot & 3)] = best;
+    });
+  return { colors: kept.map((g) => g.color), attrs };
+}
+
+function bodyMaterial(layers: string[]) {
   const m = new MeshToonMaterial({ vertexColors: true });
-  const colors = Array.from({ length: 8 }, (_, i) => new Color(layers[i]?.color ?? "#000000"));
+  const colors = Array.from({ length: LAYERS }, (_, i) => new Color(layers[i] ?? "#000000"));
   m.onBeforeCompile = (s) => {
     goPatch(s);
     Object.assign(s.uniforms, { paintColor: { value: colors }, paintCount: { value: layers.length } });
     s.vertexShader = s.vertexShader
-      .replace("#include <common>", "#include <common>\nattribute vec4 paintA;\nattribute vec4 paintB;\nvarying vec4 vPaintA;\nvarying vec4 vPaintB;")
-      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvPaintA = paintA;\nvPaintB = paintB;");
+      .replace("#include <common>", `#include <common>\n${PAINT_ATTRS}`)
+      .replace("#include <begin_vertex>", `#include <begin_vertex>\n${PAINT_COPY}`);
     s.fragmentShader = s.fragmentShader
-      .replace("#include <common>", "#include <common>\nvarying vec4 vPaintA;\nvarying vec4 vPaintB;\nuniform vec3 paintColor[8];\nuniform int paintCount;")
+      .replace("#include <common>", `#include <common>\n${PAINT_VARYINGS}\nuniform vec3 paintColor[${LAYERS}];\nuniform int paintCount;`)
       .replace("#include <color_fragment>", `#include <color_fragment>\n${PAINT}`);
   };
   m.customProgramCacheKey = () => "go-smooth";
   return m;
+}
+
+/** The see-through parts: their own mesh, GO-shaded, drawn after the body without writing depth. */
+function glassPart(d: Meshed) {
+  if (!d.glass) return { glass: null, glassMaterial: null };
+  const g = new BufferGeometry();
+  const lin = new Float32Array(d.glass.colors.length);
+  for (let i = 0; i < lin.length; i++) lin[i] = linear(d.glass.colors[i]);
+  g.setAttribute("position", new BufferAttribute(d.glass.positions, 3));
+  g.setAttribute("normal", new BufferAttribute(d.glass.normals, 3));
+  g.setAttribute("color", new BufferAttribute(lin, 3));
+  g.setAttribute("skinIndex", new BufferAttribute(d.glass.skinIndex, 4));
+  g.setAttribute("skinWeight", new BufferAttribute(d.glass.skinWeight, 4));
+  g.setIndex(new BufferAttribute(d.glass.indices, 1));
+  g.computeBoundingSphere();
+  const m = new MeshToonMaterial({ vertexColors: true, transparent: true, opacity: d.glass.opacity, depthWrite: false, side: DoubleSide });
+  m.onBeforeCompile = goPatch;
+  m.customProgramCacheKey = () => "go-glass";
+  return { glass: g, glassMaterial: m };
 }
 
 function build(d: Meshed): Built {
@@ -200,18 +263,13 @@ function build(d: Meshed): Built {
   const nv = d.positions.length / 3;
   const lin = new Float32Array(d.colors.length);
   for (let i = 0; i < lin.length; i++) lin[i] = linear(d.colors[i]);
-  const np = d.paint.layers.length;
-  const pa = new Float32Array(nv * 4).fill(0.1);
-  const pb = new Float32Array(nv * 4).fill(0.1);
-  for (let q = 0; q < nv; q++)
-    for (let l = 0; l < Math.min(np, 8); l++) (l < 4 ? pa : pb)[q * 4 + (l % 4)] = d.paint.dist[q * np + l];
+  const paint = paintGroups(d);
   body.setAttribute("position", new BufferAttribute(d.positions, 3));
   body.setAttribute("normal", new BufferAttribute(d.normals, 3));
   body.setAttribute("color", new BufferAttribute(lin, 3));
   body.setAttribute("skinIndex", new BufferAttribute(d.skinIndex, 4));
   body.setAttribute("skinWeight", new BufferAttribute(d.skinWeight, 4));
-  body.setAttribute("paintA", new BufferAttribute(pa, 4));
-  body.setAttribute("paintB", new BufferAttribute(pb, 4));
+  paint.attrs.forEach((a, i) => body.setAttribute(`paint${i}`, new BufferAttribute(a, 4)));
   body.setIndex(new BufferAttribute(d.indices, 1));
   body.computeBoundingSphere();
   const atlas = d.decals.cells.length ? drawAtlas(d.decals.cells, d.decals.rows) : null;
@@ -226,11 +284,12 @@ function build(d: Meshed): Built {
   }
   return {
     body,
-    bodyMaterial: bodyMaterial(d.paint.layers),
+    bodyMaterial: bodyMaterial(paint.colors),
     lit,
     unlit,
     litMaterial,
     unlitMaterial: unlit && atlas ? new MeshBasicMaterial({ map: atlas, ...over }) : null,
+    ...glassPart(d),
     bones: d.bones,
   };
 }
@@ -289,6 +348,12 @@ function rig(b: Built) {
   roots.forEach((r) => body.add(r));
   body.bind(skeleton);
   group.add(body);
+  if (b.glass && b.glassMaterial) {
+    const glass = new SkinnedMesh(b.glass, b.glassMaterial);
+    glass.bind(skeleton, body.bindMatrix);
+    glass.renderOrder = 3;
+    group.add(glass);
+  }
   for (const [geo, mat] of [
     [b.lit, b.litMaterial],
     [b.unlit, b.unlitMaterial],
@@ -319,6 +384,59 @@ function animate(group: Group, t: number, asleep: boolean) {
   }
 }
 
+type Aura = {
+  color: string;
+  core: string;
+  opacity: number;
+  center: [number, number, number];
+  back: number;
+  puffs: [number, number, number][];
+  wisps: [number, number, number][];
+  churn: { scale: number; speed: [number, number]; spin: number };
+};
+
+const puff = new SphereGeometry(1, 16, 12);
+const parentTurn = new Quaternion();
+
+/**
+ * A see-through cloud round the body (Gastly's gas): soft puffs in a plane that
+ * always faces the camera, a little behind the body, churning and turning.
+ */
+function AuraCloud({ aura, seed }: { aura: Aura; seed: number }) {
+  const group = useRef<Group>(null);
+  const materials = useMemo(
+    () => ({
+      outer: new MeshBasicMaterial({ color: aura.color, transparent: true, opacity: aura.opacity, depthWrite: false }),
+      core: new MeshBasicMaterial({ color: aura.core, transparent: true, opacity: aura.opacity, depthWrite: false }),
+    }),
+    [aura],
+  );
+  const toCamera = useMemo(() => new Vector3(), []);
+  useFrame(({ camera, clock }) => {
+    const g = group.current;
+    if (!g?.parent) return;
+    const t = clock.elapsedTime + seed;
+    // face the camera, and sit a little behind the body from where it's seen
+    g.parent.worldToLocal(toCamera.copy(camera.position));
+    toCamera.sub(g.position.set(...aura.center)).normalize();
+    g.position.addScaledVector(toCamera, -aura.back);
+    // world rotation = the camera's: undo the parent's turn
+    g.quaternion.copy(g.parent.getWorldQuaternion(parentTurn).invert()).multiply(camera.quaternion);
+    g.rotateZ(Math.sin(t * aura.churn.spin) * 0.3);
+    g.children.forEach((c, i) => {
+      const k = 1 + Math.sin(t * aura.churn.speed[i % 2] + i * 1.7) * aura.churn.scale;
+      c.scale.setScalar((c.userData.r as number) * k);
+    });
+  });
+  return (
+    <group ref={group}>
+      {[...aura.puffs.map((p) => [p, materials.outer] as const), ...aura.wisps.map((p) => [p, materials.core] as const)].map(([[x, y, r], m], i) => (
+        <mesh key={i} geometry={puff} material={m} position={[x, y, 0]} scale={r} userData={{ r }} renderOrder={-1} />
+      ))}
+    </group>
+  );
+}
+
 /** One smooth Pokémon, 1 tall, feet at y 0, facing +z. Until its mesh is ready, the fallback (the old model) stands in. */
 export function SmoothModel({ dex, seed = 0, asleep = false, fallback: Fallback }: ModelProps & { dex: number; fallback?: ComponentType<ModelProps> }) {
   const b = useBuilt(dex);
@@ -329,9 +447,11 @@ export function SmoothModel({ dex, seed = 0, asleep = false, fallback: Fallback 
     if (g?.userData.bones) animate(g, clock.elapsedTime + seed * 1.7, asleep);
   });
   if (!object) return Fallback ? <Fallback seed={seed} asleep={asleep} /> : null;
+  const aura = (RECIPES[dex] as { aura?: Aura }).aura;
   return (
     <group ref={holder}>
       <primitive object={object} />
+      {aura ? <AuraCloud aura={aura} seed={seed} /> : null}
     </group>
   );
 }

@@ -2,7 +2,7 @@
 // projected onto the field's surface and lifted a hair off it, with its own cell in one texture atlas.
 // GO's rigs ship faces as textures too (notes/research/gfx-characters.md 1.2, 4).
 
-const N = 10;
+
 const LIFT = 0.0022;
 export const ATLAS = { cols: 4, cellPx: 96 };
 
@@ -43,18 +43,24 @@ export function buildDecals(mesh) {
     for (let b = 1; b < w.length; b++) if (w[b] > w[bone]) bone = b;
     const set = f.lit ? sets.lit : sets.unlit;
     const base = set.pos.length / 3;
+    // wide features (a big grin on a round face) get a finer grid so they follow the curve
+    const N = R > 0.12 ? 22 : 12;
     for (let j = 0; j <= N; j++)
       for (let k = 0; k <= N; k++) {
         const x = ((k / N) * 2 - 1) * R;
         const y = ((j / N) * 2 - 1) * R;
-        let p = [0, 1, 2].map((a) => f.C[a] + f.u[a] * x + f.v[a] * y);
-        let n = f.n;
-        for (let it = 0; it < 6; it++) {
+        // straight onto the surface along the feature's own normal, the way it's drawn (a planar projection)
+        const o = [0, 1, 2].map((a) => f.C[a] + f.u[a] * x + f.v[a] * y + f.n[a] * R);
+        let t = 0;
+        let p = o;
+        for (let it = 0; it < 48; it++) {
+          p = [o[0] - f.n[0] * t, o[1] - f.n[1] * t, o[2] - f.n[2] * t];
           const d = C.dist(p[0], p[1], p[2]);
-          C.grad(p[0], p[1], p[2], eps, g);
-          n = norm(g);
-          p = [p[0] - n[0] * d, p[1] - n[1] * d, p[2] - n[2] * d];
+          if (Math.abs(d) < 1e-4 || t > R * 3) break;
+          t += d * 0.9;
         }
+        C.grad(p[0], p[1], p[2], eps, g);
+        const n = norm(g);
         set.pos.push(p[0] + n[0] * LIFT, p[1] + n[1] * LIFT, p[2] + n[2] * LIFT);
         set.uv.push((col + k / N) / ATLAS.cols, 1 - (row + 1 - j / N) / rows);
         set.bone.push(bone);
