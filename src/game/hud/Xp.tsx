@@ -32,7 +32,7 @@ export function FactToast({ spawn, onDone }: { spawn: Spawn; onDone: () => void 
     <div role="status" className="panel toast-in pointer-events-auto relative w-full max-w-md overflow-hidden rounded-3xl">
       <div className="flex items-start gap-3 p-4">
         {/* eslint-disable-next-line @next/next/no-img-element -- tiny local sprite */}
-        <img src={`/sprites/${spawn.pokemon.dex}.webp`} alt="" width={52} height={52} className="size-13 shrink-0 object-contain" />
+        <img src={`/portraits/${spawn.pokemon.dex}.webp`} alt="" width={52} height={52} className="size-13 shrink-0 object-contain" />
         <div className="min-w-0 flex-1">
           <p className="text-xs font-bold tracking-wide text-gold-ink">Caught {spawn.pokemon.name}</p>
           <p className="font-display text-lg leading-tight font-semibold">{spawn.title}</p>

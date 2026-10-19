@@ -27,7 +27,7 @@ export function FoeView({ dex, name, className = "" }: { dex: number; name: stri
   if (!POKEMON_3D[dex]) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- local sprite
-      <img src={`/sprites/${dex}.webp`} alt={name} width={200} height={200} className={`object-contain drop-shadow-xl ${className}`} />
+      <img src={`/portraits/${dex}.webp`} alt={name} width={200} height={200} className={`object-contain drop-shadow-xl ${className}`} />
     );
   }
   return (

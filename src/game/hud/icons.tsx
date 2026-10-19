@@ -55,7 +55,7 @@ export function EggIcon({ km, size = 26 }: { km: keyof typeof EGG_SPOTS; size?: 
   );
 }
 
-/** The right icon for any map object; wild Pokémon use their real sprite. */
+/** The right icon for any map object; Pokémon use their portrait (rendered from our own 3D model). */
 export function ObjectIcon({ object, size = 36 }: { object: MapObject; size?: number }) {
   switch (object.kind) {
     case "gym":
@@ -68,8 +68,8 @@ export function ObjectIcon({ object, size = 36 }: { object: MapObject; size?: nu
       return <EggIcon km={object.km} size={size * 0.7} />;
     case "spawn":
       return (
-        // eslint-disable-next-line @next/next/no-img-element -- tiny local sprites, already sized
-        <img src={`/sprites/${object.pokemon.dex}.webp`} alt="" width={size} height={size} className="object-contain" />
+        // eslint-disable-next-line @next/next/no-img-element -- tiny local portraits, already sized
+        <img src={`/portraits/${object.pokemon.dex}.webp`} alt="" width={size} height={size} className="object-contain" />
       );
   }
 }

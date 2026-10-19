@@ -30,7 +30,7 @@ export function useSpriteTexture(dex: number) {
     let live = true;
     let loading = cache.get(dex);
     if (!loading) {
-      loading = new TextureLoader().loadAsync(`/sprites/${dex}.webp`).then((t) => {
+      loading = new TextureLoader().loadAsync(`/portraits/${dex}.webp`).then((t) => {
         t.colorSpace = SRGBColorSpace;
         t.anisotropy = 4;
         return { texture: t, feet: measureFeet(t.image as HTMLImageElement) };

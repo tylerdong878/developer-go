@@ -34,7 +34,7 @@ function BallIcon({ top }: { top: string }) {
 
 function WildIcon({ dex }: { dex: number }) {
   // eslint-disable-next-line @next/next/no-img-element -- tiny local sprite
-  return <img src={`/sprites/${dex}.webp`} alt="" width={28} height={28} className="size-7 object-contain" />;
+  return <img src={`/portraits/${dex}.webp`} alt="" width={28} height={28} className="size-7 object-contain" />;
 }
 
 /**

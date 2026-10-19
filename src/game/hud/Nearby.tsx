@@ -143,7 +143,7 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
                     >
                       <span className="grid size-12 shrink-0 place-items-center rounded-full bg-sky">
                         {/* eslint-disable-next-line @next/next/no-img-element -- tiny local sprite */}
-                        <img src={`/sprites/${w.species.dex}.webp`} alt="" width={38} height={38} className="object-contain" />
+                        <img src={`/portraits/${w.species.dex}.webp`} alt="" width={38} height={38} className="object-contain" />
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-semibold">{w.species.name}</span>

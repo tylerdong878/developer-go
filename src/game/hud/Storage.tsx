@@ -30,7 +30,7 @@ function Detail({ c, onBack }: { c: Catch; onBack: () => void }) {
         CP <span className="text-4xl font-semibold text-ink">{c.cp}</span>
       </p>
       {/* eslint-disable-next-line @next/next/no-img-element -- tiny local sprite */}
-      <img src={`/sprites/${c.dex}.webp`} alt={c.name} width={160} height={160} className="mx-auto my-2 size-40 object-contain" />
+      <img src={`/portraits/${c.dex}.webp`} alt={c.name} width={160} height={160} className="mx-auto my-2 size-40 object-contain" />
       <p className="font-display text-2xl font-semibold">
         {factDex.has(c.dex) ? "✦ " : ""}
         {c.name}
@@ -99,7 +99,7 @@ export function PokemonPanel({ onClose }: { onClose: () => void }) {
                     CP <span className="text-sm font-semibold text-ink">{c.cp}</span>
                   </span>
                   {/* eslint-disable-next-line @next/next/no-img-element -- tiny local sprite */}
-                  <img src={`/sprites/${c.dex}.webp`} alt="" width={64} height={64} className="size-16 object-contain" />
+                  <img src={`/portraits/${c.dex}.webp`} alt="" width={64} height={64} className="size-16 object-contain" />
                   <span className="max-w-full truncate text-sm font-semibold">
                     {factDex.has(c.dex) ? "✦ " : ""}
                     {c.name}

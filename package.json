@@ -8,8 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run",
-    "sprites:fetch": "tsx scripts/sprites/fetch.ts"
+    "test": "vitest run"
   },
   "dependencies": {
     "@react-three/fiber": "^9.8.1",

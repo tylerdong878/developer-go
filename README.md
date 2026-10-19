@@ -15,7 +15,7 @@ My portfolio, built like Pokémon GO. Walk my trainer around a 3D home base: gym
 - **Content:** every job, project, hackathon, and fact is typed data in [`src/content`](src/content).
 
 ## Stack
-Next.js, TypeScript, Tailwind, three.js with React Three Fiber, and Vitest. The town, my trainer, and Teddy are all built from simple shapes in code (every building is one instanced box with windows drawn by a shader), sounds are made with Web Audio, and the only images are the Pokémon sprites.
+Next.js, TypeScript, Tailwind, three.js with React Three Fiber, and Vitest. Everything is built in code: the town and its buildings from our own kit (rounded boxes with facades drawn by a shader), and every Pokémon, my trainer, Teddy and the townspeople as smooth models, blended shapes meshed in a worker at load with painted faces and bones. Sounds are made with Web Audio. The only images are portraits rendered from those same models (public/portraits).
 
 ## Run it
 ```bash
@@ -23,7 +23,6 @@ npm install
 npm run dev        # http://localhost:3000
 npm test
 npm run typecheck
-npm run sprites:fetch   # download any missing Pokémon sprites
 ```
 
 ## Community (Convex)

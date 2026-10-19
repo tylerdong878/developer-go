@@ -139,7 +139,7 @@ function spawnCard(s: Spawn, onAbout: () => void): View {
     accent: "#2e9e57",
     art: (
       // eslint-disable-next-line @next/next/no-img-element -- tiny local sprite
-      <img src={`/sprites/${s.pokemon.dex}.webp`} alt={s.pokemon.name} width={60} height={60} className="object-contain" />
+      <img src={`/portraits/${s.pokemon.dex}.webp`} alt={s.pokemon.name} width={60} height={60} className="object-contain" />
     ),
     kicker: `Wild ${s.pokemon.name}, No. ${String(s.pokemon.dex).padStart(4, "0")}`,
     title: s.title,

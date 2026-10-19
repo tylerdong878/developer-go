@@ -171,7 +171,7 @@ function Sprite({ dex, caught, small = false }: { dex: number; caught: boolean; 
   return (
     // eslint-disable-next-line @next/next/no-img-element -- tiny local sprite
     <img
-      src={`/sprites/${dex}.webp`}
+      src={`/portraits/${dex}.webp`}
       alt=""
       width={64}
       height={64}

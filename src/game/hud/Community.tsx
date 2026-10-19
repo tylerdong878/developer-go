@@ -20,7 +20,7 @@ function ago(at: number, now: number) {
 function Sprite({ dex, size = 40 }: { dex: number; size?: number }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element -- tiny local sprite
-    <img src={`/sprites/${dex}.webp`} alt="" width={size} height={size} className="object-contain" style={{ width: size, height: size }} />
+    <img src={`/portraits/${dex}.webp`} alt="" width={size} height={size} className="object-contain" style={{ width: size, height: size }} />
   );
 }
 
