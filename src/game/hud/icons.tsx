@@ -1,6 +1,8 @@
-import { useId } from "react";
-import type { BadgeTier, MapObject } from "@/content";
+import { useId, useSyncExternalStore } from "react";
+import type { BadgeTier, MapObject, Raid } from "@/content";
 import { EGG_SPOTS, MYSTIC, MYSTIC_LIGHT, RAID_EGG } from "../colors";
+import { progressStore } from "../progress";
+import { RAID_BOSS } from "../raidBosses";
 
 /* Small flat versions of the map objects, for lists, buttons, and cards. */
 
@@ -67,17 +69,34 @@ export function StopIcon({ size = 30, lured = false }: { size?: number; lured?: 
   );
 }
 
-export function RaidIcon({ stars, size = 34 }: { stars: 1 | 3 | 5; size?: number }) {
+/** A raid gym with its egg on top, or, once it's hatched, its boss (like GO's Nearby raid tab). */
+export function RaidIcon({ stars, size = 34, boss }: { stars: 1 | 3 | 5; size?: number; boss?: number }) {
   const egg = RAID_EGG[stars];
   return (
     <svg viewBox="0 0 52 68" width={size} height={size * 1.3} aria-hidden>
       <path d="M11 66 15 53h22l4 13Z" fill="#6b7788" />
       <rect x="21" y="36" width="10" height="18" rx="2" fill="#dfe5ec" />
       <ellipse cx="26" cy="36" rx="14" ry="5" fill="#9aa5b4" />
-      <path d="M26 3c8 0 12 9 12 16 0 7-5.4 12-12 12S14 26 14 19c0-7 4-16 12-16Z" fill={egg} stroke="#fff" strokeWidth="2" />
-      <path d="M20 10c1.6-2.4 3.6-3.6 6-3.8" stroke="#fff" strokeWidth="2" strokeLinecap="round" fill="none" opacity=".8" />
+      {boss ? (
+        <image href={`/portraits/${boss}.webp`} x="3" y="-4" width="46" height="46" />
+      ) : (
+        <>
+          <path d="M26 3c8 0 12 9 12 16 0 7-5.4 12-12 12S14 26 14 19c0-7 4-16 12-16Z" fill={egg} stroke="#fff" strokeWidth="2" />
+          <path d="M20 10c1.6-2.4 3.6-3.6 6-3.8" stroke="#fff" strokeWidth="2" strokeLinecap="round" fill="none" opacity=".8" />
+        </>
+      )}
     </svg>
   );
+}
+
+/** A raid on the map, showing its boss once this visitor has hatched it. */
+function RaidObjectIcon({ raid, size }: { raid: Raid; size: number }) {
+  const hatched = useSyncExternalStore(
+    progressStore.subscribe,
+    () => progressStore.get().hatched.includes(raid.slug),
+    () => false,
+  );
+  return <RaidIcon stars={raid.stars} size={size} boss={hatched ? RAID_BOSS[raid.slug]?.dex : undefined} />;
 }
 
 export function EggIcon({ km, size = 26 }: { km: keyof typeof EGG_SPOTS; size?: number }) {
@@ -100,7 +119,7 @@ export function ObjectIcon({ object, size = 36 }: { object: MapObject; size?: nu
     case "stop":
       return <StopIcon size={size * 0.75} lured={object.featured} />;
     case "raid":
-      return <RaidIcon stars={object.stars} size={size * 0.85} />;
+      return <RaidObjectIcon raid={object} size={size * 0.85} />;
     case "egg":
       return <EggIcon km={object.km} size={size * 0.7} />;
     case "spawn":
