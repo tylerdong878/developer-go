@@ -14,8 +14,12 @@ import { sfx } from "../sound";
 import { FoeView } from "./FoeView";
 import { ItemIcon } from "./icons";
 
-/** Who you're trying to catch. Fact Pokémon never run and always get caught by the second hit. */
-export type Foe = { dex: number; name: string; rare: boolean; cp: number };
+/**
+ * Who you're trying to catch. Fact Pokémon never run and always get caught by
+ * the second hit. A raid boss comes with `premier`: GO's bonus round, a set of
+ * Premier Balls and the odds; it never runs early, but it's gone when they're spent.
+ */
+export type Foe = { dex: number; name: string; rare: boolean; cp: number; premier?: { balls: number; rate: number } };
 
 type Phase = "aim" | "flying" | "wiggle" | "caught" | "fled";
 type Throw = "Nice" | "Great" | "Excellent" | null;
@@ -51,6 +55,11 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
   const [berry, setBerry] = useState(false);
   const [firstOfKind] = useState(() => !progressStore.get().caught[foe.dex]);
   const thrown = useRef<{ great: boolean; berry: boolean }>({ great: false, berry: false });
+  const round = foe.premier;
+  const left = useRef(round?.balls ?? 0);
+  const [premierLeft, setPremierLeft] = useState(round?.balls ?? 0);
+  /** The bonus round is over once the last Premier Ball misses or breaks open. */
+  const spent = () => !!round && left.current <= 0;
 
   // A fact Pokémon never gets stuck behind an empty bag: it hands you a ball.
   useEffect(() => {
@@ -59,7 +68,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
   }, [foe.rare]);
 
   // Ring colors like GO, from the chance a Nice throw would catch it with what's selected: a Great Ball or a berry shifts it greener.
-  const ease = (foe.rare ? 0.7 : 0.45) + 0.1 + (ballType === "great" ? 0.15 : 0) + (berry ? 0.2 : 0);
+  const ease = round ? round.rate + 0.1 + (berry ? 0.15 : 0) : (foe.rare ? 0.7 : 0.45) + 0.1 + (ballType === "great" ? 0.15 : 0) + (berry ? 0.2 : 0);
   const ringColor = ease >= 0.85 ? "#2ee82e" : ease >= 0.65 ? "#b5f21b" : ease >= 0.45 ? "#fef204" : ease >= 0.25 ? "#ff9a1f" : "#f2342a";
   const caughtBefore = (progressStore.get().caught[foe.dex] ?? 0) > 0;
 
@@ -100,14 +109,16 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
     const bonus = hitRing < 0.3 ? "Excellent" : hitRing < 0.7 ? "Great" : "Nice";
     setLabel(bonus);
     hits.current += 1;
-    const chance = foe.rare
-      ? hits.current >= 2
-        ? 1
-        : 0.7
-      : 0.45 +
-        { Nice: 0.1, Great: 0.2, Excellent: 0.35 }[bonus] +
-        (thrown.current.great ? 0.15 : 0) +
-        (thrown.current.berry ? 0.2 : 0);
+    const chance = round
+      ? round.rate + { Nice: 0.05, Great: 0.12, Excellent: 0.25 }[bonus] + (thrown.current.berry ? 0.15 : 0)
+      : foe.rare
+        ? hits.current >= 2
+          ? 1
+          : 0.7
+        : 0.45 +
+          { Nice: 0.1, Great: 0.2, Excellent: 0.35 }[bonus] +
+          (thrown.current.great ? 0.15 : 0) +
+          (thrown.current.berry ? 0.2 : 0);
     const caught = Math.random() < chance;
     const wiggles = caught ? 3 : 1 + Math.floor(Math.random() * 3);
     setPhase("wiggle");
@@ -119,7 +130,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
         setMessage(null);
         return;
       }
-      if (!foe.rare && Math.random() < 0.15) {
+      if (spent() || (!round && !foe.rare && Math.random() < 0.15)) {
         setPhase("fled");
         sfx.breakFree();
         setMessage(`Oh no! ${foe.name} fled.`);
@@ -137,6 +148,14 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
 
   /** Spends a ball from the bag for this throw (and the berry, if one's fed). */
   const spendBall = () => {
+    if (round) {
+      if (spent()) return false;
+      left.current -= 1;
+      setPremierLeft(left.current);
+      thrown.current = { great: false, berry };
+      setBerry(false);
+      return true;
+    }
     if (!spendItem(ballType)) {
       setMessage(ballType === "great" ? "Out of Great Balls." : "Out of Poké Balls. Spin a PokéStop!");
       window.setTimeout(() => setMessage(null), 1400);
@@ -163,6 +182,12 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
         place(to.x, to.y + 40, 0.45);
         resolve(ringAtRelease);
       } else {
+        if (spent()) {
+          setPhase("fled");
+          sfx.breakFree();
+          setMessage(`Oh no! ${foe.name} fled.`);
+          return;
+        }
         setMessage("Missed!");
         window.setTimeout(() => {
           const { rest } = geometry();
@@ -240,7 +265,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
       ref={field}
       role="dialog"
       aria-modal="true"
-      aria-label={`Wild ${foe.name}`}
+      aria-label={round ? `Raid boss ${foe.name}` : `Wild ${foe.name}`}
       className="encounter fixed inset-0 z-50 touch-none overflow-hidden select-none"
       onPointerMove={onMove}
       onPointerUp={onUp}
@@ -299,7 +324,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
         style={{ transformOrigin: "50% 50%" }}
       >
         <div className={`size-full ${phase === "wiggle" ? "ball-wiggle" : ""}`}>
-          <PokeBall great={ballType === "great"} />
+          <PokeBall kind={round ? "premier" : ballType} />
         </div>
       </div>
 
@@ -330,17 +355,19 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
           </button>
           {/* how many of this ball are left, next to it */}
           <p className="pointer-events-none absolute bottom-5 left-[calc(50%+min(16vw,75px)+6px)] font-[family-name:var(--font-lato)] text-lg font-black text-white [text-shadow:0_0_3px_#0a2a4a,0_0_3px_#0a2a4a]">
-            {items[ballType]}
+            {round ? premierLeft : items[ballType]}
           </p>
-          {/* ball switch, bottom right */}
-          <button
-            type="button"
-            onClick={() => setBallType((b) => (b === "ball" ? "great" : "ball"))}
-            aria-label={`Switch to ${ballType === "ball" ? "Great Balls" : "Poké Balls"}`}
-            className="absolute right-[8%] bottom-6 grid size-16 place-items-center rounded-full bg-white/40 backdrop-blur-sm transition active:scale-90"
-          >
-            <ItemIcon id={ballType === "ball" ? "great" : "ball"} size={34} />
-          </button>
+          {/* ball switch, bottom right (a bonus round only has Premier Balls) */}
+          {round ? null : (
+            <button
+              type="button"
+              onClick={() => setBallType((b) => (b === "ball" ? "great" : "ball"))}
+              aria-label={`Switch to ${ballType === "ball" ? "Great Balls" : "Poké Balls"}`}
+              className="absolute right-[8%] bottom-6 grid size-16 place-items-center rounded-full bg-white/40 backdrop-blur-sm transition active:scale-90"
+            >
+              <ItemIcon id={ballType === "ball" ? "great" : "ball"} size={34} />
+            </button>
+          )}
         </>
       ) : null}
 
@@ -391,21 +418,24 @@ function Caught({ foe, rewards }: { foe: Foe; rewards: [string, number][] }) {
   );
 }
 
-/** The ball in your hand: a Poké Ball, or a Great Ball (blue top with its red side panels). */
-function PokeBall({ great = false }: { great?: boolean }) {
+/** The ball in your hand: a Poké Ball, a Great Ball (blue top with its red side panels), or a raid's Premier Ball (all white, red band). */
+function PokeBall({ kind = "ball" }: { kind?: "ball" | "great" | "premier" }) {
+  const great = kind === "great";
+  const premier = kind === "premier";
+  const line = premier ? "#e3350d" : "#151c24";
   return (
     <svg viewBox="0 0 64 64" className="size-full drop-shadow-lg" aria-hidden>
       <circle cx="32" cy="32" r="30" fill="#f2f8fa" />
-      <path d="M2 32a30 30 0 0 1 60 0Z" fill={great ? "#2b6fd6" : "#ff2a18"} />
+      {premier ? null : <path d="M2 32a30 30 0 0 1 60 0Z" fill={great ? "#2b6fd6" : "#ff2a18"} />}
       {great ? (
         <>
           <path d="M9 14c5 2 8 6 9.5 12L9 27Z" fill="#e3350d" />
           <path d="M55 14c-5 2-8 6-9.5 12L55 27Z" fill="#e3350d" />
         </>
       ) : null}
-      <circle cx="32" cy="32" r="30" fill="none" stroke="#151c24" strokeWidth="3" />
-      <path d="M2.5 32h59" stroke="#151c24" strokeWidth="4" />
-      <circle cx="32" cy="32" r="9.5" fill="#fff" stroke="#151c24" strokeWidth="4" />
+      <circle cx="32" cy="32" r="30" fill="none" stroke={premier ? "#a9b2bc" : "#151c24"} strokeWidth="3" />
+      <path d="M2.5 32h59" stroke={line} strokeWidth="4" />
+      <circle cx="32" cy="32" r="9.5" fill="#fff" stroke={line} strokeWidth="4" />
     </svg>
   );
 }

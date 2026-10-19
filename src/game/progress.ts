@@ -23,6 +23,7 @@ export type Progress = {
   spun: string[];
   visited: string[];
   hatched: string[];
+  bonus: Record<string, boolean>;
   xp: number;
   items: Items;
 };
@@ -31,7 +32,7 @@ export type Progress = {
 export const STARTER_ITEMS: Items = { ball: 20, great: 0, razz: 2 };
 
 const KEY = "developer-go:progress";
-const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], xp: 0, items: STARTER_ITEMS };
+const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, xp: 0, items: STARTER_ITEMS };
 
 function load(): Progress {
   try {
@@ -97,6 +98,12 @@ export function recordVisit(slug: string) {
 export function recordHatch(slug: string) {
   const p = current();
   if (!p.hatched.includes(slug)) save({ ...p, hatched: [...p.hatched, slug] });
+}
+
+/** A raid's one bonus round is over: caught the boss, or it got away. */
+export function recordBonus(slug: string, caught: boolean) {
+  const p = current();
+  if (!(slug in p.bonus)) save({ ...p, bonus: { ...p.bonus, [slug]: caught } });
 }
 
 export function recordSpin(slug: string) {

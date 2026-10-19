@@ -1,12 +1,13 @@
 "use client";
 
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useState, useSyncExternalStore } from "react";
 import { badgeTier, type Egg, type Gym, type MapObject, monthsAt, type Raid, type Role, skills, type SkillId, type Spawn, type Stop, tenure } from "@/content";
 import { GOLD_INK, LURE, MYSTIC, RAID_EGG } from "../colors";
 import { Sheet } from "./Sheet";
 import { BADGE, EggIcon, GymBadge, GymIcon, RaidIcon, StopIcon } from "./icons";
 import { SpinDisc } from "./SpinDisc";
-import { RAID_BOSS } from "../raidBosses";
+import { progressStore } from "../progress";
+import { premierBalls, type RaidBoss, RAID_BOSS } from "../raidBosses";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const month = (m: string) => {
@@ -20,8 +21,18 @@ const span = (r: Role) => `${month(r.start)} - ${r.end ? month(r.end) : "present
  * a project, a raid for a hackathon, a Pokédex entry for a fun fact, and an
  * egg for work in progress. They all share the one panel look.
  */
-export function Card({ object, onClose, onAbout }: { object: MapObject; onClose: () => void; onAbout: () => void }) {
-  const view = cardFor(object, onAbout);
+export function Card({
+  object,
+  onClose,
+  onAbout,
+  onBonus,
+}: {
+  object: MapObject;
+  onClose: () => void;
+  onAbout: () => void;
+  onBonus: (slug: string) => void;
+}) {
+  const view = cardFor(object, onAbout, onBonus);
   return (
     <Sheet side title={view.title} onClose={onClose} art={view.art} kicker={view.kicker} accent={view.accent} subtitle={view.subtitle}>
       <div className="space-y-5">{view.body}</div>
@@ -31,14 +42,14 @@ export function Card({ object, onClose, onAbout }: { object: MapObject; onClose:
 
 type View = { accent: string; art: ReactNode; kicker: string; title: string; subtitle?: string; body: ReactNode };
 
-function cardFor(o: MapObject, onAbout: () => void): View {
+function cardFor(o: MapObject, onAbout: () => void, onBonus: (slug: string) => void): View {
   switch (o.kind) {
     case "gym":
       return gymCard(o);
     case "stop":
       return stopCard(o);
     case "raid":
-      return raidCard(o);
+      return raidCard(o, onBonus);
     case "spawn":
       return spawnCard(o, onAbout);
     case "egg":
@@ -121,7 +132,7 @@ function stopCard(s: Stop): View {
   };
 }
 
-function raidCard(r: Raid): View {
+function raidCard(r: Raid, onBonus: (slug: string) => void): View {
   const egg = RAID_EGG[r.stars];
   const boss = RAID_BOSS[r.slug];
   return {
@@ -148,6 +159,7 @@ function raidCard(r: Raid): View {
             Raid boss: <span className="font-semibold text-ink">{boss.name}</span>, {boss.nod}
           </p>
         ) : null}
+        {boss ? <BonusRound raid={r} boss={boss} onBonus={onBonus} /> : null}
         <div>
           <h3 className="font-display text-lg font-semibold">{r.project.name}</h3>
           <p className="mt-0.5 leading-relaxed">{r.project.tagline}</p>
@@ -161,6 +173,38 @@ function raidCard(r: Raid): View {
       </>
     ),
   };
+}
+
+/** GO's bonus round after a raid: one try at the boss with Premier Balls, or how it went. */
+function BonusRound({ raid, boss, onBonus }: { raid: Raid; boss: RaidBoss; onBonus: (slug: string) => void }) {
+  const result = useSyncExternalStore(progressStore.subscribe, () => progressStore.get().bonus[raid.slug], () => undefined);
+  if (result !== undefined)
+    return (
+      <p className="text-sm font-semibold text-ink-soft">
+        {result ? `Caught ${boss.name} in the bonus round.` : `${boss.name} got away. GO only gives one bonus round per raid.`}
+      </p>
+    );
+  return (
+    <button
+      type="button"
+      onClick={() => onBonus(raid.slug)}
+      className="go-pill inline-flex items-center gap-2.5 rounded-full px-5 py-2.5 transition active:scale-95"
+    >
+      <PremierBall />
+      Catch {boss.name}
+      <span className="text-sm font-semibold opacity-80">{premierBalls(raid)} Premier Balls</span>
+    </button>
+  );
+}
+
+function PremierBall() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" aria-hidden>
+      <circle cx="12" cy="12" r="10.5" fill="#fff" stroke="#c9d1d9" strokeWidth="1.5" />
+      <path d="M1.5 12h21" stroke="#e3350d" strokeWidth="2" />
+      <circle cx="12" cy="12" r="3.4" fill="#fff" stroke="#e3350d" strokeWidth="2" />
+    </svg>
+  );
 }
 
 function spawnCard(s: Spawn, onAbout: () => void): View {

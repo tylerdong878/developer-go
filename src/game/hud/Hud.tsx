@@ -6,8 +6,8 @@ import { bySlug } from "../objects";
 import { slots } from "../base";
 import { game, ZOOM } from "../state";
 import { goTo } from "../travel";
-import { gainXp, progressStore, recordCatch, recordHatch, recordVisit } from "../progress";
-import { HATCH_MS, RAID_BOSS } from "../raidBosses";
+import { gainXp, progressStore, recordBonus, recordCatch, recordHatch, recordVisit } from "../progress";
+import { BONUS_RATE, bossCp, HATCH_MS, premierBalls, RAID_BOSS } from "../raidBosses";
 import { buddyStore } from "../buddy";
 import { count } from "../community";
 import { catchRewards, cpFor } from "../cp";
@@ -179,6 +179,14 @@ export function Hud() {
   }, [menu]);
 
   const closeCard = useCallback(() => setCard(null), []);
+  // GO's bonus round: one try at the raid's boss, with Premier Balls
+  const startBonus = useCallback((slug: string) => {
+    const raid = bySlug.get(slug);
+    const boss = RAID_BOSS[slug];
+    if (raid?.kind !== "raid" || !boss || slug in progressStore.get().bonus) return;
+    setCard(null);
+    setFoe({ dex: boss.dex, name: boss.name, rare: false, cp: bossCp(boss, Math.random()), goal: slug, premier: { balls: premierBalls(raid), rate: BONUS_RATE[raid.stars] } });
+  }, []);
   const closeFact = useCallback(() => setFact(null), []);
   const factSpawn = fact ? bySlug.get(fact) : undefined;
   const closeScreen = useCallback(() => setScreen(null), []);
@@ -206,6 +214,10 @@ export function Hud() {
       );
     }
     setFoe(null);
+    if (foe.premier) {
+      recordBonus(foe.goal, caught);
+      return setCard(foe.goal);
+    }
     if (!caught || !foe.rare) return;
     // A caught fact Pokémon drops its fact in as a toast. Snorlax still opens its card: waking it leads to About.
     const o = bySlug.get(foe.goal);
@@ -257,7 +269,7 @@ export function Hud() {
       </div>
 
       <div className="pointer-events-auto">
-        {object ? <Card object={object} onClose={closeCard} onAbout={openAbout} /> : null}
+        {object ? <Card object={object} onClose={closeCard} onAbout={openAbout} onBonus={startBonus} /> : null}
         {screen === "profile" ? <ProfilePanel onClose={closeScreen} /> : null}
         {screen === "about" ? <TrainerPanel onClose={closeScreen} /> : null}
         {screen === "research" ? <ResearchPanel onClose={closeScreen} /> : null}

@@ -1,10 +1,11 @@
 "use client";
 
 import { type ReactNode, useSyncExternalStore } from "react";
-import { bag, medals, type MedalTier, spawns, trainer, wild } from "@/content";
+import { bag, medals, type MedalTier, raids, spawns, trainer, wild } from "@/content";
 import { buddyStore } from "../buddy";
 import { MYSTIC } from "../colors";
 import { levelFor, progressStore, xpForLevel } from "../progress";
+import { RAID_BOSS } from "../raidBosses";
 import { visitorMedals } from "../visitorMedals";
 import { ItemIcon } from "./icons";
 import { ITEM_INFO } from "./SpinDisc";
@@ -129,9 +130,9 @@ export function TrainerPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
-/** GO's Pokédex: the fact Pokémon first, then every wild one, filled in as you catch them. */
+/** GO's Pokédex: the fact Pokémon first, then every wild one, then the raid bosses, filled in as you catch them. */
 export function PokedexPanel({ onClose, onOpen }: { onClose: () => void; onOpen: (slug: string) => void }) {
-  const { caught } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const { caught, bonus, hatched } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
   const total = spawns.length + wild.length;
   const have = [...spawns.map((s) => s.pokemon.dex), ...wild.map((w) => w.dex)].filter((d) => caught[d]).length;
   return (
@@ -161,6 +162,29 @@ export function PokedexPanel({ onClose, onOpen }: { onClose: () => void; onOpen:
             {caught[w.dex] ? <span className="text-[10px] text-ink-soft">×{caught[w.dex]}</span> : null}
           </li>
         ))}
+      </ul>
+      <Label>Raid bosses</Label>
+      <ul className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+        {raids.map((r) => {
+          const boss = RAID_BOSS[r.slug];
+          if (!boss) return null;
+          const got = bonus[r.slug] === true;
+          return (
+            <li key={r.slug}>
+              {/* a raid opens once you've walked up and hatched it */}
+              <button
+                type="button"
+                disabled={!hatched.includes(r.slug)}
+                onClick={() => onOpen(r.slug)}
+                className="flex w-full flex-col items-center rounded-2xl bg-ink/5 px-1 pt-1.5 pb-2 transition enabled:hover:bg-ink/10"
+              >
+                <Sprite dex={boss.dex} caught={got} small />
+                <span className="text-xs font-semibold">{got ? boss.name : "???"}</span>
+                <span className="text-[10px] text-ink-soft">{"★".repeat(r.stars)}</span>
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </Sheet>
   );
