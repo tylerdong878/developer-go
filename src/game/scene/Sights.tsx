@@ -475,7 +475,7 @@ function Lapras() {
     const g = swim.current;
     if (!g) return;
     const t = clock.elapsedTime * 0.05;
-    g.position.set(124 + Math.cos(t) * 13, Math.sin(clock.elapsedTime * 1.1) * 0.06, 14 + Math.sin(t) * 8);
+    g.position.set(112 + Math.cos(t) * 9, Math.sin(clock.elapsedTime * 1.1) * 0.06, -30 + Math.sin(t) * 5);
     g.rotation.set(Math.sin(clock.elapsedTime * 0.9) * 0.03, -t - Math.PI / 2, 0);
   });
   // waterline at 0.2 of its height

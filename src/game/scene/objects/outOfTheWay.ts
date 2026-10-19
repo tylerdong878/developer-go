@@ -24,9 +24,10 @@ function solids(root: Object3D, visit: (m: Material) => void, pokemon?: (o: Obje
  * way, the way buildings and trees already do (notes/research/gfx-audit.md
  * D3, E5): gyms and statues. Their solid materials switch to alpha-hash once,
  * then their opacity eases with how much they're in the way. `radius` is how
- * wide the thing is, in meters.
+ * wide the thing is, in meters; something long (the ferry) gives `length`
+ * too, along x, and any point down its middle counts.
  */
-export function useOutOfTheWay(group: RefObject<Object3D | null>, x: number, z: number, radius: number) {
+export function useOutOfTheWay(group: RefObject<Object3D | null>, x: number, z: number, radius: number, length = 0) {
   const shown = useRef(1);
 
   useLayoutEffect(() => {
@@ -45,10 +46,15 @@ export function useOutOfTheWay(group: RefObject<Object3D | null>, x: number, z: 
     const sx = position.x - cx;
     const sz = position.z - cz;
     const span = sx * sx + sz * sz || 1;
-    const t = ((x - cx) * sx + (z - cz) * sz) / span;
-    const along = Math.max(0, Math.min(1, t));
-    const off = Math.hypot(x - (cx + along * sx), z - (cz + along * sz));
-    const inTheWay = t > 0 && t < 0.92 && off < radius;
+    const steps = Math.ceil(length / (radius * 1.5));
+    let inTheWay = false;
+    for (let i = 0; i <= steps && !inTheWay; i++) {
+      const px = steps ? x - length / 2 + (length * i) / steps : x;
+      const t = ((px - cx) * sx + (z - cz) * sz) / span;
+      const along = Math.max(0, Math.min(1, t));
+      const off = Math.hypot(px - (cx + along * sx), z - (cz + along * sz));
+      inTheWay = t > 0 && t < 0.92 && off < radius;
+    }
     let f = shown.current + ((inTheWay ? 0.12 : 1) - shown.current) * (1 - Math.exp(-8 * dt));
     if (f > 0.99) f = 1;
     if (f === shown.current || !group.current) return;

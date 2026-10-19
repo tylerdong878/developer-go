@@ -217,8 +217,8 @@ export const trees: Vec2[] = (() => {
  */
 export const LAB = { at: [64, 127] as Vec2, scale: 0.9, hill: 12, gate: [64, 109.9] as Vec2 };
 
-/** Courts and fields, with a little room around them, so nothing gets built on them. */
-const landmarkLots: Vec2[][] = [rect(-54, 62, 48, 32), rect(-16, 62, 18, 17), rect(4, 64, 18, 33), rect(-10, 98, 14, 14), rect(LAB.at[0], LAB.at[1] - 3, 26, 32)];
+/** Courts, fields, the lab and the container yard by the Seaport's crane (scene/Harbor.tsx), with a little room around them, so nothing gets built on them. */
+const landmarkLots: Vec2[][] = [rect(-54, 62, 48, 32), rect(-16, 62, 18, 17), rect(4, 64, 18, 33), rect(-10, 98, 14, 14), rect(LAB.at[0], LAB.at[1] - 3, 26, 32), rect(72, -108, 26, 18)];
 
 /** The neighborhood's buildings, placed once from the layout above (see lots.ts). */
 export const buildings = placeBuildings({
