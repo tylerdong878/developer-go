@@ -89,21 +89,24 @@ float goShade = saturate( goLum / goBase );
 outgoingLight = max( mix( vec3( goLum ), outgoingLight, 1.0 + goShadowSat * ( 1.0 - goShade ) ), 0.0 );
 outgoingLight *= mix( 1.0 - goGroundAO, 1.0, smoothstep( 0.0, 0.3, vGoY ) );`;
 
+/** Turns a MeshToonMaterial's lighting into GO's. Every Pokémon material uses it, the smooth models too. */
+export function goPatch(s: { uniforms: Record<string, unknown>; vertexShader: string; fragmentShader: string }) {
+  Object.assign(s.uniforms, goLight);
+  s.vertexShader = s.vertexShader
+    .replace("#include <common>", "#include <common>\nvarying float vGoY;")
+    .replace("#include <begin_vertex>", "#include <begin_vertex>\nvGoY = (modelMatrix * vec4(position, 1.0)).y;");
+  s.fragmentShader = s.fragmentShader
+    .replace("#include <lights_toon_pars_fragment>", GO_LIGHTS)
+    .replace("#include <opaque_fragment>", `${GO_FINISH}\n#include <opaque_fragment>`);
+}
+
 const toons = new Map<string, MeshToonMaterial>();
 /** GO's Pokémon material in one color, shared across every Pokémon. */
 export function toon(color: string) {
   let m = toons.get(color);
   if (m) return m;
   m = new MeshToonMaterial({ color });
-  m.onBeforeCompile = (s) => {
-    Object.assign(s.uniforms, goLight);
-    s.vertexShader = s.vertexShader
-      .replace("#include <common>", "#include <common>\nvarying float vGoY;")
-      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvGoY = (modelMatrix * vec4(position, 1.0)).y;");
-    s.fragmentShader = s.fragmentShader
-      .replace("#include <lights_toon_pars_fragment>", GO_LIGHTS)
-      .replace("#include <opaque_fragment>", `${GO_FINISH}\n#include <opaque_fragment>`);
-  };
+  m.onBeforeCompile = goPatch;
   m.customProgramCacheKey = () => "go-pokemon";
   toons.set(color, m);
   return m;
