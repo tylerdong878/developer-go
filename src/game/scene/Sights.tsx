@@ -29,6 +29,7 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { raids } from "@/content";
 import { slots } from "../base";
 import { town } from "./fade";
+import { SmoothModel } from "./pokemon/Smooth";
 import { skyLook } from "./Sky";
 
 /*
@@ -436,38 +437,89 @@ function RaidSites() {
   );
 }
 
-/* ---------------- gulls ---------------- */
+/* ---------------- Pokémon of the waterfront ---------------- */
 
-/** A Wingull-ish gull: two swept wings, white with gray tips, as one small mesh. */
-const gull = (() => {
-  const g = new BufferGeometry();
-  g.setAttribute("position", new Float32BufferAttribute([0, 0, 0.25, -0.9, 0.1, -0.15, 0, 0, -0.15, 0, 0, 0.25, 0, 0, -0.15, 0.9, 0.1, -0.15], 3));
-  g.computeVertexNormals();
-  return g;
-})();
-const GULLS = 7;
-
-function Gulls() {
-  const mesh = useRef<InstancedMesh>(null);
+/**
+ * A flock of Wingull wheeling over the harbor (Bulbapedia: "it circles above
+ * oceans"), gliding on wide wings with a few beats now and then.
+ */
+function Wingulls() {
+  const flock = useRef<Group>(null);
   useFrame(({ clock }) => {
-    const m = mesh.current;
-    if (!m) return;
     const t = clock.elapsedTime;
-    for (let i = 0; i < GULLS; i++) {
-      const a = t * (0.12 + i * 0.01) + i * 0.9;
+    flock.current?.children.forEach((g, i) => {
+      const a = t * (0.12 + i * 0.012) + i * 1.3;
       const r = 14 + (i % 3) * 5;
-      dummy.position.set(108 + Math.cos(a) * r, 16 + (i % 4) * 2 + Math.sin(t * 0.7 + i) * 0.6, -6 + Math.sin(a) * r);
-      dummy.rotation.set(0, -a, Math.sin(t * 6 + i) * 0.25);
-      dummy.scale.set(1, 1 + Math.sin(t * 7 + i) * 0.5, 1);
-      dummy.updateMatrix();
-      m.setMatrixAt(i, dummy.matrix);
-    }
-    m.instanceMatrix.needsUpdate = true;
+      g.position.set(108 + Math.cos(a) * r, 15 + (i % 3) * 2.2 + Math.sin(t * 0.6 + i) * 0.7, -6 + Math.sin(a) * r);
+      // fly along the circle, banking into the turn
+      g.rotation.set(0, -a, 0.3);
+    });
   });
   return (
-    <instancedMesh ref={mesh} args={[gull, undefined, GULLS]} frustumCulled={false}>
-      <meshLambertMaterial color="#f4f6f8" side={DoubleSide} />
-    </instancedMesh>
+    <group ref={flock}>
+      {Array.from({ length: 5 }, (_, i) => (
+        <group key={i} userData={{ noShadow: true }}>
+          <group scale={3.6} rotation-y={Math.PI}>
+            <SmoothModel dex={278} seed={i} />
+          </group>
+        </group>
+      ))}
+    </group>
+  );
+}
+
+/** Lapras swimming slow circles in the harbor past the pier, as Ash's Lapras carried him round the Orange Islands. */
+function Lapras() {
+  const swim = useRef<Group>(null);
+  useFrame(({ clock }) => {
+    const g = swim.current;
+    if (!g) return;
+    const t = clock.elapsedTime * 0.05;
+    g.position.set(124 + Math.cos(t) * 13, Math.sin(clock.elapsedTime * 1.1) * 0.06, 14 + Math.sin(t) * 8);
+    g.rotation.set(Math.sin(clock.elapsedTime * 0.9) * 0.03, -t - Math.PI / 2, 0);
+  });
+  // waterline at 0.2 of its height
+  return (
+    <group ref={swim} userData={{ noShadow: true }}>
+      <group scale={5.2} position-y={-0.2 * 5.2}>
+        <SmoothModel dex={131} />
+      </group>
+    </group>
+  );
+}
+
+/**
+ * The park pond's swan boat (a nod to the Public Garden's), with a Swanna
+ * gliding along behind it, both slowly round the pond.
+ */
+function SwanBoat() {
+  const boat = useRef<Group>(null);
+  const swan = useRef<Group>(null);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime * 0.045;
+    const at = (k: number, g: Group | null) => {
+      if (!g) return;
+      const a = t + k;
+      g.position.set(-97 + Math.cos(a) * 11, Math.sin(clock.elapsedTime * 1.3 + k) * 0.03, -3 + Math.sin(a) * 6.5);
+      // the bow points along the path
+      g.rotation.y = Math.atan2(-Math.sin(a) * 11, Math.cos(a) * 6.5);
+    };
+    at(0, boat.current);
+    at(-0.5, swan.current);
+  });
+  return (
+    <>
+      <group ref={boat} userData={{ noShadow: true }}>
+        <group scale={2.6} position-y={-0.09 * 2.6}>
+          <SmoothModel dex="boat-swanna" />
+        </group>
+      </group>
+      <group ref={swan} userData={{ noShadow: true }}>
+        <group scale={2.2} position-y={-0.14 * 2.2}>
+          <SmoothModel dex={581} />
+        </group>
+      </group>
+    </>
   );
 }
 
@@ -478,7 +530,9 @@ export function Sights() {
       <HarborKit />
       <Lighthouse />
       <RaidSites />
-      <Gulls />
+      <Wingulls />
+      <Lapras />
+      <SwanBoat />
     </>
   );
 }

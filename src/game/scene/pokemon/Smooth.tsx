@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { type ComponentType, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bone,
+  BackSide,
   BufferAttribute,
   BufferGeometry,
   CanvasTexture,
@@ -34,6 +35,8 @@ import type { ModelProps } from "./types";
  * (ears, tails, heads move), and all of it shades with GO's soft ramp.
  */
 
+/** A species' dex number, or a named model (the swan boat). */
+type Key = number | string;
 type BoneDef = { name: string; at: [number, number, number]; parent: string | null };
 type Cell = { feature: Record<string, unknown>; col: number; row: number; R: number };
 type DecalSet = { positions: Float32Array; uvs: Float32Array; bones: Uint8Array; indices: Uint32Array } | null;
@@ -57,6 +60,8 @@ type Meshed = {
     indices: Uint32Array;
     opacity: number;
   } | null;
+  /** An unlit glow round it (Rotom's electric aura and bolts), drawn inside out like a halo. */
+  halo: Omit<NonNullable<Meshed["glass"]>, "opacity"> | null;
 };
 type Built = {
   body: BufferGeometry;
@@ -67,6 +72,7 @@ type Built = {
   unlitMaterial: MeshBasicMaterial | null;
   glass: BufferGeometry | null;
   glassMaterial: MeshToonMaterial | null;
+  halo: BufferGeometry | null;
   bones: BoneDef[];
 };
 
@@ -97,12 +103,12 @@ function getWorker() {
   return worker;
 }
 
-async function meshOnMain(dex: number, grid: number): Promise<Meshed | null> {
+async function meshOnMain(dex: Key, grid: number): Promise<Meshed | null> {
   const { meshSpecies } = await import("./sdf/species.js");
   return meshSpecies(RECIPES[dex], grid) as unknown as Meshed;
 }
 
-function mesh(dex: number, grid: number): Promise<Meshed | null> {
+function mesh(dex: Key, grid: number): Promise<Meshed | null> {
   const w = getWorker();
   if (!w) return meshOnMain(dex, grid);
   return new Promise((resolve) => {
@@ -239,19 +245,27 @@ function bodyMaterial(layers: string[]) {
   return m;
 }
 
+/** A skinned geometry from meshed arrays, colors to linear. */
+function skinned(m: NonNullable<Meshed["halo"]>) {
+  const g = new BufferGeometry();
+  const lin = new Float32Array(m.colors.length);
+  for (let i = 0; i < lin.length; i++) lin[i] = linear(m.colors[i]);
+  g.setAttribute("position", new BufferAttribute(m.positions, 3));
+  g.setAttribute("normal", new BufferAttribute(m.normals, 3));
+  g.setAttribute("color", new BufferAttribute(lin, 3));
+  g.setAttribute("skinIndex", new BufferAttribute(m.skinIndex, 4));
+  g.setAttribute("skinWeight", new BufferAttribute(m.skinWeight, 4));
+  g.setIndex(new BufferAttribute(m.indices, 1));
+  g.computeBoundingSphere();
+  return g;
+}
+
+const haloMaterial = new MeshBasicMaterial({ vertexColors: true, side: BackSide });
+
 /** The see-through parts: their own mesh, GO-shaded, drawn after the body without writing depth. */
 function glassPart(d: Meshed) {
   if (!d.glass) return { glass: null, glassMaterial: null };
-  const g = new BufferGeometry();
-  const lin = new Float32Array(d.glass.colors.length);
-  for (let i = 0; i < lin.length; i++) lin[i] = linear(d.glass.colors[i]);
-  g.setAttribute("position", new BufferAttribute(d.glass.positions, 3));
-  g.setAttribute("normal", new BufferAttribute(d.glass.normals, 3));
-  g.setAttribute("color", new BufferAttribute(lin, 3));
-  g.setAttribute("skinIndex", new BufferAttribute(d.glass.skinIndex, 4));
-  g.setAttribute("skinWeight", new BufferAttribute(d.glass.skinWeight, 4));
-  g.setIndex(new BufferAttribute(d.glass.indices, 1));
-  g.computeBoundingSphere();
+  const g = skinned(d.glass);
   const m = new MeshToonMaterial({ vertexColors: true, transparent: true, opacity: d.glass.opacity, depthWrite: false, side: DoubleSide });
   m.onBeforeCompile = goPatch;
   m.customProgramCacheKey = () => "go-glass";
@@ -260,7 +274,6 @@ function glassPart(d: Meshed) {
 
 function build(d: Meshed): Built {
   const body = new BufferGeometry();
-  const nv = d.positions.length / 3;
   const lin = new Float32Array(d.colors.length);
   for (let i = 0; i < lin.length; i++) lin[i] = linear(d.colors[i]);
   const paint = paintGroups(d);
@@ -290,15 +303,16 @@ function build(d: Meshed): Built {
     litMaterial,
     unlitMaterial: unlit && atlas ? new MeshBasicMaterial({ map: atlas, ...over }) : null,
     ...glassPart(d),
+    halo: d.halo ? skinned(d.halo) : null,
     bones: d.bones,
   };
 }
 
-const built = new Map<number, Built | null>();
-const building = new Map<number, Promise<Built | null>>();
+const built = new Map<Key, Built | null>();
+const building = new Map<Key, Promise<Built | null>>();
 
 /** The species' smooth model, meshed on first use and shared by every instance. */
-function load(dex: number) {
+function load(dex: Key) {
   let p = building.get(dex);
   if (!p) {
     const grid = renderBudget().light ? 48 : 64;
@@ -312,7 +326,7 @@ function load(dex: number) {
   return p;
 }
 
-function useBuilt(dex: number) {
+function useBuilt(dex: Key) {
   const [b, setB] = useState<Built | null | undefined>(() => built.get(dex));
   useEffect(() => {
     if (b !== undefined) return;
@@ -348,6 +362,11 @@ function rig(b: Built) {
   roots.forEach((r) => body.add(r));
   body.bind(skeleton);
   group.add(body);
+  if (b.halo) {
+    const halo = new SkinnedMesh(b.halo, haloMaterial);
+    halo.bind(skeleton, body.bindMatrix);
+    group.add(halo);
+  }
   if (b.glass && b.glassMaterial) {
     const glass = new SkinnedMesh(b.glass, b.glassMaterial);
     glass.bind(skeleton, body.bindMatrix);
@@ -370,7 +389,21 @@ function rig(b: Built) {
 }
 
 /** Idle life by bone name: breathing, a head that looks about, ears that twitch, tails that wag, wings that flap. */
+/** How each species' wings move at idle (bones named wing*): none unless listed. */
+const WINGS: Partial<Record<Key, "flap" | "glide" | "flutter" | "buzz">> = { 41: "flap", 16: "flutter", 278: "glide", 479: "buzz", 255: "flutter" };
+
+function wingAngle(kind: string | undefined, t: number) {
+  if (kind === "flap") return Math.sin(t * 9) * 0.35;
+  if (kind === "buzz") return Math.sin(t * 14) * 0.08;
+  // a few quick beats every few seconds, still in between
+  const burst = (p: number) => (t % p < 0.5 ? Math.sin((t % p) * Math.PI * 6) : 0);
+  if (kind === "glide") return Math.sin(t * 0.8) * 0.06 + burst(4.7) * 0.4;
+  if (kind === "flutter") return Math.abs(burst(6.5)) * 0.5;
+  return 0;
+}
+
 function animate(group: Group, t: number, asleep: boolean) {
+  const wings = WINGS[group.userData.key as Key];
   const bones = group.userData.bones as Bone[];
   for (const bone of bones) {
     const n = bone.name;
@@ -379,7 +412,7 @@ function animate(group: Group, t: number, asleep: boolean) {
     else if (n === "head" && !asleep) bone.rotation.set(Math.sin(t * 0.7) * 0.04, Math.sin(t * 0.5) * 0.12, Math.sin(t * 0.9) * 0.03);
     else if (/^ear/.test(n)) bone.rotation.z = side * (Math.sin(t * 1.7 + side) * 0.06 + (t % 5.3 < 0.25 ? Math.sin((t % 5.3) * 25) * 0.25 : 0));
     else if (/^tail/.test(n)) bone.rotation.y = Math.sin(t * (asleep ? 1 : 3)) * (asleep ? 0.06 : 0.22);
-    else if (/^wing/.test(n)) bone.rotation.z = side * Math.sin(t * 9) * 0.35;
+    else if (/^wing/.test(n)) bone.rotation.z = side * wingAngle(wings, t);
     else if (/^(arm|hand)/.test(n) && !asleep) bone.rotation.x = Math.sin(t * 1.3 + side) * 0.08;
   }
 }
@@ -438,9 +471,14 @@ function AuraCloud({ aura, seed }: { aura: Aura; seed: number }) {
 }
 
 /** One smooth Pokémon, 1 tall, feet at y 0, facing +z. Until its mesh is ready, the fallback (the old model) stands in. */
-export function SmoothModel({ dex, seed = 0, asleep = false, fallback: Fallback }: ModelProps & { dex: number; fallback?: ComponentType<ModelProps> }) {
+export function SmoothModel({ dex, seed = 0, asleep = false, fallback: Fallback }: ModelProps & { dex: Key; fallback?: ComponentType<ModelProps> }) {
   const b = useBuilt(dex);
-  const object = useMemo(() => (b ? rig(b) : null), [b]);
+  const object = useMemo(() => {
+    if (!b) return null;
+    const o = rig(b);
+    o.userData.key = dex;
+    return o;
+  }, [b, dex]);
   const holder = useRef<Group>(null);
   useFrame(({ clock }) => {
     const g = holder.current?.children[0] as Group | undefined;
@@ -457,7 +495,7 @@ export function SmoothModel({ dex, seed = 0, asleep = false, fallback: Fallback 
 }
 
 /** Starts meshing species ahead of time, so they're ready when they first appear. */
-export function preloadSmooth(dexes: number[]) {
+export function preloadSmooth(dexes: Key[]) {
   dexes.forEach((d) => {
     if (RECIPES[d]) void load(d);
   });

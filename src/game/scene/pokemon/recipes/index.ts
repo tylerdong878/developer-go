@@ -24,13 +24,19 @@ import voltorb from "./100-voltorb.js";
 import hitmonlee from "./106-hitmonlee.js";
 import chansey from "./113-chansey.js";
 import magikarp from "./129-magikarp.js";
+import lapras from "./131-lapras.js";
 import ditto from "./132-ditto.js";
 import eevee from "./133-eevee.js";
 import porygon from "./137-porygon.js";
 import snorlax from "./143-snorlax.js";
 import dratini from "./147-dratini.js";
 import torchic from "./255-torchic.js";
+import wingull from "./278-wingull.js";
+import rotom from "./479-rotom.js";
+import swanna from "./581-swanna.js";
 import sirfetchd from "./865-sirfetchd.js";
+import alcremie from "./869-alcremie.js";
+import swannaBoat from "./boat-swanna.js";
 
 /**
  * Species built as smooth models (notes/research/gfx-characters.md 3): each
@@ -38,7 +44,7 @@ import sirfetchd from "./865-sirfetchd.js";
  * checked against the official art, HOME and GO's own model from every side
  * (previews in .cache/research/models/previews). Meshed once, in a worker.
  */
-export const RECIPES: Record<number, object> = {
+export const RECIPES: Record<number | string, object> = {
   1: bulbasaur,
   4: charmander,
   7: squirtle,
@@ -65,11 +71,17 @@ export const RECIPES: Record<number, object> = {
   106: hitmonlee,
   113: chansey,
   129: magikarp,
+  131: lapras,
   132: ditto,
   133: eevee,
   137: porygon,
   143: snorlax,
   147: dratini,
   255: torchic,
+  278: wingull,
+  479: rotom,
+  581: swanna,
   865: sirfetchd,
+  869: alcremie,
+  "boat-swanna": swannaBoat,
 };

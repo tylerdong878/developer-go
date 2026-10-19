@@ -59,5 +59,9 @@ const smooth = (dex: number, fallback?: ComponentType<ModelProps>) => {
 
 export const POKEMON_3D: Record<number, ComponentType<ModelProps>> = {
   ...PARTS,
-  ...Object.fromEntries(Object.keys(RECIPES).map((d) => [Number(d), smooth(Number(d), PARTS[Number(d)])])),
+  ...Object.fromEntries(
+    Object.keys(RECIPES)
+      .filter((d) => /^\d+$/.test(d))
+      .map((d) => [Number(d), smooth(Number(d), PARTS[Number(d)])]),
+  ),
 };

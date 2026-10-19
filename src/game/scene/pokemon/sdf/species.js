@@ -20,7 +20,13 @@ export function meshSpecies(recipe, grid) {
       opacity: recipe.transparent[0].opacity ?? 0.55,
     };
   }
+  let halo = null;
+  if (recipe.glow) {
+    const g = buildMesh({ ...recipe.glow, bones: recipe.bones }, { grid: Math.round(grid * 0.75) });
+    halo = { positions: g.positions, normals: g.normals, colors: g.colors, skinIndex: g.skinIndex, skinWeight: g.skinWeight, indices: g.indices };
+  }
   return {
+    halo,
     positions: mesh.positions,
     normals: mesh.normals,
     colors: mesh.colors,
@@ -37,6 +43,6 @@ export function meshSpecies(recipe, grid) {
 /** The big arrays, handed to the main thread without copying. */
 export function transferables(m) {
   const list = [m.positions, m.normals, m.colors, m.skinIndex, m.skinWeight, m.indices, m.paint.dist];
-  if (m.glass) list.push(m.glass.positions, m.glass.normals, m.glass.colors, m.glass.skinIndex, m.glass.skinWeight, m.glass.indices);
+  for (const x of [m.glass, m.halo]) if (x) list.push(x.positions, x.normals, x.colors, x.skinIndex, x.skinWeight, x.indices);
   return list.map((a) => a.buffer);
 }
