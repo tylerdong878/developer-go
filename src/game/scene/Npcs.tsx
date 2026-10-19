@@ -18,6 +18,7 @@ import {
 import { places } from "../base";
 import { circle, ellipse, type Vec2 } from "../geometry";
 import { game } from "../state";
+import { SmoothModel } from "./pokemon/Smooth";
 
 /*
  * People around town, as Let's Go's trainer classes (notes/research/world-npcs.md):
@@ -537,6 +538,10 @@ export function Npcs({ few = false }: { few?: boolean }) {
       {list.map((npc, i) => (
         <Person key={npc.line} npc={npc} seed={i} />
       ))}
+      {/* Nurse Joy's Chansey, beside her at the door, like every anime Pokémon Center */}
+      <group position={[centerDoor[0] + 4.1, 0, centerDoor[1] - 0.7]} rotation-y={-0.35} scale={1.55} userData={{ noShadow: true }}>
+        <SmoothModel dex={113} />
+      </group>
     </>
   );
 }
