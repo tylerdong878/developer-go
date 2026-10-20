@@ -7,7 +7,9 @@ import { preloadSmooth, SmoothModel } from "./pokemon/Smooth";
 import { CanvasTexture, DoubleSide, type Group, SRGBColorSpace } from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import type { Mover } from "../player";
+import { game } from "../state";
 import { parts } from "./parts";
+import { BONES, newMotion, pose } from "./trainerMotion";
 import { Shadow } from "./Shadow";
 
 const PARTS = ["body", "legL", "legR", "armL", "armR"] as const;
@@ -23,21 +25,34 @@ const HEIGHT = (RECIPES["trainer-tyler"] as { height: number }).height;
 preloadSmooth(["trainer-tyler", "teddy"]);
 
 /**
- * Tyler, as a smooth model in Let's Go's trainer style (notes/research/model-people-items.md),
- * built from his photo: black hair parted in the middle, a Team Mystic jacket, dark pants, white sneakers.
- * He faces +z; `mover` places him, and his walk swings the model's bones. Until it's meshed, the
- * part-by-part model stands in.
+ * Tyler, as a smooth model in Let's Go's proportions with GO's outfit cues
+ * (.cache/research/models/trainer-v2-notes.md), built from his photo: black
+ * hair parted in the middle, a Team Mystic hoodie, dark pants, white sneakers,
+ * a backpack. He faces +z; `mover` places him, and trainerMotion.ts poses his
+ * bones: a walk with bending knees and elbows that blends into a run, and an
+ * idle that breathes, shifts its weight and looks around. Until it's meshed,
+ * the part-by-part model stands in with a simple swing.
  */
 export function Trainer3D({ mover }: { mover: Mover }) {
   const root = useRef<Group>(null);
   const phase = useRef(0);
+  const motion = useRef(newMotion());
 
-  useFrame((_, dt) => {
+  useFrame(({ clock }, dt) => {
     const r = root.current;
     if (!r) return;
     r.position.copy(mover.position);
     r.rotation.y = mover.heading;
-    // the bones (or the stand-in's limbs), looked up by name each frame: whichever is showing
+    // the smooth model's bones, when it's meshed
+    const bones = parts(r, BONES);
+    const body = r.getObjectByName("body");
+    if (bones && body) {
+      const bob = pose(bones, motion.current, mover.speed, game.input.dash && mover.speed > 20, clock.elapsedTime, Math.min(dt, 0.05));
+      body.rotation.x = 0;
+      body.position.y = bob * HEIGHT;
+      return;
+    }
+    // the stand-in's limbs
     const p = parts(r, PARTS);
     if (!p) return;
     // Stride grows with speed; standing still, he just breathes.
