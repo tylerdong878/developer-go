@@ -14,6 +14,8 @@ import { catchRewards, cpFor } from "../cp";
 import { sfx } from "../sound";
 import { earned, visitorMedals } from "../visitorMedals";
 import { findWild, holdWild, removeWild } from "../wild";
+import { BOOST_CP, boosted } from "../species";
+import { weatherStore } from "../weather";
 import { Encounter, type Foe, type Thrown } from "./Encounter";
 import { FactToast, XpPops } from "./Xp";
 import { Card } from "./Card";
@@ -123,7 +125,11 @@ export function Hud() {
       if (w) {
         // it stays on the map until the catch is over
         holdWild(w.id);
-        return setFoe({ dex: w.species.dex, name: w.species.name, rare: false, cp: cpFor(w.species.dex, false, Math.random()), goal });
+        // boosted by the weather: stronger, like GO's five extra levels
+        const weather = weatherStore.get();
+        const boost = boosted(w.species.dex, weather);
+        const cp = Math.round(cpFor(w.species.dex, false, Math.random()) * (boost ? BOOST_CP : 1));
+        return setFoe({ dex: w.species.dex, name: w.species.name, rare: false, cp, goal, boost: boost ? weather : undefined });
       }
       const o = bySlug.get(goal);
       // the first time you walk up to a raid, its egg hatches (scene/objects/Gym.tsx), then the raid opens

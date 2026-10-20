@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BOOSTS } from "../species";
 import { useWeather, type Weather, WEATHER_LABEL } from "../weather";
 
 /** GO's weather icon: a round white button with a slate line glyph, under the map. Tap it for what it is. */
@@ -50,22 +51,38 @@ const GLYPH: Record<Weather, React.ReactNode> = {
   ),
 };
 
+/** The weather's glyph on its own (the catch screen shows it by a boosted Pokémon's CP). */
+export function WeatherIcon({ weather, size = 26 }: { weather: Weather; size?: number }) {
+  return (
+    <svg viewBox="0 0 32 32" width={size} height={size} fill="none" stroke="#3a5560" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {GLYPH[weather]}
+    </svg>
+  );
+}
+
+const cap = (t: string) => t[0].toUpperCase() + t.slice(1);
+const list = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}` : xs[0]);
+
 export function WeatherBadge() {
   const weather = useWeather();
   const [open, setOpen] = useState(false);
   const label = `${WEATHER_LABEL[weather]} in Boston`;
+  const boosts = `Boosts ${list(BOOSTS[weather].map(cap))} Pokémon`;
   return (
     <div className="flex items-center justify-end gap-2">
-      {open ? <span className="panel rounded-full px-3 py-1.5 text-sm font-semibold">{label}</span> : null}
+      {open ? (
+        <span className="panel rounded-2xl px-3 py-1.5 text-sm">
+          <span className="block font-semibold">{label}</span>
+          <span className="block text-xs text-ink-soft">{boosts}</span>
+        </span>
+      ) : null}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        aria-label={`Weather: ${label}`}
+        aria-label={`Weather: ${label}. ${boosts}.`}
         className="panel grid size-11 place-items-center rounded-full transition hover:scale-105 active:scale-95"
       >
-        <svg viewBox="0 0 32 32" width="26" height="26" fill="none" stroke="#3a5560" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          {GLYPH[weather]}
-        </svg>
+        <WeatherIcon weather={weather} />
       </button>
     </div>
   );

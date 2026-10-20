@@ -16,6 +16,9 @@ import {
   SRGBColorSpace,
 } from "three";
 import { sfx } from "../../sound";
+import { boosted } from "../../species";
+import { usePhase } from "../../useTimeOfDay";
+import { weatherStore } from "../../weather";
 import { game } from "../../state";
 import { goTo } from "../../travel";
 import { goalId, isOut, LEAVE, moveWild, refreshWild, RUSTLE, wildStore, type WildSpawn } from "../../wild";
@@ -62,8 +65,10 @@ const LEAVES = 12;
 /** GO's rings at a wild Pokémon's feet (notes/research/spawns.md): three ripples when it pops out, then three faint ones pulsing every 2 s. */
 const ringGeometry = new RingGeometry(0.92, 1, 48).rotateX(-Math.PI / 2);
 const PULSE = 2;
+/** A weather-boosted one stands in GO's swirl instead: three cyan-white arcs turning half a turn a second. */
+const arcGeometry = new RingGeometry(0.84, 1, 24, 1, 0, 1.5).rotateX(-Math.PI / 2);
 
-function ripples(group: Group, age: number, size: number) {
+function ripples(group: Group, age: number, size: number, boost: boolean) {
   const since = age - RUSTLE;
   group.visible = since > 0;
   if (!group.visible) return;
@@ -77,7 +82,11 @@ function ripples(group: Group, age: number, size: number) {
       m.opacity = pop < 0 ? 0 : 0.8 * (1 - k);
       return;
     }
-    // then GO's faint pulse while it's out
+    // then GO's faint pulse while it's out (a boosted one has its swirl instead)
+    if (boost) {
+      m.opacity = 0;
+      return;
+    }
     const k = (((since - 1.2 - i * 0.25) / PULSE) % 1 + 1) % 1;
     ring.scale.setScalar(size * (0.25 + k * 0.45));
     m.opacity = 0.3 * Math.sin(k * Math.PI);
@@ -125,6 +134,7 @@ function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
   const leaves = useRef<Group>(null);
   const puff = useRef<Mesh>(null);
   const rings = useRef<Group>(null);
+  const swirl = useRef<Group>(null);
   const popped = useRef(false);
   const mark = useRef<Sprite>(null);
   const home = useRef<[number, number]>([s.x, s.z]);
@@ -143,7 +153,14 @@ function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
     // rustle, pop out, and later shrink away into a puff
     if (body.current) body.current.scale.setScalar(going >= 0 ? Math.max(0, 1 - going * going) : backOut((age - RUSTLE) / 0.35));
     if (leaves.current) rustle(leaves.current, age);
-    if (rings.current) ripples(rings.current, going >= 0 ? -1 : age, Math.max(1.2, critterSize(s.species.dex) * 0.75));
+    const size = Math.max(1.2, critterSize(s.species.dex) * 0.75);
+    const boost = boosted(s.species.dex, weatherStore.get());
+    if (rings.current) ripples(rings.current, going >= 0 ? -1 : age, size, boost);
+    if (swirl.current) {
+      swirl.current.visible = boost && going < 0 && age > RUSTLE + 0.6;
+      swirl.current.rotation.y = -now * Math.PI;
+      swirl.current.scale.setScalar(size);
+    }
     if (!popped.current && age >= RUSTLE) {
       popped.current = true;
       // a soft pop, if it's close enough to hear
@@ -220,6 +237,13 @@ function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
           </mesh>
         ))}
       </group>
+      <group ref={swirl} position-y={0.06} visible={false}>
+        {[0, 1, 2].map((i) => (
+          <mesh key={i} geometry={arcGeometry} rotation-y={(i / 3) * Math.PI * 2} renderOrder={-16}>
+            <meshBasicMaterial color={i ? "#bff4ff" : "#ffffff"} transparent opacity={0.85} depthWrite={false} />
+          </mesh>
+        ))}
+      </group>
       <mesh ref={puff} position-y={0.7} visible={false}>
         <sphereGeometry args={[0.8, 16, 12]} />
         <meshBasicMaterial color="#ffffff" transparent depthWrite={false} />
@@ -242,6 +266,7 @@ const none: never[] = [];
 export function WildSpawns({ grass }: { grass: string }) {
   const list = useSyncExternalStore(wildStore.subscribe, wildStore.get, () => none);
   const last = useRef(-10);
+  const night = usePhase() === "night";
 
   useFrame(({ clock }) => {
     const now = clock.elapsedTime;
@@ -249,7 +274,12 @@ export function WildSpawns({ grass }: { grass: string }) {
     if (game.input.locked || now - last.current < 1) return;
     last.current = now;
     const { position, heading, speed } = game.player.trainer;
-    refreshWild(position.x, position.z, now, Math.random, { ahead: speed > 1 ? heading : null, goal: game.input.goal });
+    refreshWild(position.x, position.z, now, Math.random, {
+      ahead: speed > 1 ? heading : null,
+      goal: game.input.goal,
+      weather: weatherStore.get(),
+      night,
+    });
   });
 
   return (

@@ -13,13 +13,23 @@ import { catchRewards } from "../cp";
 import { sfx } from "../sound";
 import { FoeView } from "./FoeView";
 import { ItemIcon } from "./icons";
+import { WeatherIcon } from "./WeatherBadge";
+import type { Weather } from "../weather";
 
 /**
  * Who you're trying to catch. Fact Pokémon never run and always get caught by
  * the second hit. A raid boss comes with `premier`: GO's bonus round, a set of
  * Premier Balls and the odds; it never runs early, but it's gone when they're spent.
  */
-export type Foe = { dex: number; name: string; rare: boolean; cp: number; premier?: { balls: number; rate: number } };
+export type Foe = {
+  dex: number;
+  name: string;
+  rare: boolean;
+  cp: number;
+  premier?: { balls: number; rate: number };
+  /** The weather boosting it, if any: GO shows its icon by the CP. */
+  boost?: Weather;
+};
 
 type Phase = "aim" | "flying" | "wiggle" | "caught" | "fled";
 type Throw = "Nice" | "Great" | "Excellent" | null;
@@ -295,6 +305,11 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
             <span className="text-xs">CP</span>
             <span className="text-xl font-black">{foe.cp}</span>
           </span>
+          {foe.boost ? (
+            <span className="grid size-7 place-items-center rounded-full bg-white/90" title="Weather boosted">
+              <WeatherIcon weather={foe.boost} size={20} />
+            </span>
+          ) : null}
         </p>
       </div>
 

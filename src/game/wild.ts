@@ -1,6 +1,8 @@
 import { wild as roster, type WildSpecies } from "@/content";
 import { slots, walkable } from "./base";
 import type { Vec2 } from "./geometry";
+import { boosted, NIGHT_OWLS } from "./species";
+import type { Weather } from "./weather";
 
 /**
  * A wild Pokémon on the map. `born` is when its spot started rustling (on the
@@ -61,10 +63,15 @@ export const findWild = (goal: string) => spawns.find((s) => goalId(s) === goal)
 /** Out on the map: done rustling and not on its way off. */
 export const isOut = (s: WildSpawn, now = clock) => s.leaving === null && now - s.born >= RUSTLE;
 
-function pick(rand: () => number) {
-  const total = roster.reduce((n, s) => n + s.weight, 0);
+/** How likely each species is right now: GO spawns boosted types more often, and a few species more at night. */
+function weightOf(s: WildSpecies, weather: Weather | null, night: boolean) {
+  return s.weight * (weather && boosted(s.dex, weather) ? 2 : 1) * (night && NIGHT_OWLS.has(s.dex) ? 2 : 1);
+}
+
+function pick(rand: () => number, weather: Weather | null, night: boolean) {
+  const total = roster.reduce((n, s) => n + weightOf(s, weather, night), 0);
   let r = rand() * total;
-  for (const s of roster) if ((r -= s.weight) < 0) return s;
+  for (const s of roster) if ((r -= weightOf(s, weather, night)) < 0) return s;
   return roster[0];
 }
 
@@ -95,6 +102,9 @@ type Around = {
   ahead?: number | null;
   /** The goal he's walking to, so that one doesn't leave before he gets there. */
   goal?: string | null;
+  /** The weather now (boosted types come out more) and whether it's night. */
+  weather?: Weather | null;
+  night?: boolean;
 };
 
 /**
@@ -103,7 +113,7 @@ type Around = {
  * (a little later if he's right there), and ones he's left behind are forgotten.
  * Call it about once a second.
  */
-export function refreshWild(x: number, z: number, now: number, rand: () => number = Math.random, { ahead = null, goal = null }: Around = {}) {
+export function refreshWild(x: number, z: number, now: number, rand: () => number = Math.random, { ahead = null, goal = null, weather = null, night = false }: Around = {}) {
   clock = now;
   let changed = false;
   if (nextAt === null) nextAt = now + FIRST;
@@ -134,7 +144,7 @@ export function refreshWild(x: number, z: number, now: number, rand: () => numbe
     for (let tries = 0; tries < 40; tries++) {
       const p = spotFor(x, z, rand, ahead, firstOne);
       if (!openSpot(p) || Math.hypot(p[0] - x, p[1] - z) < NEAR) continue;
-      spawns = [...spawns, { id: nextId++, species: pick(rand), x: p[0], z: p[1], born: now, until: now + lifetime(rand), leaving: null }];
+      spawns = [...spawns, { id: nextId++, species: pick(rand, weather, night), x: p[0], z: p[1], born: now, until: now + lifetime(rand), leaving: null }];
       changed = true;
       break;
     }
