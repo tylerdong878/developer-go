@@ -10,13 +10,13 @@ import { gainXp, progressStore, recordBonus, recordCatch, recordHatch, recordVis
 import { BONUS_RATE, bossCp, HATCH_MS, premierBalls, RAID_BOSS } from "../raidBosses";
 import { buddyStore } from "../buddy";
 import { count } from "../community";
-import { catchRewards, cpFor } from "../cp";
+import { catchRewards, cpFor, FLED_XP } from "../cp";
 import { sfx } from "../sound";
 import { earned, visitorMedals } from "../visitorMedals";
 import { findWild, holdWild, removeWild } from "../wild";
 import { BOOST_CP, boosted } from "../species";
 import { weatherStore } from "../weather";
-import { Encounter, type Foe, type Thrown } from "./Encounter";
+import { type CatchResult, Encounter, type Foe } from "./Encounter";
 import { FactToast, XpPops } from "./Xp";
 import { Card } from "./Card";
 import { MainMenu, MenuBall, type Screen, TrainerBadge } from "./Menu";
@@ -210,13 +210,16 @@ export function Hud() {
     setScreen(s);
   };
   const object = card ? bySlug.get(card) : undefined;
-  const endCatch = (caught: boolean, best: Thrown) => {
+  const endCatch = ({ outcome, best, firstThrow }: CatchResult) => {
     if (!foe) return;
+    const caught = outcome === "caught";
     holdWild(null);
+    // running away leaves it where it was, like GO; caught or fled, it's gone
     const w = findWild(foe.goal);
-    if (w) removeWild(w.id);
+    if (w && outcome !== "ran") removeWild(w.id);
+    if (w && outcome === "fled") gainXp(FLED_XP, "it fled");
     if (caught) {
-      const rewards = catchRewards(foe.rare, best, !progressStore.get().caught[foe.dex]);
+      const rewards = catchRewards(foe.rare, best, !progressStore.get().caught[foe.dex], firstThrow);
       recordCatch({ dex: foe.dex, name: foe.name, cp: foe.cp, throw: best });
       count("catches", { dex: foe.dex, cp: foe.cp });
       gainXp(

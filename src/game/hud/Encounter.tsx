@@ -10,6 +10,7 @@ import {
 } from "react";
 import { addItems, progressStore, spendItem } from "../progress";
 import { catchRewards } from "../cp";
+import { SPECIES } from "../species";
 import { sfx } from "../sound";
 import { FoeView } from "./FoeView";
 import { ItemIcon } from "./icons";
@@ -35,27 +36,48 @@ type Phase = "aim" | "flying" | "wiggle" | "caught" | "fled";
 type Throw = "Nice" | "Great" | "Excellent" | null;
 
 const RING_CYCLE = 1.7; // seconds for the inner ring to shrink from full to nearly nothing
-const RING_MIN = 0.1;
-const HIT_RADIUS = 80; // px around the Pokémon that counts as a hit
+const RING_MIN = 0.12;
+const OUTER = 120; // px: the white ring's radius, and what counts as a hit
 
 /**
- * GO's catch screen (notes/research/pokemon-go-ui.md): the Pokémon on a field
- * inside a fixed white ring, with an inner ring that keeps shrinking and
- * growing, colored by how hard the catch is (green easy to red hard); a dark
- * name plate over it; a big Poké Ball cut off at the bottom, a berry button
- * on the left and the ball switch on the right. Flick the ball up at it. The
- * inner ring's size against the outer one when it lands is the throw, like
- * GO: Excellent under 0.3, Great under 0.7, Nice otherwise. Then the ball
- * wiggles, and either it's caught or it breaks free.
+ * GO's odds (notes/research/encounter.md 7): P = 1 - (1 - min(1, BCR / 2·CPM))^M,
+ * with the species' base capture rate, a level 15 CP multiplier, and M the
+ * ball x berry x throw multipliers.
+ */
+const CPM = 0.5174;
+const catchChance = (dex: number, m: number) => 1 - (1 - Math.min(1, (SPECIES[dex]?.capture ?? 0.3) / (2 * CPM))) ** m;
+/** GO's ring color: the plain-throw chance, red at 0, yellow at a half, green at 1. */
+const ringColorFor = (p: number) =>
+  p < 0.5 ? `rgb(255, ${Math.round(510 * p)}, 0)` : `rgb(${Math.round(510 * (1 - p))}, 255, 0)`;
+
+/** How an encounter ended, for the HUD: caught, it fled, or you ran (it stays on the map). */
+export type CatchResult = { outcome: "caught" | "fled" | "ran"; best: Throw; firstThrow: boolean };
+
+/**
+ * GO's catch screen (notes/research/pokemon-go-ui.md, encounter.md): the
+ * Pokémon on a field, a dark name plate over it, a big Poké Ball cut off at
+ * the bottom, a berry button on the left and the ball switch on the right.
+ * Hold the ball and the rings show: a white one round the Pokémon and an inner
+ * one that keeps shrinking, colored by the chance (red hard, green easy).
+ * Flick it up. Land inside the colored ring for a bonus, by its size when the
+ * ball arrives: Excellent under 0.3, Great under 0.7, Nice otherwise. Then the
+ * ball wiggles, and either it's caught or it breaks free, and maybe flees.
  */
 export type Thrown = "Nice" | "Great" | "Excellent" | null;
 
-export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean, best: Thrown) => void }) {
+export function Encounter({ foe, onDone }: { foe: Foe; onDone: (result: CatchResult) => void }) {
   const field = useRef<HTMLDivElement>(null);
   const ball = useRef<HTMLDivElement>(null);
   const ring = useRef<HTMLDivElement>(null);
   const [phase, setPhase] = useState<Phase>("aim");
   const [label, setLabel] = useState<Throw>(null);
+  /** The rings only show while you hold the ball, and while it flies. */
+  const [holding, setHolding] = useState(false);
+  /** Balls thrown, misses included: a catch with the first one is GO's First Throw. */
+  const throws = useRef(0);
+  const [firstBall, setFirstBall] = useState(false);
+  /** A fact Pokémon has been hit once (the next hit always catches it). */
+  const [struck, setStruck] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const hits = useRef(0);
   const drag = useRef<{ id: number; samples: { x: number; y: number; t: number }[] } | null>(null);
@@ -77,9 +99,15 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
     if (foe.rare && bag.ball + bag.great === 0) addItems({ ball: 1 });
   }, [foe.rare]);
 
-  // Ring colors like GO, from the chance a Nice throw would catch it with what's selected: a Great Ball or a berry shifts it greener.
-  const ease = round ? round.rate + 0.1 + (berry ? 0.15 : 0) : (foe.rare ? 0.7 : 0.45) + 0.1 + (ballType === "great" ? 0.15 : 0) + (berry ? 0.2 : 0);
-  const ringColor = ease >= 0.85 ? "#2ee82e" : ease >= 0.65 ? "#b5f21b" : ease >= 0.45 ? "#fef204" : ease >= 0.25 ? "#ff9a1f" : "#f2342a";
+  // Ring color like GO: a plain throw's chance with the selected ball and berry
+  const plain = round
+    ? round.rate + (berry ? 0.15 : 0)
+    : foe.rare
+      ? struck
+        ? 1
+        : 0.7
+      : catchChance(foe.dex, (ballType === "great" ? 1.5 : 1) * (berry ? 1.5 : 1));
+  const ringColor = ringColorFor(Math.min(1, plain));
   const caughtBefore = (progressStore.get().caught[foe.dex] ?? 0) > 0;
 
   const geometry = useCallback(() => {
@@ -115,32 +143,35 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
 
   const ringNow = () => 1 - (((performance.now() - start.current) / 1000 / RING_CYCLE) % 1) * (1 - RING_MIN);
 
-  const resolve = (hitRing: number) => {
-    const bonus = hitRing < 0.3 ? "Excellent" : hitRing < 0.7 ? "Great" : "Nice";
+  /** The ball landed: `ringAt` is the inner ring's size then, and `inside` whether it came down within it. */
+  const resolve = (ringAt: number, inside: boolean) => {
+    const bonus: Throw = !inside ? null : ringAt <= 0.3 ? "Excellent" : ringAt <= 0.7 ? "Great" : "Nice";
     setLabel(bonus);
+    setHolding(false);
     hits.current += 1;
+    if (foe.rare) setStruck(true);
+    const throwBonus = inside ? 2 - ringAt : 1;
     const chance = round
-      ? round.rate + { Nice: 0.05, Great: 0.12, Excellent: 0.25 }[bonus] + (thrown.current.berry ? 0.15 : 0)
+      ? round.rate + (throwBonus - 1) * 0.25 + (thrown.current.berry ? 0.15 : 0)
       : foe.rare
         ? hits.current >= 2
           ? 1
           : 0.7
-        : 0.45 +
-          { Nice: 0.1, Great: 0.2, Excellent: 0.35 }[bonus] +
-          (thrown.current.great ? 0.15 : 0) +
-          (thrown.current.berry ? 0.2 : 0);
+        : catchChance(foe.dex, (thrown.current.great ? 1.5 : 1) * (thrown.current.berry ? 1.5 : 1) * throwBonus);
     const caught = Math.random() < chance;
     const wiggles = caught ? 3 : 1 + Math.floor(Math.random() * 3);
     setPhase("wiggle");
     for (let i = 0; i < wiggles; i++) window.setTimeout(sfx.wiggle, 500 + i * 650);
     window.setTimeout(() => {
       if (caught) {
+        setFirstBall(throws.current === 1);
         setPhase("caught");
         sfx.catch();
         setMessage(null);
         return;
       }
-      if (spent() || (!round && !foe.rare && Math.random() < 0.15)) {
+      // GO only rolls a flee after a break-out, at the species' own rate (Abra nearly always teleports off)
+      if (spent() || (!round && !foe.rare && Math.random() < (SPECIES[foe.dex]?.flee ?? 0.1))) {
         setPhase("fled");
         sfx.breakFree();
         setMessage(`Oh no! ${foe.name} fled.`);
@@ -164,6 +195,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
       setPremierLeft(left.current);
       thrown.current = { great: false, berry };
       setBerry(false);
+      throws.current += 1;
       return true;
     }
     if (!spendItem(ballType)) {
@@ -173,15 +205,16 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
     }
     thrown.current = { great: ballType === "great", berry };
     setBerry(false);
+    throws.current += 1;
     return true;
   };
 
-  const fly = (from: { x: number; y: number }, to: { x: number; y: number }, hit: boolean) => {
+  /** Throws from `from` to `to`; a hit lands `offset` px off the Pokémon's middle. */
+  const fly = (from: { x: number; y: number }, to: { x: number; y: number }, hit: boolean, offset = 0) => {
     sfx.throw();
     setPhase("flying");
     const t0 = performance.now();
     const duration = 560;
-    const ringAtRelease = ringNow();
     const step = () => {
       const k = Math.min(1, (performance.now() - t0) / duration);
       const x = from.x + (to.x - from.x) * k;
@@ -190,8 +223,11 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
       if (k < 1) requestAnimationFrame(step);
       else if (hit) {
         place(to.x, to.y + 40, 0.45);
-        resolve(ringAtRelease);
+        // the ring's size when the ball gets there is what counts, like GO
+        const r = ringNow();
+        resolve(r, Math.abs(offset) <= r * OUTER);
       } else {
+        setHolding(false);
         if (spent()) {
           setPhase("fled");
           sfx.breakFree();
@@ -212,6 +248,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
 
   const onDown = (e: ReactPointerEvent) => {
     if (phase !== "aim") return;
+    setHolding(true);
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
     drag.current = { id: e.pointerId, samples: [{ x: e.clientX, y: e.clientY, t: performance.now() }] };
   };
@@ -239,36 +276,54 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
     const from = local(e);
     if (vy > -350) {
       place(rest.x, rest.y); // not a throw, just let go
+      setHolding(false);
       return;
     }
     // Where the ball would cross the Pokémon's height.
     const lead = (from.y - target.y) / -vy;
     const x = from.x + vx * lead;
-    const hit = Math.abs(x - target.x) < HIT_RADIUS && from.y > target.y;
+    const hit = Math.abs(x - target.x) < OUTER && from.y > target.y;
     if (!spendBall()) {
       place(rest.x, rest.y);
+      setHolding(false);
       return;
     }
-    fly(from, hit ? target : { x, y: target.y - 60 }, hit);
+    fly(from, hit ? { x, y: target.y } : { x, y: target.y - 60 }, hit, x - target.x);
   };
 
-  // Keyboard fallback: space throws straight at it.
+  /** What to tell the HUD: run means it stays on the map. */
+  const result = (outcome: CatchResult["outcome"]): CatchResult => ({ outcome, best: label, firstThrow: outcome === "caught" && firstBall });
+  const ending: CatchResult["outcome"] = phase === "caught" ? "caught" : phase === "fled" ? "fled" : "ran";
+
+  // Keyboard: hold space to raise the ball (the rings show), let go to throw straight at it.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onDone(false, null);
+      if (e.key === "Escape") onDone(result("ran"));
       if ((e.key === " " || e.key === "Enter") && phase === "aim") {
+        e.preventDefault();
+        if (!e.repeat) setHolding(true);
+      }
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if ((e.key === " " || e.key === "Enter") && phase === "aim" && holding) {
         e.preventDefault();
         const { target, rest } = geometry();
         if (spendBall()) fly(rest, target, true);
+        else setHolding(false);
       }
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keyup", onKeyUp);
+    };
   });
+
 
   const done = phase === "caught" || phase === "fled";
   // Worked out when the encounter starts, so a catch doesn't count itself as already in the Pokédex.
-  const rewards = catchRewards(foe.rare, label, firstOfKind);
+  const rewards = catchRewards(foe.rare, label, firstOfKind, phase === "caught" && firstBall);
 
   return (
     <div
@@ -284,7 +339,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
       {/* run, top left: GO's white running figure */}
       <button
         type="button"
-        onClick={() => onDone(phase === "caught", label)}
+        onClick={() => onDone(result(ending))}
         aria-label={done ? "Back to the map" : "Run"}
         className="absolute top-4 left-4 grid size-12 place-items-center rounded-full text-white drop-shadow-md transition active:scale-90"
       >
@@ -315,9 +370,15 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
 
       {/* the Pokémon inside its rings */}
       <div className="absolute top-[45%] left-1/2 -translate-x-1/2 -translate-y-1/2">
-        <div className="absolute top-1/2 left-1/2 size-60 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white/90" />
-        {phase === "aim" ? (
-          <div ref={ring} className="absolute top-1/2 left-1/2 size-60 rounded-full border-[5px]" style={{ borderColor: ringColor }} />
+        {holding ? (
+          <>
+            <div className="absolute top-1/2 left-1/2 size-60 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white/80 shadow-[0_0_6px_rgba(255,255,255,0.8)]" />
+            <div
+              ref={ring}
+              className="absolute top-1/2 left-1/2 size-60 rounded-full border-[5px]"
+              style={{ borderColor: ringColor, boxShadow: `0 0 8px ${ringColor}` }}
+            />
+          </>
         ) : null}
         <FoeView
           dex={foe.dex}
@@ -349,7 +410,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
         </div>
       ) : phase === "aim" ? (
         <p className="pointer-events-none absolute inset-x-0 bottom-[calc(min(32vw,150px)*0.85+28px)] text-center font-[family-name:var(--font-lato)] text-xs font-bold tracking-wide text-white drop-shadow">
-          Flick the ball up to throw (or press space)
+          Hold the ball and flick it up (or hold space)
         </p>
       ) : null}
 
@@ -392,7 +453,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (caught: boolean,
         <div className="absolute inset-x-0 bottom-10 flex justify-center">
           <button
             type="button"
-            onClick={() => onDone(phase === "caught", label)}
+            onClick={() => onDone(result(ending))}
             className="go-pill rounded-full px-12 py-3 text-lg transition active:scale-95"
           >
             OK
