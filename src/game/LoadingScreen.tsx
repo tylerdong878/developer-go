@@ -1,11 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { trainer } from "@/content";
 
 /**
  * A loading screen like GO's: sky over a green hill, a Poké Ball bouncing on
- * it, a progress bar, and the game's famous line along the bottom. It fades
- * out once the world is drawn (after a short minimum, so it never flashes).
+ * it, a progress bar, and the game's famous line along the bottom. Above it,
+ * who this is, with the resume and the plain page a tap away even while the
+ * world loads. It fades out once the world is drawn (after a short minimum, so
+ * it never flashes).
  */
 export function LoadingScreen({ ready }: { ready: boolean }) {
   const [progress, setProgress] = useState(0.05);
@@ -33,12 +37,28 @@ export function LoadingScreen({ ready }: { ready: boolean }) {
   if (gone) return null;
   return (
     <div
-      role="progressbar"
-      aria-label="Loading the world"
-      aria-valuenow={Math.round((done ? 1 : progress) * 100)}
       className={`loading-screen absolute inset-0 z-[80] flex flex-col items-center justify-center transition-opacity duration-500 ${done ? "opacity-0" : "opacity-100"}`}
     >
-      <div className="relative -mt-10 flex flex-col items-center">
+      <div className="mb-14 px-6 text-center text-white drop-shadow">
+        <h1 className="font-display text-4xl font-semibold sm:text-5xl">{trainer.name}</h1>
+        {trainer.headline.map((line) => (
+          <p key={line} className="mt-1 font-display text-base font-medium sm:text-lg">
+            {line}
+          </p>
+        ))}
+        <p className="mt-4 flex flex-wrap justify-center gap-2">
+          <a href="/resume" className="rounded-full bg-white px-4 py-1.5 text-sm font-bold text-mystic-700 shadow transition hover:scale-105">
+            Resume
+          </a>
+          <Link href="/text" className="rounded-full bg-white/25 px-4 py-1.5 text-sm font-bold text-white ring-1 ring-white/70 transition hover:bg-white/35">
+            Plain version
+          </Link>
+          <a href={`mailto:${trainer.email}`} className="rounded-full bg-white/25 px-4 py-1.5 text-sm font-bold text-white ring-1 ring-white/70 transition hover:bg-white/35">
+            Email
+          </a>
+        </p>
+      </div>
+      <div className="relative flex flex-col items-center">
         <svg viewBox="0 0 64 64" width="96" height="96" className="loading-ball" aria-hidden>
           <circle cx="32" cy="32" r="30" fill="#fff" />
           <path d="M2 32a30 30 0 0 1 60 0Z" fill="#e3350d" />
@@ -49,7 +69,12 @@ export function LoadingScreen({ ready }: { ready: boolean }) {
         </svg>
         <span className="loading-shadow mt-1 block h-3 w-16 rounded-[50%] bg-mystic-900/25" aria-hidden />
       </div>
-      <div className="mt-8 h-2 w-56 overflow-hidden rounded-full bg-white/40">
+      <div
+        role="progressbar"
+        aria-label="Loading the world"
+        aria-valuenow={Math.round((done ? 1 : progress) * 100)}
+        className="mt-8 h-2 w-56 overflow-hidden rounded-full bg-white/40"
+      >
         <div
           className="h-full rounded-full bg-white transition-[width] duration-300"
           style={{ width: `${(done ? 1 : progress) * 100}%` }}

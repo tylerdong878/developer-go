@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useControls } from "./controls";
 import { Hud } from "./hud/Hud";
 import { palettes } from "./palette";
@@ -20,6 +20,7 @@ import { CastShadows } from "./scene/Sun";
 import { patchLook } from "./scene/look";
 import { World } from "./scene/World";
 import { game } from "./state";
+import { startedStore } from "./ready";
 import { useReducedMotion } from "./useReducedMotion";
 import { usePhase } from "./useTimeOfDay";
 
@@ -32,6 +33,11 @@ export default function Game() {
   const stage = useRef<HTMLDivElement>(null);
   const [budget] = useState(renderBudget);
   useControls(stage);
+  // nothing moves (or spawns) until the visitor starts
+  const started = useSyncExternalStore(startedStore.subscribe, startedStore.get, startedStore.server);
+  useEffect(() => {
+    game.input.locked = !started;
+  }, [started]);
 
   return (
     <>

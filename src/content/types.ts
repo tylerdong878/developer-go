@@ -118,6 +118,8 @@ export type Medal = {
 
 export type Trainer = {
   name: string;
+  /** Who he is in a line or two, for the loading screen. */
+  headline: string[];
   about: string[];
   school: { name: string; degree: string; graduation: string; gpa: string };
   email: string;

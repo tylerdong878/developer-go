@@ -8,7 +8,6 @@ import { BallSpinner, Intro } from "./Intro";
 import { LoadingScreen } from "./LoadingScreen";
 import { markStarted, readyStore, startedStore } from "./ready";
 import { unlockSound } from "./sound";
-import { game } from "./state";
 
 // three.js needs the browser, so the game loads on the client after the page
 // shell paints, under the intro.
@@ -56,10 +55,6 @@ export function GameLoader() {
   useEffect(() => {
     if (skip) markStarted();
   }, [skip]);
-
-  useEffect(() => {
-    game.input.locked = !started;
-  }, [started]);
 
   const start = () => {
     unlockSound();

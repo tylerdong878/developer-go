@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
-const GREETING = "Hey, I'm Tyler! Gyms here are my jobs and PokéStops are my projects. Walk around and catch whatever you find.";
+const GREETING =
+  "Hey, I'm Tyler! I study CS at Northeastern and just interned at AWS. Gyms here are my jobs, PokéStops are my projects, raids are my hackathons. Walk around and catch whatever you find.";
 
 /** How you move, said once, for whatever you're holding. */
 const coarse = () => window.matchMedia("(pointer: coarse)").matches;
@@ -82,9 +83,14 @@ export function Intro({ ready, onStart }: { ready: boolean; onStart: () => void 
                 <BallSpinner size={20} /> Loading the world...
               </span>
             )}
-            <Link href="/text" className="shrink-0 underline underline-offset-2" onClick={(e) => e.stopPropagation()}>
-              Plain version
-            </Link>
+            <span className="flex shrink-0 gap-3">
+              <a href="/resume" className="underline underline-offset-2" onClick={(e) => e.stopPropagation()}>
+                Resume
+              </a>
+              <Link href="/text" className="underline underline-offset-2" onClick={(e) => e.stopPropagation()}>
+                Plain version
+              </Link>
+            </span>
           </div>
           {canStart ? <span className="dialog-next absolute right-5 bottom-2 text-xl text-pokeball">▼</span> : null}
         </div>

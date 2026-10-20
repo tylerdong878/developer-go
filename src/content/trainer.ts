@@ -3,6 +3,7 @@ import type { Trainer } from "./types";
 
 export const trainer: Trainer = {
   name: "Tyler Dong",
+  headline: ["SDE intern at AWS, summer 2026", "CS + Computer Engineering at Northeastern, class of 2028"],
   about: [
     "I'm Tyler, a CS + Computer Engineering student at Northeastern (class of 2028).",
     "I like building things that have to be fast and correct: disk encryption at AWS, market data pipelines, and payments in a production app with 26k+ users.",
