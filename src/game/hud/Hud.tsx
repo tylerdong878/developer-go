@@ -28,7 +28,8 @@ import { WeatherBadge } from "./WeatherBadge";
 import { SettingsPanel } from "./Settings";
 import { PokemonPanel } from "./Storage";
 import { CommunityPanel } from "./Community";
-import { BagPanel, BuddyPanel, PokedexPanel, ProfilePanel, TrainerPanel } from "./Panels";
+import { BagPanel, BuddyPanel, HighlightsPanel, PokedexPanel, ProfilePanel, TrainerPanel } from "./Panels";
+import { clearScreenRequest, screenRequest } from "./request";
 
 /** Swings the camera round to put a map object ahead of the trainer. */
 function face(slug: string) {
@@ -200,6 +201,27 @@ export function Hud() {
   const closeFact = useCallback(() => setFact(null), []);
   const factSpawn = fact ? bySlug.get(fact) : undefined;
   const closeScreen = useCallback(() => setScreen(null), []);
+  const pickTab = useCallback((tab: "tyler" | "you") => setScreen(tab === "tyler" ? "about" : "profile"), []);
+  // a highlight: close the list and dash there, and its card opens on arrival
+  const goHighlight = useCallback((slug: string) => {
+    setScreen(null);
+    goTo(slug, true);
+  }, []);
+  // a screen the intro asked for (its Highlights link), once the HUD is up
+  useEffect(() => {
+    const check = () => {
+      const want = screenRequest.get();
+      if (!want || !startedStore.get()) return;
+      clearScreenRequest();
+      setScreen(want);
+    };
+    const offRequest = screenRequest.subscribe(check);
+    const offStart = startedStore.subscribe(check);
+    return () => {
+      offRequest();
+      offStart();
+    };
+  }, []);
   const openAbout = useCallback(() => {
     setCard(null);
     setScreen("about");
@@ -261,7 +283,7 @@ export function Hud() {
         <Prompt hidden={card !== null || screen !== null || menu || nearby || foe !== null || buddy} />
       </div>
       <div className={`pointer-events-auto absolute bottom-4 left-4 transition-opacity ${menu ? "invisible opacity-0" : ""}`}>
-        <TrainerBadge onOpen={() => setScreen("profile")} />
+        <TrainerBadge onOpen={() => setScreen("about")} />
       </div>
       <div className="pointer-events-auto absolute bottom-4 left-1/2 -translate-x-1/2">
         <MenuBall
@@ -284,8 +306,9 @@ export function Hud() {
 
       <div className="pointer-events-auto">
         {object ? <Card object={object} onClose={closeCard} onAbout={openAbout} onBonus={startBonus} /> : null}
-        {screen === "profile" ? <ProfilePanel onClose={closeScreen} /> : null}
-        {screen === "about" ? <TrainerPanel onClose={closeScreen} /> : null}
+        {screen === "profile" ? <ProfilePanel onClose={closeScreen} onTab={pickTab} /> : null}
+        {screen === "about" ? <TrainerPanel onClose={closeScreen} onTab={pickTab} /> : null}
+        {screen === "highlights" ? <HighlightsPanel onClose={closeScreen} onGo={goHighlight} /> : null}
         {screen === "research" ? <ResearchPanel onClose={closeScreen} /> : null}
         {screen === "pokedex" ? (
           <PokedexPanel

@@ -32,7 +32,7 @@ export function BallSpinner({ size = 28 }: { size?: number }) {
  * while a classic Pokémon text box types out one line, and the controls show
  * once. Tap anywhere (or press Enter) to start.
  */
-export function Intro({ ready, onStart }: { ready: boolean; onStart: () => void }) {
+export function Intro({ ready, onStart, onHighlights }: { ready: boolean; onStart: () => void; onHighlights: () => void }) {
   const [shown, setShown] = useState(0);
   const controls = useControlsHint();
 
@@ -84,6 +84,18 @@ export function Intro({ ready, onStart }: { ready: boolean; onStart: () => void 
               </span>
             )}
             <span className="flex shrink-0 gap-3">
+              {ready ? (
+                <button
+                  type="button"
+                  className="underline underline-offset-2"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onHighlights();
+                  }}
+                >
+                  Highlights
+                </button>
+              ) : null}
               <a href="/resume" className="underline underline-offset-2" onClick={(e) => e.stopPropagation()}>
                 Resume
               </a>

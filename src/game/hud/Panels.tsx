@@ -1,13 +1,14 @@
 "use client";
 
 import { type ReactNode, useSyncExternalStore } from "react";
-import { bag, medals, type MedalTier, raids, spawns, trainer, wild } from "@/content";
+import { bag, gyms, type MapObject, medals, type MedalTier, raids, spawns, stops, trainer, wild } from "@/content";
+import { describe } from "../objects";
 import { buddyStore } from "../buddy";
 import { MYSTIC } from "../colors";
 import { levelFor, progressStore, xpForLevel } from "../progress";
 import { RAID_BOSS } from "../raidBosses";
 import { visitorMedals } from "../visitorMedals";
-import { ItemIcon } from "./icons";
+import { ItemIcon, ObjectIcon } from "./icons";
 import { ITEM_INFO } from "./SpinDisc";
 import { Sheet } from "./Sheet";
 
@@ -28,6 +29,31 @@ const GROUPS = [
   ["honor", "Honors"],
   ["go", "In Pokémon GO"],
 ] as const;
+
+/** GO's profile tabs: Tyler's trainer card, and yours. */
+export function ProfileTabs({ current, onPick }: { current: "tyler" | "you"; onPick: (tab: "tyler" | "you") => void }) {
+  return (
+    <div role="tablist" aria-label="Whose profile" className="mb-5 flex justify-center gap-1">
+      {(
+        [
+          ["tyler", trainer.name.split(" ")[0]],
+          ["you", "You"],
+        ] as const
+      ).map(([id, label]) => (
+        <button
+          key={id}
+          type="button"
+          role="tab"
+          aria-selected={current === id}
+          onClick={() => onPick(id)}
+          className={`go-title border-b-2 px-4 py-1.5 text-xs transition ${current === id ? "border-ink text-ink" : "border-transparent text-ink-soft hover:text-ink"}`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 /** A small uppercase section label, the same everywhere. */
 function Label({ children }: { children: ReactNode }) {
@@ -63,7 +89,7 @@ function MedalRow({ tint, title, detail, children }: { tint: string; title: stri
 }
 
 /** Everything about Tyler: who he is, how to reach him, what he's won, what he uses, and his real GO account. */
-export function TrainerPanel({ onClose }: { onClose: () => void }) {
+export function TrainerPanel({ onClose, onTab }: { onClose: () => void; onTab?: (tab: "tyler" | "you") => void }) {
   const stats = [
     ["Level", String(trainer.go.level)],
     ["Total XP", n(trainer.go.xp)],
@@ -80,6 +106,7 @@ export function TrainerPanel({ onClose }: { onClose: () => void }) {
       subtitle={`${trainer.school.name}, ${trainer.school.degree}, ${trainer.school.graduation}`}
       onClose={onClose}
     >
+      {onTab ? <ProfileTabs current="tyler" onPick={onTab} /> : null}
       <div className="space-y-3 leading-relaxed">
         {trainer.about.map((p) => (
           <p key={p}>{p}</p>
@@ -320,6 +347,59 @@ export function BagPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+/** The best of it in one list, for anyone short on time: each one dashes you there and opens it. */
+export function HighlightsPanel({ onClose, onGo }: { onClose: () => void; onGo: (slug: string) => void }) {
+  const jobs = gyms.filter((g) => ["aws", "philips", "tetracorp"].includes(g.slug));
+  const projects = stops.filter((s) => s.featured && s.slug !== "bluffs");
+  const wins = raids.filter((r) => r.result);
+  const row = (o: MapObject) => {
+    const { name, subtitle } = describe(o);
+    return (
+      <li key={o.slug}>
+        <button
+          type="button"
+          onClick={() => onGo(o.slug)}
+          className="flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-ink/6 focus-visible:bg-ink/6"
+        >
+          <span className="grid size-12 shrink-0 place-items-center rounded-full bg-sky">
+            <ObjectIcon object={o} size={36} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-semibold">{name}</span>
+            <span className="block truncate text-sm text-ink-soft">{subtitle}</span>
+          </span>
+          <span aria-hidden className="text-lg text-ink-soft">›</span>
+        </button>
+      </li>
+    );
+  };
+  return (
+    <Sheet title="Highlights" kicker={trainer.name} accent={MYSTIC} subtitle={trainer.headline.join(". ")} onClose={onClose}>
+      <div className="flex flex-wrap gap-2">
+        <a href="/resume" className="go-pill rounded-full px-5 py-2 text-sm transition active:scale-95">
+          Resume
+        </a>
+        <a href={`mailto:${trainer.email}`} className="go-pill rounded-full px-5 py-2 text-sm transition active:scale-95">
+          Email me
+        </a>
+        {trainer.links
+          .filter((l) => l.label === "GitHub" || l.label === "LinkedIn")
+          .map((l) => (
+            <a key={l.href} href={l.href} target="_blank" rel="noreferrer" className="rounded-full bg-ink/6 px-4 py-2 text-sm font-bold transition hover:bg-ink/12">
+              {l.label}
+            </a>
+          ))}
+      </div>
+      <Label>Jobs</Label>
+      <ul>{jobs.map(row)}</ul>
+      <Label>Projects</Label>
+      <ul>{projects.map(row)}</ul>
+      <Label>Hackathon wins</Label>
+      <ul>{wins.map(row)}</ul>
+    </Sheet>
+  );
+}
+
 /** A rolled-up page with a Poké Ball seal, for the resume key item. */
 function ResumeIcon() {
   return (
@@ -335,7 +415,7 @@ function ResumeIcon() {
 }
 
 /** Your trainer profile: your level, what you've done on the base, and your medals. */
-export function ProfilePanel({ onClose }: { onClose: () => void }) {
+export function ProfilePanel({ onClose, onTab }: { onClose: () => void; onTab?: (tab: "tyler" | "you") => void }) {
   const progress = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
   const level = levelFor(progress.xp);
   const from = xpForLevel(level);
@@ -349,6 +429,7 @@ export function ProfilePanel({ onClose }: { onClose: () => void }) {
   ] as const;
   return (
     <Sheet title={`Level ${level}`} kicker="You" accent={MYSTIC} onClose={onClose}>
+      {onTab ? <ProfileTabs current="you" onPick={onTab} /> : null}
       <div className="h-2 overflow-hidden rounded-full bg-ink/8">
         <div className="h-full rounded-full bg-teal" style={{ width: `${Math.min(100, ((progress.xp - from) / (to - from)) * 100)}%` }} />
       </div>

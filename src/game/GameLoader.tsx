@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useSyncExternalStore } from "react";
 import { trainer } from "@/content";
+import { requestScreen } from "./hud/request";
 import { BallSpinner, Intro } from "./Intro";
 import { LoadingScreen } from "./LoadingScreen";
 import { markStarted, readyStore, startedStore } from "./ready";
@@ -65,7 +66,16 @@ export function GameLoader() {
   return (
     <>
       <Game />
-      {started ? null : <Intro ready={ready} onStart={start} />}
+      {started ? null : (
+        <Intro
+          ready={ready}
+          onStart={start}
+          onHighlights={() => {
+            requestScreen("highlights");
+            start();
+          }}
+        />
+      )}
       <LoadingScreen ready={ready} />
     </>
   );

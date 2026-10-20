@@ -102,6 +102,7 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
             </span>
           ))}
         </span>
+        <span className="ml-1 font-display text-xs font-bold tracking-wide text-ink-soft uppercase">Nearby</span>
       </button>
 
       {open ? (
