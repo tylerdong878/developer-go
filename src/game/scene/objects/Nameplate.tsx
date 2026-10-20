@@ -10,7 +10,7 @@ const HEIGHT = 0.036;
 /** Names only show once you're close enough to walk over, so the map stays clean. */
 const SHOW_WITHIN = 22;
 
-type Plate = { sprite: Sprite; x: number; y: number; z: number; aspect: number; shown: number };
+type Plate = { sprite: Sprite; x: number; y: number; z: number; aspect: number; shown: number; within: number };
 const plates = new Set<Plate>();
 
 /** A white pill with the name, drawn once into a texture in the site's display font. */
@@ -48,7 +48,7 @@ async function drawPlate(text: string, accent: string) {
  * cover a nearer one. It goes inside the object's group (so it draws at
  * height y over it); x and z are the object's spot on the map, for the layout.
  */
-export function Nameplate({ text, accent, x, z, y }: { text: string; accent: string; x: number; z: number; y: number }) {
+export function Nameplate({ text, accent, x, z, y, within = SHOW_WITHIN }: { text: string; accent: string; x: number; z: number; y: number; within?: number }) {
   const sprite = useRef<Sprite>(null);
   const [plate, setPlate] = useState<{ texture: CanvasTexture; aspect: number } | null>(null);
 
@@ -68,12 +68,12 @@ export function Nameplate({ text, accent, x, z, y }: { text: string; accent: str
 
   useEffect(() => {
     if (!plate || !sprite.current) return;
-    const entry: Plate = { sprite: sprite.current, x, y, z, aspect: plate.aspect, shown: 0 };
+    const entry: Plate = { sprite: sprite.current, x, y, z, aspect: plate.aspect, shown: 0, within };
     plates.add(entry);
     return () => {
       plates.delete(entry);
     };
-  }, [plate, x, y, z]);
+  }, [plate, x, y, z, within]);
 
   if (!plate) return null;
   return (
@@ -100,7 +100,7 @@ export function PlateLayout() {
       .map((p) => ({ p, d: Math.hypot(position.x - p.x, position.z - p.z) }))
       .sort((a, b) => a.d - b.d);
     for (const { p, d } of order) {
-      let want = Math.min(1, Math.max(0, (SHOW_WITHIN - d) / 5));
+      let want = Math.min(1, Math.max(0, (p.within - d) / 5));
       if (want > 0) {
         const v = point.current.set(p.x, p.y, p.z).project(camera);
         const onScreen = v.z < 1 && Math.abs(v.x) < 1.2 && Math.abs(v.y) < 1.2;

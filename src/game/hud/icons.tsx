@@ -1,6 +1,7 @@
 import { useId, useSyncExternalStore } from "react";
 import type { BadgeTier, MapObject, Raid } from "@/content";
 import { EGG_SPOTS, MYSTIC, MYSTIC_LIGHT, RAID_EGG } from "../colors";
+import { foundStore } from "../discovered";
 import { progressStore } from "../progress";
 import { RAID_BOSS } from "../raidBosses";
 
@@ -89,6 +90,15 @@ export function RaidIcon({ stars, size = 34, boss }: { stars: 1 | 3 | 5; size?: 
   );
 }
 
+/** A fact Pokémon: a dark silhouette until you've found it on the map, like GO's Nearby. */
+function FactIcon({ slug, dex, size }: { slug: string; dex: number; size: number }) {
+  const found = useSyncExternalStore(foundStore.subscribe, () => foundStore.get().has(slug), () => false);
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- tiny local portraits, already sized
+    <img src={`/portraits/${dex}.webp`} alt="" width={size} height={size} className={`object-contain ${found ? "" : "brightness-0 opacity-45"}`} />
+  );
+}
+
 /** A raid on the map, showing its boss once this visitor has hatched it. */
 function RaidObjectIcon({ raid, size }: { raid: Raid; size: number }) {
   const hatched = useSyncExternalStore(
@@ -123,10 +133,7 @@ export function ObjectIcon({ object, size = 36 }: { object: MapObject; size?: nu
     case "egg":
       return <EggIcon km={object.km} size={size * 0.7} />;
     case "spawn":
-      return (
-        // eslint-disable-next-line @next/next/no-img-element -- tiny local portraits, already sized
-        <img src={`/portraits/${object.pokemon.dex}.webp`} alt="" width={size} height={size} className="object-contain" />
-      );
+      return <FactIcon slug={object.slug} dex={object.pokemon.dex} size={size} />;
   }
 }
 

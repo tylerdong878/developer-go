@@ -2,19 +2,7 @@
 
 import { type ThreeEvent, useFrame } from "@react-three/fiber";
 import { useRef, useSyncExternalStore } from "react";
-import {
-  CanvasTexture,
-  DoubleSide,
-  type Group,
-  type Mesh,
-  type MeshBasicMaterial,
-  MeshLambertMaterial,
-  RingGeometry,
-  Shape,
-  ShapeGeometry,
-  type Sprite,
-  SRGBColorSpace,
-} from "three";
+import { CanvasTexture, type Group, type Sprite, SRGBColorSpace } from "three";
 import { sfx } from "../../sound";
 import { boosted } from "../../species";
 import { usePhase } from "../../useTimeOfDay";
@@ -22,6 +10,7 @@ import { weatherStore } from "../../weather";
 import { game } from "../../state";
 import { goTo } from "../../travel";
 import { goalId, isOut, LEAVE, moveWild, refreshWild, RUSTLE, wildStore, type WildSpawn } from "../../wild";
+import { type Appearing, AppearFx, bodyScale } from "./appear";
 import { critterLift, critterSize, Critter } from "./Critter";
 
 /** When a wild one notices you, and how far it strays from where it appeared. */
@@ -53,76 +42,6 @@ function alertTexture() {
   return alertMark;
 }
 
-/** GO's rustling leaves: a little leaf, shared by every spawn. */
-const leafShape = new Shape();
-leafShape.moveTo(0, -0.26);
-leafShape.quadraticCurveTo(0.2, 0, 0, 0.26);
-leafShape.quadraticCurveTo(-0.2, 0, 0, -0.26);
-const leafGeometry = new ShapeGeometry(leafShape, 4);
-const leafMaterials = ["#4ccd63", "#27ae54", "#8fdc5a"].map((c) => new MeshLambertMaterial({ color: c, side: DoubleSide }));
-const LEAVES = 12;
-
-/** GO's rings at a wild Pokémon's feet (notes/research/spawns.md): three ripples when it pops out, then three faint ones pulsing every 2 s. */
-const ringGeometry = new RingGeometry(0.92, 1, 48).rotateX(-Math.PI / 2);
-const PULSE = 2;
-/** A weather-boosted one stands in GO's swirl instead: three cyan-white arcs turning half a turn a second. */
-const arcGeometry = new RingGeometry(0.84, 1, 24, 1, 0, 1.5).rotateX(-Math.PI / 2);
-
-function ripples(group: Group, age: number, size: number, boost: boolean) {
-  const since = age - RUSTLE;
-  group.visible = since > 0;
-  if (!group.visible) return;
-  group.children.forEach((ring, i) => {
-    const m = (ring as Mesh).material as MeshBasicMaterial;
-    // the pop: three quick white ripples, one after another
-    const pop = (since - i * 0.14) / 0.75;
-    if (pop < 1) {
-      const k = Math.max(0, pop);
-      ring.scale.setScalar(size * (0.3 + k * 0.9));
-      m.opacity = pop < 0 ? 0 : 0.8 * (1 - k);
-      return;
-    }
-    // then GO's faint pulse while it's out (a boosted one has its swirl instead)
-    if (boost) {
-      m.opacity = 0;
-      return;
-    }
-    const k = (((since - 1.2 - i * 0.25) / PULSE) % 1 + 1) % 1;
-    ring.scale.setScalar(size * (0.25 + k * 0.45));
-    m.opacity = 0.3 * Math.sin(k * Math.PI);
-  });
-}
-
-/** GO's pop: overshoots a little and settles. */
-const backOut = (k: number) => (k <= 0 ? 0 : k >= 1 ? 1 : 1 + 2.70158 * (k - 1) ** 3 + 1.70158 * (k - 1) ** 2);
-
-/**
- * Leaves swirling over the spot while a Pokémon is about to appear, bursting
- * out when it pops up (notes/research/world-2.md 3.2).
- */
-function rustle(group: Group, age: number) {
-  const burst = age - RUSTLE;
-  group.visible = burst < 0.9;
-  if (!group.visible) return;
-  group.children.forEach((leaf, i) => {
-    const a = (i / LEAVES) * Math.PI * 2;
-    if (burst < 0) {
-      // a small whirl low over the grass, picking up as it nears the pop
-      const spin = a + age * (5 + age * 3);
-      const r = 0.45 + Math.sin(age * 7 + i) * 0.15;
-      leaf.position.set(Math.cos(spin) * r, 0.15 + Math.abs(Math.sin(age * 6 + i * 1.7)) * (0.3 + age * 0.25), Math.sin(spin) * r);
-      leaf.rotation.set(age * 9 + i, age * 7, i);
-      leaf.scale.setScalar(Math.min(1, age * 3));
-    } else {
-      // flung out and drifting down as they shrink away
-      const r = 0.6 + burst * 3.2;
-      leaf.position.set(Math.cos(a + 0.3) * r, 0.5 + burst * 2.2 - burst * burst * 3.4, Math.sin(a + 0.3) * r);
-      leaf.rotation.set(burst * 12 + i, burst * 8, i);
-      leaf.scale.setScalar(Math.max(0, 1 - burst / 0.9));
-    }
-  });
-}
-
 /**
  * One wild Pokémon. Leaves rustle where it's about to appear and it pops out;
  * then it potters around near there, and when you come close it stops and a
@@ -131,10 +50,7 @@ function rustle(group: Group, age: number) {
 function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
   const root = useRef<Group>(null);
   const body = useRef<Group>(null);
-  const leaves = useRef<Group>(null);
-  const puff = useRef<Mesh>(null);
-  const rings = useRef<Group>(null);
-  const swirl = useRef<Group>(null);
+  const fx = useRef<Appearing>({ age: -1, going: -1, size: 1, boost: false });
   const popped = useRef(false);
   const mark = useRef<Sprite>(null);
   const home = useRef<[number, number]>([s.x, s.z]);
@@ -151,28 +67,13 @@ function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
     const age = now - s.born;
     const going = s.leaving === null ? -1 : (now - s.leaving) / LEAVE;
     // rustle, pop out, and later shrink away into a puff
-    if (body.current) body.current.scale.setScalar(going >= 0 ? Math.max(0, 1 - going * going) : backOut((age - RUSTLE) / 0.35));
-    if (leaves.current) rustle(leaves.current, age);
-    const size = Math.max(1.2, critterSize(s.species.dex) * 0.75);
-    const boost = boosted(s.species.dex, weatherStore.get());
-    if (rings.current) ripples(rings.current, going >= 0 ? -1 : age, size, boost);
-    if (swirl.current) {
-      swirl.current.visible = boost && going < 0 && age > RUSTLE + 0.6;
-      swirl.current.rotation.y = -now * Math.PI;
-      swirl.current.scale.setScalar(size);
-    }
+    fx.current = { age, going, size: Math.max(1.2, critterSize(s.species.dex) * 0.75), boost: boosted(s.species.dex, weatherStore.get()) };
+    if (body.current) body.current.scale.setScalar(bodyScale(fx.current));
     if (!popped.current && age >= RUSTLE) {
       popped.current = true;
       // a soft pop, if it's close enough to hear
       const { position } = game.player.trainer;
       if (Math.hypot(position.x - s.x, position.z - s.z) < 20) sfx.appear();
-    }
-    if (puff.current) {
-      puff.current.visible = going >= 0 && going < 1;
-      if (puff.current.visible) {
-        puff.current.scale.setScalar(0.6 + going * 1.6);
-        (puff.current.material as MeshBasicMaterial).opacity = 0.75 * (1 - going);
-      }
     }
     const out = isOut(s, now);
     const { position } = game.player.trainer;
@@ -225,29 +126,7 @@ function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
           }}
         />
       </group>
-      <group ref={leaves}>
-        {Array.from({ length: LEAVES }, (_, i) => (
-          <mesh key={i} geometry={leafGeometry} material={leafMaterials[i % leafMaterials.length]} scale={0} />
-        ))}
-      </group>
-      <group ref={rings} position-y={0.05} visible={false}>
-        {[0, 1, 2].map((i) => (
-          <mesh key={i} geometry={ringGeometry} renderOrder={-16}>
-            <meshBasicMaterial color="#ffffff" transparent opacity={0} depthWrite={false} />
-          </mesh>
-        ))}
-      </group>
-      <group ref={swirl} position-y={0.06} visible={false}>
-        {[0, 1, 2].map((i) => (
-          <mesh key={i} geometry={arcGeometry} rotation-y={(i / 3) * Math.PI * 2} renderOrder={-16}>
-            <meshBasicMaterial color={i ? "#bff4ff" : "#ffffff"} transparent opacity={0.85} depthWrite={false} />
-          </mesh>
-        ))}
-      </group>
-      <mesh ref={puff} position-y={0.7} visible={false}>
-        <sphereGeometry args={[0.8, 16, 12]} />
-        <meshBasicMaterial color="#ffffff" transparent depthWrite={false} />
-      </mesh>
+      <AppearFx state={fx} />
       <sprite ref={mark} visible={false} renderOrder={7}>
         <spriteMaterial map={alertTexture()} transparent depthWrite={false} />
       </sprite>

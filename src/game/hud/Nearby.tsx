@@ -6,6 +6,7 @@ import { slots, START } from "../base";
 import { describe } from "../objects";
 import { game } from "../state";
 import { goTo } from "../travel";
+import { foundStore } from "../discovered";
 import { goalId, isOut, wildStore } from "../wild";
 import { ObjectIcon } from "./icons";
 
@@ -73,7 +74,10 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
   const wildList = [...wildOut].sort(
     (a, b) => Math.hypot(a.x - spot[0], a.z - spot[1]) - Math.hypot(b.x - spot[0], b.z - spot[1]),
   );
-  const list = [...current.items].sort((a, b) => distanceFrom(spot, a) - distanceFrom(spot, b));
+  const found = useSyncExternalStore(foundStore.subscribe, foundStore.get, foundStore.server);
+  const hidden = (o: MapObject) => o.kind === "spawn" && !found.has(o.slug);
+  // like GO, the ones you haven't found yet come first
+  const list = [...current.items].sort((a, b) => Number(hidden(b)) - Number(hidden(a)) || distanceFrom(spot, a) - distanceFrom(spot, b));
 
   const pick = (slug: string) => {
     setOpen(false);
@@ -161,7 +165,7 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
               </>
             ) : null}
             {list.map((o) => {
-              const { name, subtitle } = describe(o);
+              const { name, subtitle } = hidden(o) ? { name: "???", subtitle: "Somewhere nearby. Go find it!" } : describe(o);
               return (
                 <li key={o.slug}>
                   <button

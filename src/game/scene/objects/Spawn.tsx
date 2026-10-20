@@ -1,29 +1,68 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useSyncExternalStore } from "react";
 import { CanvasTexture, type Group, type Sprite, SRGBColorSpace } from "three";
 import type { Spawn as SpawnContent } from "@/content";
+import { discover, foundStore } from "../../discovered";
+import { sfx } from "../../sound";
+import { boosted } from "../../species";
+import { game } from "../../state";
+import { weatherStore } from "../../weather";
+import { REACH } from "../Rings";
+import { type Appearing, AppearFx, bodyScale } from "./appear";
 import { Critter, critterLift, critterSize } from "./Critter";
 import { Nameplate } from "./Nameplate";
 import { tapObject } from "./tap";
 
+/** You find a fact Pokémon the first time you come this close: GO's draw range at our scale. */
+const REVEAL = 24;
+
 /**
- * A rare Pokémon at a fixed spot, one per fun fact about me. It sparkles so
- * it stands out from the everyday wild ones. Snorlax is asleep, so it gets
- * Zzz's instead.
+ * A rare Pokémon at a fixed spot, one per fun fact about me, like GO's Daily
+ * Encounter: it waits unseen until you first come close, then leaves rustle,
+ * it pops out, and it stays, on a brighter pulsing ring. It sparkles so it
+ * stands out from the everyday wild ones (include then prune: GO's map has no
+ * sparkles). Snorlax is asleep, so it gets Zzz's instead. Its name shows once
+ * you're about at your ring, since GO doesn't label Pokémon from afar.
  */
 export function Spawn({ spawn, x, z, grass }: { spawn: SpawnContent; x: number; z: number; grass: string }) {
   const { dex, name } = spawn.pokemon;
   const size = critterSize(dex);
   const lift = critterLift(dex);
   const asleep = dex === 143;
+  const found = useSyncExternalStore(foundStore.subscribe, () => foundStore.get().has(spawn.slug), () => asleep);
+  const body = useRef<Group>(null);
+  const fx = useRef<Appearing>({ age: -1, going: -1, size: Math.max(1.2, size * 0.75), boost: false, daily: true });
+  /** When it popped out (on the clock); far in the past if it was already found. */
+  const since = useRef<number | null>(null);
+
+  useFrame(({ clock }) => {
+    const now = clock.elapsedTime;
+    if (since.current === null) {
+      if (foundStore.get().has(spawn.slug)) since.current = -1e6;
+      else if (!game.input.locked) {
+        const { position } = game.player.trainer;
+        if (Math.hypot(position.x - x, position.z - z) < REVEAL) {
+          discover(spawn.slug);
+          since.current = now;
+          sfx.appear();
+        }
+      }
+    }
+    fx.current.age = since.current === null ? -1 : Math.min(now - since.current, 1e3);
+    fx.current.boost = boosted(dex, weatherStore.get());
+    if (body.current) body.current.scale.setScalar(bodyScale(fx.current));
+  });
 
   return (
     <group position={[x, 0, z]}>
-      <Critter dex={dex} grass={grass} asleep={asleep} onClick={tapObject(spawn.slug)} seed={x} />
-      {asleep ? <Zzz y={size * 0.9} /> : <Sparkles height={size + lift} />}
-      <Nameplate text={name} accent="#f6c453" x={x} z={z} y={size + lift + 1.1} />
+      <group ref={body} scale={0}>
+        <Critter dex={dex} grass={grass} asleep={asleep} onClick={tapObject(spawn.slug)} seed={x} />
+        {asleep ? <Zzz y={size * 0.9} /> : <Sparkles height={size + lift} />}
+      </group>
+      <AppearFx state={fx} />
+      {found ? <Nameplate text={name} accent="#f6c453" x={x} z={z} y={size + lift + 1.1} within={REACH + 3} /> : null}
     </group>
   );
 }
