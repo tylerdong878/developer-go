@@ -3,7 +3,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import { RECIPES } from "./pokemon/recipes";
-import { SmoothModel } from "./pokemon/Smooth";
+import { preloadSmooth, SmoothModel } from "./pokemon/Smooth";
 import { CanvasTexture, DoubleSide, type Group, SRGBColorSpace } from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import type { Mover } from "../player";
@@ -18,6 +18,9 @@ const JACKET = "#0b84d6";
 
 /** How tall Tyler stands, in meters (his recipe is 1 tall). */
 const HEIGHT = (RECIPES["trainer-tyler"] as { height: number }).height;
+
+// You and your buddy are the first thing anyone sees: they mesh before the town's other models
+preloadSmooth(["trainer-tyler", "teddy"]);
 
 /**
  * Tyler, as a smooth model in Let's Go's trainer style (notes/research/model-people-items.md),
