@@ -6,7 +6,7 @@ import { slots, START } from "../base";
 import { describe } from "../objects";
 import { game } from "../state";
 import { goTo } from "../travel";
-import { goalId, wildStore } from "../wild";
+import { goalId, isOut, wildStore } from "../wild";
 import { ObjectIcon } from "./icons";
 
 const TABS = [
@@ -68,7 +68,9 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
   const closest = [...everything].sort((a, b) => distanceFrom(spot, a) - distanceFrom(spot, b)).slice(0, 3);
   const current = TABS.find((t) => t.id === tab)!;
   const wildNow = useSyncExternalStore(wildStore.subscribe, wildStore.get, () => noWild);
-  const wildList = [...wildNow].sort(
+  // only the ones out on the map: not still rustling, not on their way off
+  const wildOut = wildNow.filter((w) => isOut(w));
+  const wildList = [...wildOut].sort(
     (a, b) => Math.hypot(a.x - spot[0], a.z - spot[1]) - Math.hypot(b.x - spot[0], b.z - spot[1]),
   );
   const list = [...current.items].sort((a, b) => distanceFrom(spot, a) - distanceFrom(spot, b));
@@ -124,7 +126,7 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
                 }`}
               >
                 {t.label}{" "}
-                <span className="opacity-70">{t.items.length + (t.id === "spawn" ? wildNow.length : 0)}</span>
+                <span className="opacity-70">{t.items.length + (t.id === "spawn" ? wildOut.length : 0)}</span>
               </button>
             ))}
           </div>

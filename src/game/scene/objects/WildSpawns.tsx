@@ -2,10 +2,10 @@
 
 import { type ThreeEvent, useFrame } from "@react-three/fiber";
 import { useRef, useSyncExternalStore } from "react";
-import { CanvasTexture, type Group, type Sprite, SRGBColorSpace } from "three";
+import { CanvasTexture, DoubleSide, type Group, type Mesh, type MeshBasicMaterial, MeshLambertMaterial, ShapeGeometry, Shape, type Sprite, SRGBColorSpace } from "three";
 import { game } from "../../state";
 import { goTo } from "../../travel";
-import { goalId, moveWild, refreshWild, wildStore, type WildSpawn } from "../../wild";
+import { goalId, isOut, LEAVE, moveWild, refreshWild, RUSTLE, wildStore, type WildSpawn } from "../../wild";
 import { critterLift, critterSize, Critter } from "./Critter";
 
 /** When a wild one notices you, and how far it strays from where it appeared. */
@@ -37,12 +37,55 @@ function alertTexture() {
   return alertMark;
 }
 
+/** GO's rustling leaves: a little leaf, shared by every spawn. */
+const leafShape = new Shape();
+leafShape.moveTo(0, -0.26);
+leafShape.quadraticCurveTo(0.2, 0, 0, 0.26);
+leafShape.quadraticCurveTo(-0.2, 0, 0, -0.26);
+const leafGeometry = new ShapeGeometry(leafShape, 4);
+const leafMaterials = ["#4ccd63", "#27ae54", "#8fdc5a"].map((c) => new MeshLambertMaterial({ color: c, side: DoubleSide }));
+const LEAVES = 12;
+
+/** GO's pop: overshoots a little and settles. */
+const backOut = (k: number) => (k <= 0 ? 0 : k >= 1 ? 1 : 1 + 2.70158 * (k - 1) ** 3 + 1.70158 * (k - 1) ** 2);
+
 /**
- * One wild Pokémon: it potters around near where it appeared, and when you
- * come close it stops and a "!" pops up over it, like the games.
+ * Leaves swirling over the spot while a Pokémon is about to appear, bursting
+ * out when it pops up (notes/research/world-2.md 3.2).
+ */
+function rustle(group: Group, age: number) {
+  const burst = age - RUSTLE;
+  group.visible = burst < 0.9;
+  if (!group.visible) return;
+  group.children.forEach((leaf, i) => {
+    const a = (i / LEAVES) * Math.PI * 2;
+    if (burst < 0) {
+      // a small whirl low over the grass, picking up as it nears the pop
+      const spin = a + age * (5 + age * 3);
+      const r = 0.45 + Math.sin(age * 7 + i) * 0.15;
+      leaf.position.set(Math.cos(spin) * r, 0.15 + Math.abs(Math.sin(age * 6 + i * 1.7)) * (0.3 + age * 0.25), Math.sin(spin) * r);
+      leaf.rotation.set(age * 9 + i, age * 7, i);
+      leaf.scale.setScalar(Math.min(1, age * 3));
+    } else {
+      // flung out and drifting down as they shrink away
+      const r = 0.6 + burst * 3.2;
+      leaf.position.set(Math.cos(a + 0.3) * r, 0.5 + burst * 2.2 - burst * burst * 3.4, Math.sin(a + 0.3) * r);
+      leaf.rotation.set(burst * 12 + i, burst * 8, i);
+      leaf.scale.setScalar(Math.max(0, 1 - burst / 0.9));
+    }
+  });
+}
+
+/**
+ * One wild Pokémon. Leaves rustle where it's about to appear and it pops out;
+ * then it potters around near there, and when you come close it stops and a
+ * "!" pops up over it, like the games. When its time's up it goes in a puff.
  */
 function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
   const root = useRef<Group>(null);
+  const body = useRef<Group>(null);
+  const leaves = useRef<Group>(null);
+  const puff = useRef<Mesh>(null);
   const mark = useRef<Sprite>(null);
   const home = useRef<[number, number]>([s.x, s.z]);
   const to = useRef<[number, number] | null>(null);
@@ -50,15 +93,29 @@ function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
   const seen = useRef(false);
   const pop = useRef(0);
 
-  useFrame((_, frame) => {
+  useFrame(({ clock }, frame) => {
     const g = root.current;
     if (!g) return;
     const dt = Math.min(frame, 0.05);
+    const now = clock.elapsedTime;
+    const age = now - s.born;
+    const going = s.leaving === null ? -1 : (now - s.leaving) / LEAVE;
+    // rustle, pop out, and later shrink away into a puff
+    if (body.current) body.current.scale.setScalar(going >= 0 ? Math.max(0, 1 - going * going) : backOut((age - RUSTLE) / 0.35));
+    if (leaves.current) rustle(leaves.current, age);
+    if (puff.current) {
+      puff.current.visible = going >= 0 && going < 1;
+      if (puff.current.visible) {
+        puff.current.scale.setScalar(0.6 + going * 1.6);
+        (puff.current.material as MeshBasicMaterial).opacity = 0.75 * (1 - going);
+      }
+    }
+    const out = isOut(s, now);
     const { position } = game.player.trainer;
-    const near = Math.hypot(position.x - s.x, position.z - s.z) < NOTICE;
+    const near = out && Math.hypot(position.x - s.x, position.z - s.z) < NOTICE;
     if (near && !seen.current) pop.current = 1.4;
     seen.current = near;
-    if (!near) {
+    if (out && !near) {
       rest.current -= dt;
       if (rest.current <= 0 && !to.current) {
         const a = Math.random() * Math.PI * 2;
@@ -92,16 +149,27 @@ function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
 
   return (
     <group ref={root} position={[s.x, 0, s.z]}>
-      <Critter
-        dex={s.species.dex}
-        grass={grass}
-        seed={s.id}
-        onClick={(e: ThreeEvent<MouseEvent>) => {
-          if (e.delta > 6) return;
-          e.stopPropagation();
-          goTo(goalId(s));
-        }}
-      />
+      <group ref={body} scale={0}>
+        <Critter
+          dex={s.species.dex}
+          grass={grass}
+          seed={s.id}
+          onClick={(e: ThreeEvent<MouseEvent>) => {
+            if (e.delta > 6 || !isOut(s)) return;
+            e.stopPropagation();
+            goTo(goalId(s));
+          }}
+        />
+      </group>
+      <group ref={leaves}>
+        {Array.from({ length: LEAVES }, (_, i) => (
+          <mesh key={i} geometry={leafGeometry} material={leafMaterials[i % leafMaterials.length]} scale={0} />
+        ))}
+      </group>
+      <mesh ref={puff} position-y={0.7} visible={false}>
+        <sphereGeometry args={[0.8, 16, 12]} />
+        <meshBasicMaterial color="#ffffff" transparent depthWrite={false} />
+      </mesh>
       <sprite ref={mark} visible={false} renderOrder={7}>
         <spriteMaterial map={alertTexture()} transparent depthWrite={false} />
       </sprite>
@@ -123,7 +191,8 @@ export function WildSpawns({ grass }: { grass: string }) {
 
   useFrame(({ clock }) => {
     const now = clock.elapsedTime;
-    if (now - last.current < 1) return;
+    // nothing spawns behind the start screen: they start trickling in once you're in
+    if (game.input.locked || now - last.current < 1) return;
     last.current = now;
     const { x, z } = game.player.trainer.position;
     refreshWild(x, z, now);

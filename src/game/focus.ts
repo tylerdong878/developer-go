@@ -1,7 +1,7 @@
 import { places, slots } from "./base";
 import { REACH } from "./scene/Rings";
 import { game } from "./state";
-import { goalId, wildStore } from "./wild";
+import { goalId, isOut, wildStore } from "./wild";
 
 /**
  * The one thing in reach right now, so the HUD can offer to open it (press
@@ -25,6 +25,7 @@ export function updateFocus(x: number, z: number) {
   let best: string | null = null;
   let bestD = REACH;
   for (const w of wildStore.get()) {
+    if (!isOut(w)) continue;
     const d = Math.hypot(w.x - x, w.z - z) - 2; // a Pokémon in reach comes first, like GO
     if (d < bestD) [best, bestD] = [goalId(w), d];
   }
