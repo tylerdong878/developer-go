@@ -69,6 +69,30 @@ export const SPECIES: Record<number, Facts> = {
   869: { types: ["fairy"], capture: 0.2, flee: 0.07 },
 };
 
+/**
+ * How each one dodges in the catch screen, GO's movement types (game master
+ * `movementType`, notes/research/encounter.md 4): most jump; hoverers slide
+ * side to side, flyers rise, electric ones dart, psychic ones loop in a figure 8.
+ */
+export type Movement = "jump" | "hover" | "fly" | "electric" | "psychic" | "none";
+const MOVES: Record<number, Movement> = {
+  74: "hover",
+  137: "hover",
+  479: "hover",
+  488: "hover",
+  144: "fly",
+  278: "fly",
+  581: "fly",
+  41: "electric",
+  81: "electric",
+  63: "psychic",
+  92: "psychic",
+  95: "none",
+  129: "none",
+  869: "none",
+};
+export const movementOf = (dex: number): Movement => MOVES[dex] ?? "jump";
+
 /** GO's weather boosts, from its game master (WEATHER_AFFINITY_*, notes/research/spawns.md 4). */
 export const BOOSTS: Record<Weather, PokeType[]> = {
   clear: ["grass", "ground", "fire"],

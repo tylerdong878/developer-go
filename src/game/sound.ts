@@ -96,6 +96,8 @@ export const sfx = {
     [880, 1175, 1568].forEach((f, i) => tone("sine", f, f, 0.25, 0.07, 0.25 + i * 0.07));
   },
   xp: () => tone("sine", 1318, 1760, 0.15, 0.05),
+  /** The ball starts spinning for a curveball. */
+  spinBall: () => [988, 1319, 1568].forEach((f, i) => tone("sine", f, f * 1.05, 0.12, 0.04, i * 0.05)),
   /** A wild Pokémon popping out on the map: soft, so a few in a row don't nag. */
   appear: () => {
     tone("sine", 520, 880, 0.1, 0.025);

@@ -210,7 +210,7 @@ export function Hud() {
     setScreen(s);
   };
   const object = card ? bySlug.get(card) : undefined;
-  const endCatch = ({ outcome, best, firstThrow }: CatchResult) => {
+  const endCatch = ({ outcome, best, firstThrow, curve }: CatchResult) => {
     if (!foe) return;
     const caught = outcome === "caught";
     holdWild(null);
@@ -219,7 +219,7 @@ export function Hud() {
     if (w && outcome !== "ran") removeWild(w.id);
     if (w && outcome === "fled") gainXp(FLED_XP, "it fled");
     if (caught) {
-      const rewards = catchRewards(foe.rare, best, !progressStore.get().caught[foe.dex], firstThrow);
+      const rewards = catchRewards(foe.rare, best, !progressStore.get().caught[foe.dex], firstThrow, curve);
       recordCatch({ dex: foe.dex, name: foe.name, cp: foe.cp, throw: best });
       count("catches", { dex: foe.dex, cp: foe.cp });
       gainXp(
