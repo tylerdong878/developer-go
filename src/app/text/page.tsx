@@ -66,6 +66,9 @@ export default function TextVersion() {
         <a href={`mailto:${trainer.email}`} className="font-semibold text-mystic-500 underline underline-offset-2">
           {trainer.email}
         </a>
+        <Link href="/resume" className="font-semibold text-mystic-500 underline underline-offset-2">
+          Resume
+        </Link>
         {trainer.links.map((l) => (
           <a key={l.href} href={l.href} className="font-semibold text-mystic-500 underline underline-offset-2">
             {l.label}

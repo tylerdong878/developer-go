@@ -15,6 +15,7 @@ export const trainer: Trainer = {
     gpa: "3.976",
   },
   email: "tylerdong878@gmail.com",
+  resume: "/tyler-dong-resume.pdf",
   links: [
     { label: "GitHub", href: "https://github.com/tylerdong878" },
     { label: "LinkedIn", href: "https://www.linkedin.com/in/tylerdong" },

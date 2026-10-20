@@ -121,6 +121,8 @@ export type Trainer = {
   about: string[];
   school: { name: string; degree: string; graduation: string; gpa: string };
   email: string;
+  /** The resume as a PDF (the /resume page, printed). No phone number on it. */
+  resume: string;
   links: Link[];
   go: {
     level: number;

@@ -92,6 +92,9 @@ export function TrainerPanel({ onClose }: { onClose: () => void }) {
         >
           Email me
         </a>
+        <a href="/resume" className="go-pill rounded-full px-5 py-2 text-sm transition active:scale-95">
+          Resume
+        </a>
         {trainer.links.map((l) => (
           <a
             key={l.href}
@@ -302,7 +305,32 @@ export function BagPanel({ onClose }: { onClose: () => void }) {
         ))}
       </ul>
       <p className="mt-4 text-sm text-ink-soft">Spin PokéStops for more. Each one refills a few minutes after you spin it.</p>
+      <Label>Key items</Label>
+      {/* like GO's key items: you always have it, and it never runs out */}
+      <a href="/resume" className="flex items-center gap-4 rounded-2xl bg-ink/5 px-4 py-3 transition hover:bg-ink/10">
+        <span className="grid size-14 shrink-0 place-items-center rounded-full bg-surface">
+          <ResumeIcon />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-display text-lg font-semibold">Tyler&apos;s Resume</span>
+          <span className="block text-sm leading-snug text-ink-soft">Everything on one page, to read, print, or save as a PDF.</span>
+        </span>
+      </a>
     </Sheet>
+  );
+}
+
+/** A rolled-up page with a Poké Ball seal, for the resume key item. */
+function ResumeIcon() {
+  return (
+    <svg viewBox="0 0 40 40" width="38" height="38" aria-hidden>
+      <path d="M10 5h15l6 6v24H10Z" fill="#fff" stroke="#3a5560" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M25 5v6h6" fill="none" stroke="#3a5560" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M14 16h12M14 20h12M14 24h8" stroke="#9fb3bd" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="26" cy="29" r="5" fill="#ff2a18" stroke="#151c24" strokeWidth="1.5" />
+      <path d="M21 29h10" stroke="#151c24" strokeWidth="1.5" />
+      <circle cx="26" cy="29" r="1.6" fill="#fff" stroke="#151c24" strokeWidth="1" />
+    </svg>
   );
 }
 
