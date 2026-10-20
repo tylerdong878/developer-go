@@ -24,6 +24,7 @@ import { Nearby } from "./Nearby";
 import { Prompt } from "./Prompt";
 import { ResearchButton, ResearchPanel } from "./Research";
 import { Minimap } from "./Minimap";
+import { MuteButton } from "./MuteButton";
 import { WeatherBadge } from "./WeatherBadge";
 import { SettingsPanel } from "./Settings";
 import { PokemonPanel } from "./Storage";
@@ -278,6 +279,7 @@ export function Hud() {
       <div className={`pointer-events-auto absolute top-4 right-4 flex flex-col items-end gap-2 transition-opacity ${menu ? "invisible opacity-0" : ""}`}>
         <Minimap />
         <WeatherBadge />
+        <MuteButton />
       </div>
       <div className="pointer-events-none absolute inset-x-0 bottom-24 flex justify-center px-4">
         <Prompt hidden={card !== null || screen !== null || menu || nearby || foe !== null || buddy} />

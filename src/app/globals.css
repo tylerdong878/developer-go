@@ -106,7 +106,8 @@ body {
  */
 .go-sheet {
   --ink: #30555d;
-  --ink-soft: #7f9b9b;
+  /* GO's gray-teal labels, deep enough to read: about 5:1 on the mint */
+  --ink-soft: #517070;
   --surface: #ffffff;
   color: var(--ink);
   font-family: var(--font-lato), var(--font-nunito-sans), sans-serif;
@@ -128,7 +129,8 @@ body {
 .go-close:hover { filter: brightness(1.06); }
 .go-pill {
   color: #ffffff;
-  background: linear-gradient(90deg, #a0db96, #2ccda9);
+  /* GO's green pill, deepened so its white text reads (4.5:1 and up) */
+  background: linear-gradient(90deg, #2a8656, #0f7a66);
   font-family: var(--font-lato), sans-serif;
   font-weight: 900;
   letter-spacing: 0.06em;

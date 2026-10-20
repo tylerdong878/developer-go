@@ -9,6 +9,7 @@ import { DASH_SPEED, game, RUN_SPEED, WALK_SPEED, ZOOM } from "../state";
 import type { PerspectiveCamera } from "three";
 import { goalPosition } from "../travel";
 import { updateFocus } from "../focus";
+import { stillNow } from "../useReducedMotion";
 import { readyStore } from "../ready";
 
 /** The opening shot: how high the camera starts, and how long it waits for the loading screen to clear. */
@@ -45,7 +46,8 @@ export function Controller() {
     const { trainer, buddy } = game.player;
     const { view, input } = game;
 
-    if (input.locked) view.yawTo += dt * 0.18; // the intro: circle slowly around Tyler and Teddy
+    const still = stillNow();
+    if (input.locked && !still) view.yawTo += dt * 0.18; // the intro: circle slowly around Tyler and Teddy
     view.yaw += (view.yawTo - view.yaw) * ease(10, dt);
     view.distance += (view.distanceTo - view.distance) * ease(10, dt);
     const fx = Math.sin(view.yaw); // camera forward on the ground
@@ -136,7 +138,8 @@ export function Controller() {
     const look = focus.current;
     if (readyStore.get()) {
       waited.current += dt;
-      if (waited.current > DROP_DELAY) drop.current += (0 - drop.current) * ease(1.5, dt);
+      if (still) drop.current = 0; // asked for less motion: already landed
+      else if (waited.current > DROP_DELAY) drop.current += (0 - drop.current) * ease(1.5, dt);
     }
     const d = drop.current * drop.current * (3 - 2 * drop.current); // smoothstep, so it slows as it lands
     const t = (view.distance - ZOOM.min) / (ZOOM.max - ZOOM.min);
@@ -147,7 +150,7 @@ export function Controller() {
     look.z += (trainer.position.z + fz * lead - look.z) * k;
     // Running pulls the camera back and widens the view a touch, so it feels faster.
     const rush = input.dash ? 0 : Math.max(0, Math.min(1, (trainer.speed - WALK_SPEED) / (RUN_SPEED - WALK_SPEED)));
-    rushed.current += (rush - rushed.current) * ease(4, dt);
+    rushed.current += ((still ? 0 : rush) - rushed.current) * ease(4, dt);
     const back = view.distance + rushed.current * 2.5 + d * DROP_FROM;
     const flat = back * Math.cos(pitch);
     camera.position.set(look.x - fx * flat, look.y + back * Math.sin(pitch), look.z - fz * flat);

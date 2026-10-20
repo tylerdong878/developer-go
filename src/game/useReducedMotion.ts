@@ -10,6 +10,9 @@ function subscribe(onChange: () => void) {
   return () => media.removeEventListener("change", onChange);
 }
 
+/** The same, outside React (the camera reads it every frame). */
+export const stillNow = () => typeof window !== "undefined" && window.matchMedia(query).matches;
+
 /** True when the visitor asked their system for less motion. */
 export function useReducedMotion() {
   return useSyncExternalStore(
