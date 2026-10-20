@@ -36,7 +36,7 @@ export const STEPS: Step[] = [
   },
   {
     title: "On the Job",
-    story: "Every gym downtown is a job I've had. The tall glass tower is where I'm interning now.",
+    story: "Every gym downtown is a job I've had. The tall tower with the orange trim is AWS, where I interned in summer 2026.",
     tasks: [
       { text: "Visit the AWS gym", need: 1, count: (p) => (p.visited.includes("aws") ? 1 : 0) },
       { text: "Visit 3 gyms", need: 3, count: (p) => visitedOf(p, gymSlugs) },

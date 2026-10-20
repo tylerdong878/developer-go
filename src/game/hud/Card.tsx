@@ -154,12 +154,6 @@ function raidCard(r: Raid, onBonus: (slug: string) => void): View {
             {r.result}
           </p>
         ) : null}
-        {boss ? (
-          <p className="text-sm text-ink-soft">
-            Raid boss: <span className="font-semibold text-ink">{boss.name}</span>, {boss.nod}
-          </p>
-        ) : null}
-        {boss ? <BonusRound raid={r} boss={boss} onBonus={onBonus} /> : null}
         <div>
           <h3 className="font-display text-lg font-semibold">{r.project.name}</h3>
           <p className="mt-0.5 leading-relaxed">{r.project.tagline}</p>
@@ -170,6 +164,13 @@ function raidCard(r: Raid, onBonus: (slug: string) => void): View {
         ) : null}
         <Stack ids={r.project.stack} />
         <Links links={r.project.links} />
+        {/* the game part last: the boss that hatched here, and GO's bonus round */}
+        {boss ? (
+          <p className="text-sm text-ink-soft">
+            Raid boss: <span className="font-semibold text-ink">{boss.name}</span>, {boss.nod}
+          </p>
+        ) : null}
+        {boss ? <BonusRound raid={r} boss={boss} onBonus={onBonus} /> : null}
       </>
     ),
   };

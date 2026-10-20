@@ -196,7 +196,6 @@ export const stops: Stop[] = [
     ],
     highlights: [
       "An interactive explainer that runs A* and breadth-first search side by side on the same grid.",
-      "The same A* idea is what walks you around this map.",
     ],
     stack: ["typescript", "nextjs", "react", "tailwind"],
     links: [gh("pathfinding-visualizer")],

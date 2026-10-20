@@ -154,11 +154,11 @@ export const slots: Record<string, Vec2> = {
   "sentiment-aura": [-134, 0],
   "pathfinding-visualizer": [-121, 24],
 
-  // raids (hackathons): the featured two by home, the rest around the campus quad
-  "hackbeanpot-2025": [24, 22],
-  "hackharvard-2025": [-24, 22],
-  "bostonhacks-2024": [46, 67],
-  "civic-tech-2025": [70, 67],
+  // raids (hackathons): the featured two (the wins) by home, the rest around the campus quad
+  "bostonhacks-2024": [24, 22],
+  "civic-tech-2025": [-24, 22],
+  "hackbeanpot-2025": [46, 67],
+  "hackharvard-2025": [70, 67],
   "hackillinois-2025": [58, 53],
   "sthacks-2025": [58, 81],
   "hack-at-brown-2025": [44, 110],

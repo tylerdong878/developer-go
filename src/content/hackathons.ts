@@ -15,7 +15,7 @@ export const raids: Raid[] = [
     venue: "Boston University, George Sherman Union",
     stars: 5,
     result: "1st of 49, Interstellar Intelligence (AI/ML) track",
-    featured: false,
+    featured: true,
     project: {
       name: "SVS Lunar Client",
       tagline:
@@ -63,7 +63,7 @@ export const raids: Raid[] = [
     dates: "Feb 7-9, 2025",
     venue: "Northeastern University",
     stars: 1,
-    featured: true,
+    featured: false,
     project: {
       name: "RoadToad",
       tagline:
@@ -85,7 +85,6 @@ export const raids: Raid[] = [
         "spotify-api",
       ],
       links: [
-        { label: "Live", href: "https://roadtoad.vercel.app" },
         { label: "Video", href: "https://youtu.be/X_MCxgd-IWA" },
         devpost("roadtoad"),
         { label: "GitHub", href: "https://github.com/Bruvato/road-toad" },
@@ -101,7 +100,7 @@ export const raids: Raid[] = [
     venue: "BU Spark!, Boston University",
     stars: 5,
     result: "Best Design of 40",
-    featured: false,
+    featured: true,
     project: {
       name: "AnimaGo",
       tagline:
@@ -138,7 +137,6 @@ export const raids: Raid[] = [
       ],
       stack: ["nextjs", "typescript", "react", "tailwind"],
       links: [
-        { label: "Live", href: "https://spend-shield.vercel.app" },
         { label: "Video", href: "https://youtu.be/_oXCg3yg9Y0" },
         devpost("spendshield"),
         { label: "GitHub", href: "https://github.com/Bruvato/spend-shield" },
@@ -176,7 +174,7 @@ export const raids: Raid[] = [
     dates: "Oct 3-5, 2025",
     venue: "Harvard University",
     stars: 1,
-    featured: true,
+    featured: false,
     project: {
       name: "FIREBALL",
       tagline:

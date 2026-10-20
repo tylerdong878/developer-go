@@ -244,7 +244,7 @@ const NPCS: Npc[] = [
   {
     route: [[-60, 37], [30, 37]],
     loop: false,
-    line: "Hoargh! Raids are his hackathons. The two by the roundabout hit hardest!",
+    line: "Hoargh! Raids are his hackathons. The five-star ones are where he won!",
     look: LOOKS.blackBelt,
     speed: 2.8,
   },
