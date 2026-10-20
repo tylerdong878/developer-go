@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { isOut, LEAVE, refreshWild, resetWild, RUSTLE, wildStore } from "./wild";
+import { holdWild, isOut, LEAVE, refreshWild, resetWild, RUSTLE, wildStore } from "./wild";
 
 /** A steady fake random, so spots and timers repeat. */
 function seeded(seed = 7) {
@@ -10,17 +10,22 @@ function seeded(seed = 7) {
 describe("wild spawns", () => {
   beforeEach(() => resetWild());
 
-  it("trickles in one at a time instead of filling the map", () => {
+  it("trickles in one at a time instead of filling the map, the first one inside the ring", () => {
     const rand = seeded();
     refreshWild(0, 6, 0, rand);
+    expect(wildStore.get()).toHaveLength(0);
+    refreshWild(0, 6, 2, rand);
     expect(wildStore.get()).toHaveLength(1);
-    refreshWild(0, 6, 1, rand);
+    const [s] = wildStore.get();
+    expect(Math.hypot(s.x, s.z - 6)).toBeLessThan(9);
+    refreshWild(0, 6, 3, rand);
     expect(wildStore.get()).toHaveLength(1);
-    for (let t = 2; t <= 60; t++) refreshWild(0, 6, t, rand);
+    for (let t = 4; t <= 60; t++) refreshWild(0, 6, t, rand);
     expect(wildStore.get().length).toBeGreaterThan(4);
   });
 
   it("rustles first, then pops out", () => {
+    refreshWild(0, 6, 8, seeded());
     refreshWild(0, 6, 10, seeded());
     const [s] = wildStore.get();
     expect(isOut(s, 10.5)).toBe(false);
@@ -30,11 +35,26 @@ describe("wild spawns", () => {
   it("leaves when its time is up, then is gone", () => {
     const rand = seeded();
     refreshWild(0, 6, 0, rand);
+    refreshWild(0, 6, 2, rand);
     const [s] = wildStore.get();
-    refreshWild(0, 6, s.until, rand);
+    // far enough from him that it doesn't linger
+    refreshWild(20, 6, s.until, rand);
     expect(s.leaving).toBe(s.until);
     expect(isOut(s, s.until)).toBe(false);
-    refreshWild(0, 6, s.until + LEAVE + 0.01, rand);
+    refreshWild(20, 6, s.until + LEAVE + 0.01, rand);
     expect(wildStore.get().includes(s)).toBe(false);
+  });
+
+  it("never leaves while it's being caught, or while he's walking to it", () => {
+    const rand = seeded();
+    refreshWild(0, 6, 0, rand);
+    refreshWild(0, 6, 2, rand);
+    const [s] = wildStore.get();
+    holdWild(s.id);
+    refreshWild(20, 6, s.until + 5, rand);
+    expect(s.leaving).toBe(null);
+    holdWild(null);
+    refreshWild(20, 6, s.until + 6, rand, { goal: `wild:${s.id}` });
+    expect(s.leaving).toBe(null);
   });
 });

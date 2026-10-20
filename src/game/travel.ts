@@ -23,7 +23,8 @@ export function goTo(goal: string, dash = false) {
   const at = goalPosition(goal);
   if (!at) return;
   const object = bySlug.get(goal);
-  const gap = object ? standOff(object) : 3;
+  // a wild one starts its encounter from GO's tap range, not right on top of it
+  const gap = object ? standOff(object) : goal.startsWith("wild:") ? 4.5 : 3;
   const [x, z] = at;
   const { position } = game.player.trainer;
   let dx = position.x - x;

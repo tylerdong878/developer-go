@@ -6,23 +6,43 @@ import type { Vec2 } from "./geometry";
  * A wild Pokémon on the map. `born` is when its spot started rustling (on the
  * scene clock), `until` when it wanders off, and `leaving` when it started to.
  */
-export type WildSpawn = { id: number; species: WildSpecies; x: number; z: number; born: number; until: number; leaving: number | null };
+export type WildSpawn = {
+  id: number;
+  species: WildSpecies;
+  x: number;
+  z: number;
+  born: number;
+  until: number;
+  leaving: number | null;
+  /** It got a few more seconds because he was right next to it. */
+  lingered?: boolean;
+};
 
-/** The most out at once, and how close to the trainer they show up. */
+/**
+ * GO only shows wild Pokémon round you, mostly inside the ring
+ * (notes/research/spawns.md). Our pink ring (9) stands for GO's 80 m, so 1 GO
+ * meter is about 0.11 here, and GO's 30 minutes is about 90 s.
+ */
 const COUNT = 7;
-const NEAR = 10;
-const FAR = 34;
-/** Past this they despawn, like walking out of range in GO. */
-const GONE = 70;
+/** Born 3-9 out (inside the ring) most of the time, 9-16 otherwise; ahead of him in a cone when he's walking. */
+const RING = 9;
+const NEAR = 3;
+const FAR = 16;
+/** Past this they're forgotten, like walking out of GO's draw range. */
+const GONE = 28;
 /** GO trickles spawns in instead of filling the map at once: a new one about this often while there's room, in seconds. */
 const EVERY: [number, number] = [3, 7];
+/** The first one shows up this soon after the visit starts, inside the ring. */
+const FIRST = 1.6;
 /** The leaves rustle this long before it pops out, and it takes this long to go. */
 export const RUSTLE = 1.4;
 export const LEAVE = 0.6;
 
 let spawns: WildSpawn[] = [];
 let nextId = 1;
-let nextAt = 0;
+let nextAt: number | null = null;
+/** The one being caught, which never leaves mid-throw. */
+let held: number | null = null;
 /** The scene clock at the last refresh, so lists can tell which ones are out. */
 let clock = 0;
 const listeners = new Set<() => void>();
@@ -48,6 +68,21 @@ function pick(rand: () => number) {
   return roster[0];
 }
 
+/** How long one stays: GO's 30 minutes for most, 60 for about 1 in 10, at our scale. */
+const lifetime = (rand: () => number) => (rand() < 0.1 ? 150 + rand() * 30 : 75 + rand() * 30);
+
+/** Somewhere to be born, round the trainer or ahead of him. */
+function spotFor(x: number, z: number, rand: () => number, ahead: number | null, first: boolean): Vec2 {
+  if (ahead !== null && !first && rand() < 0.7) {
+    const a = ahead + (rand() - 0.5) * 1.6;
+    const d = 10 + rand() * 6;
+    return [x + Math.sin(a) * d, z + Math.cos(a) * d];
+  }
+  const a = rand() * Math.PI * 2;
+  const d = first || rand() < 0.6 ? NEAR + rand() * (RING - NEAR) : RING + rand() * (FAR - RING);
+  return [x + Math.cos(a) * d, z + Math.sin(a) * d];
+}
+
 /** Clear of the gyms, stops, and other Pokémon, on dry land. */
 function openSpot(p: Vec2) {
   if (!walkable(p)) return false;
@@ -55,36 +90,62 @@ function openSpot(p: Vec2) {
   return spawns.every((s) => Math.hypot(p[0] - s.x, p[1] - s.z) > 7);
 }
 
+type Around = {
+  /** Which way he's walking (radians, like the trainer's heading), or null standing still. */
+  ahead?: number | null;
+  /** The goal he's walking to, so that one doesn't leave before he gets there. */
+  goal?: string | null;
+};
+
 /**
  * Keeps wild Pokémon coming and going around the trainer, like GO: one at a
- * time, leaves rustle at a spot a short walk away and then it pops out; old or
- * far-off ones leave. Call it about once a second.
+ * time, leaves rustle at a spot near him and then it pops out; old ones leave
+ * (a little later if he's right there), and ones he's left behind are forgotten.
+ * Call it about once a second.
  */
-export function refreshWild(x: number, z: number, now: number, rand: () => number = Math.random) {
+export function refreshWild(x: number, z: number, now: number, rand: () => number = Math.random, { ahead = null, goal = null }: Around = {}) {
   clock = now;
   let changed = false;
-  for (const s of spawns)
-    if (s.leaving === null && (s.until <= now || Math.hypot(s.x - x, s.z - z) > GONE)) {
-      s.leaving = now;
+  if (nextAt === null) nextAt = now + FIRST;
+  for (const s of spawns) {
+    if (s.leaving !== null || s.id === held || goalId(s) === goal) continue;
+    const d = Math.hypot(s.x - x, s.z - z);
+    if (d > GONE) {
+      // out of range: gone without a puff, nobody's watching
+      s.leaving = now - LEAVE;
       changed = true;
+    } else if (s.until <= now) {
+      // GO's timers don't care, but at our scale a few more seconds right next to him is kinder
+      if (d < RING && !s.lingered) {
+        s.until = now + 20;
+        s.lingered = true;
+      } else {
+        s.leaving = now;
+        changed = true;
+      }
     }
+  }
   const before = spawns.length;
   spawns = spawns.filter((s) => s.leaving === null || now - s.leaving < LEAVE);
   if (spawns.length !== before) changed = true;
   const out = spawns.filter((s) => s.leaving === null).length;
   if (now >= nextAt && out < COUNT) {
+    const firstOne = nextId === 1;
     for (let tries = 0; tries < 40; tries++) {
-      const a = rand() * Math.PI * 2;
-      const d = NEAR + rand() * (FAR - NEAR);
-      const p: Vec2 = [x + Math.cos(a) * d, z + Math.sin(a) * d];
-      if (!openSpot(p)) continue;
-      spawns = [...spawns, { id: nextId++, species: pick(rand), x: p[0], z: p[1], born: now, until: now + 60 + rand() * 60, leaving: null }];
+      const p = spotFor(x, z, rand, ahead, firstOne);
+      if (!openSpot(p) || Math.hypot(p[0] - x, p[1] - z) < NEAR) continue;
+      spawns = [...spawns, { id: nextId++, species: pick(rand), x: p[0], z: p[1], born: now, until: now + lifetime(rand), leaving: null }];
       changed = true;
       break;
     }
     nextAt = now + EVERY[0] + rand() * (EVERY[1] - EVERY[0]);
   }
   if (changed) notify();
+}
+
+/** The one in the catch screen stays put until the catch is over (null to let go). */
+export function holdWild(id: number | null) {
+  held = id;
 }
 
 /** Caught (or ran off): gone from the map. */
@@ -97,7 +158,8 @@ export function removeWild(id: number) {
 export function resetWild() {
   spawns = [];
   nextId = 1;
-  nextAt = 0;
+  nextAt = null;
+  held = null;
   clock = 0;
 }
 

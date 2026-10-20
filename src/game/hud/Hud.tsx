@@ -13,7 +13,7 @@ import { count } from "../community";
 import { catchRewards, cpFor } from "../cp";
 import { sfx } from "../sound";
 import { earned, visitorMedals } from "../visitorMedals";
-import { findWild, removeWild } from "../wild";
+import { findWild, holdWild, removeWild } from "../wild";
 import { Encounter, type Foe, type Thrown } from "./Encounter";
 import { FactToast, XpPops } from "./Xp";
 import { Card } from "./Card";
@@ -120,7 +120,11 @@ export function Hud() {
         return setScreen(goal === "place:mart" ? "bag" : "about");
       }
       const w = findWild(goal);
-      if (w) return setFoe({ dex: w.species.dex, name: w.species.name, rare: false, cp: cpFor(w.species.dex, false, Math.random()), goal });
+      if (w) {
+        // it stays on the map until the catch is over
+        holdWild(w.id);
+        return setFoe({ dex: w.species.dex, name: w.species.name, rare: false, cp: cpFor(w.species.dex, false, Math.random()), goal });
+      }
       const o = bySlug.get(goal);
       // the first time you walk up to a raid, its egg hatches (scene/objects/Gym.tsx), then the raid opens
       if (o?.kind === "raid" && RAID_BOSS[goal] && !progressStore.get().hatched.includes(goal)) {
@@ -202,6 +206,7 @@ export function Hud() {
   const object = card ? bySlug.get(card) : undefined;
   const endCatch = (caught: boolean, best: Thrown) => {
     if (!foe) return;
+    holdWild(null);
     const w = findWild(foe.goal);
     if (w) removeWild(w.id);
     if (caught) {

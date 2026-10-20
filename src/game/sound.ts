@@ -96,6 +96,11 @@ export const sfx = {
     [880, 1175, 1568].forEach((f, i) => tone("sine", f, f, 0.25, 0.07, 0.25 + i * 0.07));
   },
   xp: () => tone("sine", 1318, 1760, 0.15, 0.05),
+  /** A wild Pokémon popping out on the map: soft, so a few in a row don't nag. */
+  appear: () => {
+    tone("sine", 520, 880, 0.1, 0.025);
+    tone("triangle", 880, 1320, 0.08, 0.015, 0.05);
+  },
   hatch: () => {
     [0, 0.5, 0.85, 1.1, 1.3, 1.45].forEach((d) => tone("square", 210, 150, 0.05, 0.04, d));
     window.setTimeout(() => whoosh(0.7, 500, 4200, 0.12), 1550);

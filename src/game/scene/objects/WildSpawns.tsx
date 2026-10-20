@@ -2,7 +2,20 @@
 
 import { type ThreeEvent, useFrame } from "@react-three/fiber";
 import { useRef, useSyncExternalStore } from "react";
-import { CanvasTexture, DoubleSide, type Group, type Mesh, type MeshBasicMaterial, MeshLambertMaterial, ShapeGeometry, Shape, type Sprite, SRGBColorSpace } from "three";
+import {
+  CanvasTexture,
+  DoubleSide,
+  type Group,
+  type Mesh,
+  type MeshBasicMaterial,
+  MeshLambertMaterial,
+  RingGeometry,
+  Shape,
+  ShapeGeometry,
+  type Sprite,
+  SRGBColorSpace,
+} from "three";
+import { sfx } from "../../sound";
 import { game } from "../../state";
 import { goTo } from "../../travel";
 import { goalId, isOut, LEAVE, moveWild, refreshWild, RUSTLE, wildStore, type WildSpawn } from "../../wild";
@@ -46,6 +59,31 @@ const leafGeometry = new ShapeGeometry(leafShape, 4);
 const leafMaterials = ["#4ccd63", "#27ae54", "#8fdc5a"].map((c) => new MeshLambertMaterial({ color: c, side: DoubleSide }));
 const LEAVES = 12;
 
+/** GO's rings at a wild Pokémon's feet (notes/research/spawns.md): three ripples when it pops out, then three faint ones pulsing every 2 s. */
+const ringGeometry = new RingGeometry(0.92, 1, 48).rotateX(-Math.PI / 2);
+const PULSE = 2;
+
+function ripples(group: Group, age: number, size: number) {
+  const since = age - RUSTLE;
+  group.visible = since > 0;
+  if (!group.visible) return;
+  group.children.forEach((ring, i) => {
+    const m = (ring as Mesh).material as MeshBasicMaterial;
+    // the pop: three quick white ripples, one after another
+    const pop = (since - i * 0.14) / 0.75;
+    if (pop < 1) {
+      const k = Math.max(0, pop);
+      ring.scale.setScalar(size * (0.3 + k * 0.9));
+      m.opacity = pop < 0 ? 0 : 0.8 * (1 - k);
+      return;
+    }
+    // then GO's faint pulse while it's out
+    const k = (((since - 1.2 - i * 0.25) / PULSE) % 1 + 1) % 1;
+    ring.scale.setScalar(size * (0.25 + k * 0.45));
+    m.opacity = 0.3 * Math.sin(k * Math.PI);
+  });
+}
+
 /** GO's pop: overshoots a little and settles. */
 const backOut = (k: number) => (k <= 0 ? 0 : k >= 1 ? 1 : 1 + 2.70158 * (k - 1) ** 3 + 1.70158 * (k - 1) ** 2);
 
@@ -86,6 +124,8 @@ function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
   const body = useRef<Group>(null);
   const leaves = useRef<Group>(null);
   const puff = useRef<Mesh>(null);
+  const rings = useRef<Group>(null);
+  const popped = useRef(false);
   const mark = useRef<Sprite>(null);
   const home = useRef<[number, number]>([s.x, s.z]);
   const to = useRef<[number, number] | null>(null);
@@ -103,6 +143,13 @@ function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
     // rustle, pop out, and later shrink away into a puff
     if (body.current) body.current.scale.setScalar(going >= 0 ? Math.max(0, 1 - going * going) : backOut((age - RUSTLE) / 0.35));
     if (leaves.current) rustle(leaves.current, age);
+    if (rings.current) ripples(rings.current, going >= 0 ? -1 : age, Math.max(1.2, critterSize(s.species.dex) * 0.75));
+    if (!popped.current && age >= RUSTLE) {
+      popped.current = true;
+      // a soft pop, if it's close enough to hear
+      const { position } = game.player.trainer;
+      if (Math.hypot(position.x - s.x, position.z - s.z) < 20) sfx.appear();
+    }
     if (puff.current) {
       puff.current.visible = going >= 0 && going < 1;
       if (puff.current.visible) {
@@ -166,6 +213,13 @@ function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
           <mesh key={i} geometry={leafGeometry} material={leafMaterials[i % leafMaterials.length]} scale={0} />
         ))}
       </group>
+      <group ref={rings} position-y={0.05} visible={false}>
+        {[0, 1, 2].map((i) => (
+          <mesh key={i} geometry={ringGeometry} renderOrder={-16}>
+            <meshBasicMaterial color="#ffffff" transparent opacity={0} depthWrite={false} />
+          </mesh>
+        ))}
+      </group>
       <mesh ref={puff} position-y={0.7} visible={false}>
         <sphereGeometry args={[0.8, 16, 12]} />
         <meshBasicMaterial color="#ffffff" transparent depthWrite={false} />
@@ -194,8 +248,8 @@ export function WildSpawns({ grass }: { grass: string }) {
     // nothing spawns behind the start screen: they start trickling in once you're in
     if (game.input.locked || now - last.current < 1) return;
     last.current = now;
-    const { x, z } = game.player.trainer.position;
-    refreshWild(x, z, now);
+    const { position, heading, speed } = game.player.trainer;
+    refreshWild(position.x, position.z, now, Math.random, { ahead: speed > 1 ? heading : null, goal: game.input.goal });
   });
 
   return (

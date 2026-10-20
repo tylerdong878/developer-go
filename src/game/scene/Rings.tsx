@@ -19,8 +19,9 @@ export function Rings({ mover, still }: { mover: Mover; still: boolean }) {
   useFrame(({ clock }) => {
     if (!root.current || !ping.current) return;
     root.current.position.set(mover.position.x, 0.03, mover.position.z);
-    const t = still ? 0.6 : (clock.elapsedTime % 2.4) / 2.4;
-    ping.current.scale.setScalar(1 + t * 5);
+    // GO's white pulse goes out to about 5/8 of the pink ring (50 m of 80) every few seconds
+    const t = still ? 0.6 : (clock.elapsedTime % 3) / 3;
+    ping.current.scale.setScalar(1 + t * 4.4);
     (ping.current.material as MeshBasicMaterial).opacity = still ? 0.5 : 1 - t;
   });
 
