@@ -8,6 +8,7 @@ import { game, ZOOM } from "../state";
 import { goTo } from "../travel";
 import { gainXp, progressStore, recordBonus, recordCatch, recordHatch, recordVisit } from "../progress";
 import { BONUS_RATE, bossCp, HATCH_MS, premierBalls, RAID_BOSS } from "../raidBosses";
+import { played } from "../bond";
 import { buddyStore } from "../buddy";
 import { count } from "../community";
 import { catchRewards, cpFor, FLED_XP } from "../cp";
@@ -29,7 +30,7 @@ import { WeatherBadge } from "./WeatherBadge";
 import { SettingsPanel } from "./Settings";
 import { PokemonPanel } from "./Storage";
 import { CommunityPanel } from "./Community";
-import { BagPanel, BuddyPanel, HighlightsPanel, PokedexPanel, ProfilePanel, TrainerPanel } from "./Panels";
+import { BagPanel, BuddyPanel, HighlightsPanel, PokedexPanel, ProfilePanel, TeddyFace, TrainerPanel } from "./Panels";
 import { clearScreenRequest, screenRequest } from "./request";
 
 /** Swings the camera round to put a map object ahead of the trainer. */
@@ -107,6 +108,7 @@ export function Hud() {
         pettedOnce.current = true;
         gainXp(20, "played with Teddy");
       }
+      played();
     });
     return () => {
       off();
@@ -284,8 +286,20 @@ export function Hud() {
       <div className="pointer-events-none absolute inset-x-0 bottom-24 flex justify-center px-4">
         <Prompt hidden={card !== null || screen !== null || menu || nearby || foe !== null || buddy} />
       </div>
-      <div className={`pointer-events-auto absolute bottom-4 left-4 transition-opacity ${menu ? "invisible opacity-0" : ""}`}>
+      <div className={`pointer-events-auto absolute bottom-4 left-4 flex items-end gap-1.5 transition-opacity ${menu ? "invisible opacity-0" : ""}`}>
         <TrainerBadge onOpen={() => setScreen("about")} />
+        {/* GO keeps your buddy by your avatar: Teddy, one tap from his screen */}
+        <button
+          type="button"
+          onClick={() => {
+            sfx.open();
+            setBuddy(true);
+          }}
+          aria-label="Teddy, your buddy"
+          className="panel grid size-10 place-items-center rounded-full transition hover:scale-105 active:scale-95"
+        >
+          <TeddyFace size={30} />
+        </button>
       </div>
       <div className="pointer-events-auto absolute bottom-4 left-1/2 -translate-x-1/2">
         <MenuBall

@@ -3,6 +3,7 @@
 import { type ReactNode, useSyncExternalStore } from "react";
 import { bag, gyms, type MapObject, medals, type MedalTier, raids, spawns, stops, trainer, wild } from "@/content";
 import { describe } from "../objects";
+import { bondLevel, canFeed, feed, LEVELS } from "../bond";
 import { buddyStore } from "../buddy";
 import { MYSTIC } from "../colors";
 import { levelFor, progressStore, xpForLevel } from "../progress";
@@ -234,9 +235,9 @@ function Sprite({ dex, caught, small = false }: { dex: number; caught: boolean; 
   );
 }
 
-function TeddyFace() {
+export function TeddyFace({ size = 48 }: { size?: number }) {
   return (
-    <svg viewBox="0 0 40 40" width="48" height="48" aria-hidden>
+    <svg viewBox="0 0 40 40" width={size} height={size} aria-hidden>
       <ellipse cx="9" cy="20" rx="6" ry="10" fill="#e6cfa9" />
       <ellipse cx="31" cy="20" rx="6" ry="10" fill="#e6cfa9" />
       <circle cx="20" cy="19" r="13" fill="#f5ebd8" />
@@ -252,6 +253,9 @@ function TeddyFace() {
 /** Teddy's buddy screen, like GO's: who he is and how much love he's gotten this visit. */
 export function BuddyPanel({ onClose }: { onClose: () => void }) {
   const petted = useSyncExternalStore(buddyStore.subscribe, buddyStore.get, buddyStore.server);
+  const { bond, items } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const { level, next, index } = bondLevel(bond.hearts);
+  const from = level?.hearts ?? 0;
   return (
     <Sheet
       title={trainer.buddy.name}
@@ -267,6 +271,47 @@ export function BuddyPanel({ onClose }: { onClose: () => void }) {
         Petted {petted} {petted === 1 ? "time" : "times"} this visit
       </p>
       <p className="mt-1 text-sm text-ink-soft">Tap him on the map anytime. He follows you everywhere.</p>
+
+      <Label>{level ? level.name : "Your buddy"}</Label>
+      {/* GO's buddy hearts: a row of the four levels, and how far to the next */}
+      <div className="flex items-center gap-1.5" aria-label={`${bond.hearts} hearts`}>
+        {LEVELS.map((l, i) => (
+          <span key={l.name} title={l.name} className={`text-2xl ${i <= index ? "text-heart" : "text-ink/15"}`} aria-hidden>
+            ♥
+          </span>
+        ))}
+        <span className="ml-2 text-sm font-semibold text-ink-soft tabular-nums">{bond.hearts} hearts</span>
+      </div>
+      {next ? (
+        <>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-ink/8">
+            <div className="h-full rounded-full bg-heart" style={{ width: `${((bond.hearts - from) / (next.hearts - from)) * 100}%` }} />
+          </div>
+          <p className="mt-1.5 text-sm text-ink-soft">
+            {next.hearts - bond.hearts} more to {next.name}
+            {index < 1 ? ". Great Buddies find items as you walk." : ""}
+          </p>
+        </>
+      ) : (
+        <p className="mt-1.5 text-sm text-ink-soft">Best Buddies. It doesn&apos;t get better than this.</p>
+      )}
+      <Tiles
+        rows={[
+          ["Walked together", `${bond.km.toFixed(1)} km`],
+          ["Played today", bond.played === new Date().toISOString().slice(0, 10) ? "Yes" : "Not yet"],
+        ]}
+      />
+      <button
+        type="button"
+        disabled={!canFeed(bond) || items.razz <= 0}
+        onClick={() => feed()}
+        className="go-pill mt-4 rounded-full px-5 py-2 text-sm transition active:scale-95"
+      >
+        Give a Razz Berry ({items.razz})
+      </button>
+      <p className="mt-2 text-xs text-ink-soft">
+        Hearts like GO: walk 2 km together, play once a day, up to 3 treats a day. Distances are GO km: the map is scaled so your pink ring is GO&apos;s 80 m.
+      </p>
     </Sheet>
   );
 }

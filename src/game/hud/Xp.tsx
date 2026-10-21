@@ -15,7 +15,16 @@ export function XpPops() {
     <div aria-live="polite" className="flex flex-col items-center gap-1.5">
       {pops.map((p) => (
         <p key={p.id} className="panel xp-pop rounded-full px-4 py-1.5 font-display text-base font-bold text-mystic-500">
-          +{p.amount} XP <span className="font-semibold text-ink-soft">{p.why}</span>
+          {p.amount ? (
+            <>
+              +{p.amount} XP <span className="font-semibold text-ink-soft">{p.why}</span>
+            </>
+          ) : (
+            <>
+              <span aria-hidden className="text-heart">♥ </span>
+              {p.why}
+            </>
+          )}
         </p>
       ))}
     </div>

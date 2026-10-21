@@ -17,6 +17,10 @@ export type Catch = { id: number; dex: number; name: string; cp: number; at: num
 /** The Pokémon screen keeps the most recent catches, like GO's storage. */
 export const HISTORY_MAX = 300;
 
+/** Teddy's bond with this visitor, like a GO buddy's: hearts, GO km walked together, and today's play and treats. */
+export type Bond = { hearts: number; km: number; played: string | null; fed: number; fedOn: string | null };
+const NO_BOND: Bond = { hearts: 0, km: 0, played: null, fed: 0, fedOn: null };
+
 export type Progress = {
   caught: Record<number, number>;
   history: Catch[];
@@ -24,6 +28,7 @@ export type Progress = {
   visited: string[];
   hatched: string[];
   bonus: Record<string, boolean>;
+  bond: Bond;
   xp: number;
   items: Items;
 };
@@ -32,14 +37,14 @@ export type Progress = {
 export const STARTER_ITEMS: Items = { ball: 20, great: 0, razz: 2 };
 
 const KEY = "developer-go:progress";
-const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, xp: 0, items: STARTER_ITEMS };
+const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: NO_BOND, xp: 0, items: STARTER_ITEMS };
 
 function load(): Progress {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const saved = JSON.parse(raw);
-      return { ...empty, ...saved, items: { ...STARTER_ITEMS, ...saved.items } };
+      return { ...empty, ...saved, bond: { ...NO_BOND, ...saved.bond }, items: { ...STARTER_ITEMS, ...saved.items } };
     }
   } catch {
     // Private mode or blocked storage: start fresh.
@@ -106,6 +111,10 @@ export function recordBonus(slug: string, caught: boolean) {
   if (!(slug in p.bonus)) save({ ...p, bonus: { ...p.bonus, [slug]: caught } });
 }
 
+export function saveBond(bond: Bond) {
+  save({ ...current(), bond });
+}
+
 export function recordSpin(slug: string) {
   const p = current();
   if (!p.spun.includes(slug)) save({ ...p, spun: [...p.spun, slug] });
@@ -136,6 +145,7 @@ export function addXp(amount: number) {
 export const xpForLevel = (level: number) => (1000 * (level - 1) * level) / 2;
 export const levelFor = (xp: number) => Math.floor((1 + Math.sqrt(1 + (8 * xp) / 1000)) / 2);
 
+/** A pop up the screen: "+100 XP first visit", or just a line (amount 0), like "Teddy found a Poké Ball!". */
 export type XpPop = { id: number; amount: number; why: string };
 let pops: XpPop[] = [];
 const noPops: XpPop[] = [];
@@ -151,14 +161,23 @@ export const popStore = {
   server: () => noPops,
 };
 
+/** Floats a line up the screen with no XP. */
+export function toast(why: string) {
+  popUp(0, why);
+}
+
 /** Adds XP and floats a "+100 XP" up the screen, like GO. */
 export function gainXp(amount: number, why: string) {
   addXp(amount);
   window.setTimeout(sfx.xp, 150);
+  popUp(amount, why);
+}
+
+function popUp(amount: number, why: string) {
   const pop = { id: nextPop++, amount, why };
   pops = [...pops, pop];
   popListeners.forEach((l) => l());
-  window.setTimeout(() => {
+  setTimeout(() => {
     pops = pops.filter((p) => p.id !== pop.id);
     popListeners.forEach((l) => l());
   }, 1800);

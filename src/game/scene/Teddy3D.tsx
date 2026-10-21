@@ -3,7 +3,9 @@
 import { type ThreeEvent, useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import { CanvasTexture, type Group, type Sprite, SRGBColorSpace } from "three";
+import { walked } from "../bond";
 import { lastPetAt, pet } from "../buddy";
+import { game } from "../state";
 import { random } from "../geometry";
 import type { Mover } from "../player";
 import { hover } from "./objects/tap";
@@ -104,6 +106,7 @@ export function Teddy3D({ mover }: { mover: Mover }) {
     const r = root.current;
     if (!r) return;
     const t = clock.elapsedTime;
+    walked(r.position.distanceTo(mover.position), game.input.dash);
     r.position.copy(mover.position);
     r.rotation.y = mover.heading;
     const trot = Math.min(mover.speed / 5, 1);

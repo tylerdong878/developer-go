@@ -15,6 +15,11 @@ export const buddyStore = {
 /** When he was last petted (performance.now), so the hearts know when to float. */
 export const lastPetAt = () => lastPet;
 
+/** Hearts float off him without opening his screen (he earned one, say). */
+export function cheer() {
+  lastPet = performance.now();
+}
+
 export function pet() {
   petted += 1;
   lastPet = performance.now();
