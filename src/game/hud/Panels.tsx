@@ -163,7 +163,9 @@ export function TrainerPanel({ onClose, onTab }: { onClose: () => void; onTab?: 
 
 /** GO's Pokédex: the fact Pokémon first, then every wild one, then the raid bosses, filled in as you catch them. */
 export function PokedexPanel({ onClose, onOpen }: { onClose: () => void; onOpen: (slug: string) => void }) {
-  const { caught, bonus, hatched } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const { caught, bonus, hatched, history } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  // species caught shiny at least once, marked like GO's Pokédex
+  const shiny = new Set(history.filter((c) => c.shiny).map((c) => c.dex));
   const total = spawns.length + wild.length;
   const have = [...spawns.map((s) => s.pokemon.dex), ...wild.map((w) => w.dex)].filter((d) => caught[d]).length;
   return (
@@ -189,7 +191,10 @@ export function PokedexPanel({ onClose, onOpen }: { onClose: () => void; onOpen:
         {[...wild].sort((a, b) => a.dex - b.dex).map((w) => (
           <li key={w.dex} className="flex flex-col items-center rounded-2xl bg-ink/5 px-1 pt-1.5 pb-2">
             <Sprite dex={w.dex} caught={!!caught[w.dex]} small />
-            <span className="text-xs font-semibold">{caught[w.dex] ? w.name : "???"}</span>
+            <span className="text-xs font-semibold">
+              {caught[w.dex] ? w.name : "???"}
+              {shiny.has(w.dex) ? <span className="ml-0.5 text-[#2bb5a8]" title="Caught shiny">✧</span> : null}
+            </span>
             {caught[w.dex] ? <span className="text-[10px] text-ink-soft">×{caught[w.dex]}</span> : null}
           </li>
         ))}

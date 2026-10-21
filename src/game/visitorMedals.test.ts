@@ -22,4 +22,10 @@ describe("visitor medals", () => {
     expect(earned(all)).toContain("gym-tour");
     expect(visitorMedals(all).find((m) => m.id === "gym-tour")?.have).toBe(gyms.length);
   });
+
+  it("gives the Shiny Hunter medal for a shiny catch", () => {
+    const one = { id: 1, dex: 25, name: "Pikachu", cp: 300, at: 0, throw: null };
+    expect(earned({ ...empty, history: [one] })).not.toContain("shiny-hunter");
+    expect(earned({ ...empty, history: [{ ...one, shiny: true }] })).toContain("shiny-hunter");
+  });
 });

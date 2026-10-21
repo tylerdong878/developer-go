@@ -11,6 +11,7 @@ export function visitorMedals(p: Progress): VisitorMedal[] {
   const facts = Object.keys(p.caught).filter((d) => factDex.has(Number(d))).length;
   const gymsSeen = gyms.filter((g) => p.visited.includes(g.slug)).length;
   const raidsSeen = raids.filter((r) => p.visited.includes(r.slug)).length;
+  const shinies = p.history.filter((c) => c.shiny).length;
   return [
     { id: "first-catch", title: "First Catch", detail: "Catch a Pokémon", have: Math.min(catches, 1), need: 1 },
     { id: "collector", title: "Collector", detail: "Catch 10 Pokémon", have: Math.min(catches, 10), need: 10 },
@@ -18,6 +19,7 @@ export function visitorMedals(p: Progress): VisitorMedal[] {
     { id: "backpacker", title: "Backpacker", detail: "Spin 5 PokéStops", have: Math.min(p.spun.length, 5), need: 5 },
     { id: "gym-tour", title: "Gym Tour", detail: "Visit every gym (all my jobs)", have: gymsSeen, need: gyms.length },
     { id: "raid-party", title: "Raid Party", detail: "Visit every raid (all my hackathons)", have: raidsSeen, need: raids.length },
+    { id: "shiny-hunter", title: "Shiny Hunter", detail: "Catch a shiny Pokémon", have: Math.min(shinies, 1), need: 1 },
     { id: "explorer", title: "Explorer", detail: "Open 20 things on the base", have: Math.min(p.visited.length, 20), need: 20 },
   ];
 }
