@@ -5,7 +5,8 @@ import { PrintButton } from "./PrintButton";
 
 export const metadata: Metadata = {
   title: "Tyler Dong, resume",
-  description: "Tyler Dong's resume: CS + Computer Engineering at Northeastern, SWE intern at AWS. Experience, projects, hackathons, and skills.",
+  description: "Tyler Dong's resume: CS + Computer Engineering at Northeastern, SDE intern at AWS. Experience, projects, hackathons, and skills.",
+  alternates: { canonical: "/resume" },
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

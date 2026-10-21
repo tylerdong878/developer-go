@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fredoka, Lato, Nunito_Sans } from "next/font/google";
+import { trainer } from "@/content";
 import "./globals.css";
 
 const fredoka = Fredoka({
@@ -25,7 +26,20 @@ export const metadata: Metadata = {
   openGraph: { title: "Tyler Dong", siteName: "Tyler Dong", type: "website" },
   twitter: { card: "summary_large_image", title: "Tyler Dong" },
   description:
-    "CS + Computer Engineering at Northeastern. Explore my work Pokémon GO style: gyms are jobs, PokéStops are projects, raids are hackathons.",
+    "Tyler Dong: SDE intern at AWS, CS + Computer Engineering at Northeastern. Explore my work Pokémon GO style: gyms are jobs, PokéStops are projects, raids are hackathons.",
+  alternates: { canonical: "/" },
+};
+
+/** Who this site is about, for search engines (schema.org Person), from the same content as everything else. */
+const person = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: trainer.name,
+  url: "https://developer-go.vercel.app",
+  email: `mailto:${trainer.email}`,
+  jobTitle: "Software engineering student",
+  alumniOf: { "@type": "CollegeOrUniversity", name: trainer.school.name },
+  sameAs: trainer.links.map((l) => l.href),
 };
 
 // Like the game, the map turns to night after dark, unless the visitor picked
@@ -43,7 +57,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: timeOfDay }} />
       </head>
-      <body className="flex min-h-full flex-col font-sans">{children}</body>
+      <body className="flex min-h-full flex-col font-sans">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(person) }} />
+        {children}
+      </body>
     </html>
   );
 }

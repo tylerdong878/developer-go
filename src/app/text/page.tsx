@@ -5,6 +5,7 @@ import { eggs, gyms, type Link as ContentLink, medals, raids, type Role, skills,
 export const metadata: Metadata = {
   title: "Tyler Dong, text version",
   description: "Everything from my Pokémon GO style portfolio on one plain page: jobs, projects, hackathons, awards, and facts.",
+  alternates: { canonical: "/text" },
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
