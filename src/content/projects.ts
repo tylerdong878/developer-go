@@ -139,6 +139,30 @@ export const stops: Stop[] = [
   // More projects
   {
     kind: "stop",
+    slug: "developer-go",
+    name: "developer-go (this site)",
+    tagline: "This portfolio: a Pokémon GO style 3D town that runs in the browser, where my jobs are gyms, my projects are PokéStops and my hackathons are raids.",
+    featured: true,
+    period: "Sep 2026 - present",
+    role: "Solo",
+    stats: [
+      { value: "51", label: "models built in code" },
+      { value: "150+", label: "commits" },
+      { value: "30k+", label: "lines of TypeScript" },
+      { value: "59", label: "tests" },
+    ],
+    highlights: [
+      "Every Pokémon, person and building is original code geometry: 51 models written as blended shapes and meshed in a Web Worker at load, each with a painted face and its own bones. No ripped game assets.",
+      "Boston's real weather and the visitor's own sunrise and sunset set the sky, and the weather boosts which Pokémon spawn, like GO.",
+      "Catching follows GO's real formula with each species' capture and flee rates from the game's data, and a Convex backend keeps anonymous community totals.",
+      "The same content files build the game, a plain text page and a one-page resume, so they never drift apart.",
+    ],
+    stack: ["typescript", "nextjs", "react", "r3f", "convex", "tailwind"],
+    links: [gh("developer-go")],
+    where: near(places.westwood, -2600, -3000),
+  },
+  {
+    kind: "stop",
     slug: "snakerl",
     name: "SnakeRL",
     tagline:

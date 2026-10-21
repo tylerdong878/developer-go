@@ -149,6 +149,8 @@ export const slots: Record<string, Vec2> = {
   "polar-glide": [73, 44],
   "nba-analyzer": [-16, 47],
   "snake-and-pacman": [-22, -18],
+  // this site, by home
+  "developer-go": [20, 8],
   "spotify-playlist-updater": [-58, -12],
   snakerl: [-88, -31],
   "sentiment-aura": [-134, 0],

@@ -19,8 +19,8 @@ const host = (href: string) => href.replace(/^https?:\/\/(www\.)?/, "");
 
 /** One page: how many bullets each job keeps (its best ones come first in the content). */
 const BULLETS: Record<string, number> = { aws: 3, philips: 2, tetracorp: 2, outamation: 1, quartzy: 1, khoury: 1, homegoods: 0 };
-/** Bluffs is the Tetracorp job, already under Experience. */
-const SKIP_PROJECTS = new Set(["bluffs"]);
+/** Bluffs is the Tetracorp job, already under Experience; this site is linked in the header. */
+const SKIP_PROJECTS = new Set(["bluffs", "developer-go"]);
 
 /** Skills by kind, in the order a resume lists them: the ones used most across jobs and projects, up to a line each. */
 const KINDS: [SkillKind, string, number][] = [
