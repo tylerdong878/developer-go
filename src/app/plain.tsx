@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Gym, Link as ContentLink, Raid, Role, SkillId, Stop } from "@/content";
-import { skills } from "@/content";
+import { media, skills } from "@/content";
+import { Shot } from "./Shot";
 
 /*
  * The plain-page versions of a job, a project and a hackathon, shared by the
@@ -80,6 +81,7 @@ export function StopArticle({ s, own = false }: { s: Stop; own?: boolean }) {
       <p className="text-sm text-ink-soft">
         {s.period}, {s.role}
       </p>
+      {media[s.slug] ? <Shot m={media[s.slug]} className="mt-3 max-w-xl rounded-xl" /> : null}
       <p className="mt-1 leading-relaxed">{s.tagline}</p>
       {s.stats.length ? <p className="mt-1 text-sm">{s.stats.map((st) => `${st.value} ${st.label}`).join(" · ")}</p> : null}
       <ul className="mt-1 list-disc space-y-1 pl-5 leading-relaxed">
@@ -104,6 +106,7 @@ export function RaidArticle({ r, own = false }: { r: Raid; own?: boolean }) {
         {r.dates}, {r.venue}
         {r.result ? `. ${r.result}` : ""}
       </p>
+      {media[r.slug] ? <Shot m={media[r.slug]} className="mt-3 max-w-xl rounded-xl" /> : null}
       <p className="mt-1 leading-relaxed">{r.project.tagline}</p>
       <ul className="mt-1 list-disc space-y-1 pl-5 leading-relaxed">
         {r.project.built.map((b) => (

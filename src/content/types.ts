@@ -57,7 +57,6 @@ export type Stop = {
   highlights: string[];
   stack: SkillId[];
   links: Link[];
-  image?: string;
   where: Where;
 };
 

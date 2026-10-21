@@ -1,7 +1,8 @@
 "use client";
 
 import { type ReactNode, useState, useSyncExternalStore } from "react";
-import { badgeTier, type Egg, type Gym, type MapObject, monthsAt, type Raid, type Role, skills, type SkillId, type Spawn, type Stop, tenure } from "@/content";
+import { badgeTier, type Egg, type Gym, type MapObject, media, monthsAt, type Raid, type Role, skills, type SkillId, type Spawn, type Stop, tenure } from "@/content";
+import { Shot } from "@/app/Shot";
 import { GOLD_INK, LURE, MYSTIC, RAID_EGG } from "../colors";
 import { Sheet } from "./Sheet";
 import { BADGE, EggIcon, GymBadge, GymIcon, RaidIcon, StopIcon } from "./icons";
@@ -118,12 +119,13 @@ function stopCard(s: Stop): View {
     subtitle: `${s.period}, ${s.role}`,
     body: (
       <>
+        {media[s.slug] ? <Shot m={media[s.slug]} className="rounded-2xl bg-ink/5" /> : null}
         <p className="text-base leading-relaxed">{s.tagline}</p>
         <Stats stats={s.stats} />
         <Bullets items={s.highlights} />
         <Stack ids={s.stack} />
         <Links links={s.links} />
-        <SpinDisc slug={s.slug} lured={s.featured} />
+        <SpinDisc slug={s.slug} lured={s.featured} photo={media[s.slug]?.disc} />
       </>
     ),
   };
@@ -151,6 +153,7 @@ function raidCard(r: Raid, onBonus: (slug: string) => void): View {
             {r.result}
           </p>
         ) : null}
+        {media[r.slug] ? <Shot m={media[r.slug]} className="rounded-2xl bg-ink/5" /> : null}
         <div>
           <h3 className="font-display text-lg font-semibold">{r.project.name}</h3>
           <p className="mt-0.5 leading-relaxed">{r.project.tagline}</p>

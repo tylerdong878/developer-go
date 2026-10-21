@@ -30,7 +30,8 @@ function loot(lured: boolean): Partial<Items> {
  * and the stop turns purple on the map. You can spin each stop once per visit
  * for XP; after that the disc just spins for fun.
  */
-export function SpinDisc({ slug, lured }: { slug: string; lured: boolean }) {
+/** GO's Photo Disc: spin it for items. `photo` goes in the middle, like the stop's photo in GO's. */
+export function SpinDisc({ slug, lured, photo }: { slug: string; lured: boolean; photo?: string }) {
   const { spun } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
   const done = spun.includes(slug);
   const [turns, setTurns] = useState(0);
@@ -75,8 +76,13 @@ export function SpinDisc({ slug, lured }: { slug: string; lured: boolean }) {
           transition: "rotate 1.1s cubic-bezier(0.2, 0.8, 0.3, 1)",
         }}
       >
-        <div className="grid size-28 place-items-center rounded-full bg-surface">
-          <StopIcon size={30} lured={lured} />
+        <div className="grid size-28 place-items-center overflow-hidden rounded-full bg-surface">
+          {photo ? (
+            // eslint-disable-next-line @next/next/no-img-element -- small local webp
+            <img src={photo} alt="" width={112} height={112} draggable={false} className="size-full object-cover" />
+          ) : (
+            <StopIcon size={30} lured={lured} />
+          )}
         </div>
       </div>
       {items ? (

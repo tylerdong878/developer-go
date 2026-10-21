@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { gyms, raids, stops, trainer } from "@/content";
+import { gyms, media, raids, stops, trainer } from "@/content";
 import { GymArticle, RaidArticle, StopArticle } from "../../plain";
 
 /*
@@ -46,8 +46,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title,
     description: f.description,
     alternates: { canonical: `/w/${slug}` },
-    openGraph: { title, description: f.description, type: "article" },
-    twitter: { title, description: f.description },
+    openGraph: { title, description: f.description, type: "article", ...(media[slug] ? { images: [{ url: media[slug].still ?? media[slug].src, alt: media[slug].alt }] } : {}) },
+    twitter: { title, description: f.description, ...(media[slug] ? { images: [media[slug].still ?? media[slug].src] } : {}) },
   };
 }
 
