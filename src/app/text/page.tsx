@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { eggs, gyms, medals, raids, spawns, stops, trainer } from "@/content";
+import { bag, eggs, gyms, medals, raids, spawns, stops, trainer } from "@/content";
 import { GymArticle, RaidArticle, Stack, StopArticle } from "../plain";
 
 export const metadata: Metadata = {
@@ -79,6 +79,29 @@ export default function TextVersion() {
             <Stack ids={e.stack} />
           </article>
         ))}
+      </Section>
+
+      <Section title="Skills">
+        <div className="space-y-1">
+          {(
+            [
+              ["language", "Languages"],
+              ["framework", "Frameworks and libraries"],
+              ["infra", "Infrastructure and tools"],
+              ["api", "APIs"],
+              ["hardware", "Hardware"],
+            ] as const
+          ).map(([kind, label]) => {
+            const names = bag()
+              .filter((i) => i.kind === kind && (i.count > 0 || i.learning))
+              .map((i) => (i.learning ? `${i.name} (learning)` : i.name));
+            return names.length ? (
+              <p key={kind}>
+                <span className="font-semibold">{label}:</span> {names.join(", ")}
+              </p>
+            ) : null;
+          })}
+        </div>
       </Section>
 
       <Section title="Awards and honors">

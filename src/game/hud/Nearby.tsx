@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { eggs, gyms, type MapObject, raids, spawns, stops } from "@/content";
+import { eggs, gyms, type MapObject, media, raids, spawns, stops } from "@/content";
 import { slots, START } from "../base";
 import { describe } from "../objects";
 import { game } from "../state";
@@ -176,9 +176,19 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
                     onClick={() => pick(o.slug)}
                     className="flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-ink/6 focus-visible:bg-ink/6"
                   >
-                    <span className="grid size-12 shrink-0 place-items-center rounded-full bg-sky">
-                      <ObjectIcon object={o} size={38} />
-                    </span>
+                    {media[o.slug] ? (
+                      <span className="relative size-12 shrink-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- small local webp */}
+                        <img src={media[o.slug].disc} alt="" width={48} height={48} loading="lazy" className="size-12 rounded-full object-cover ring-2 ring-[#5ad2c8]" />
+                        <span className="absolute -right-1.5 -bottom-1 grid size-6 place-items-center rounded-full bg-surface shadow">
+                          <ObjectIcon object={o} size={18} />
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="grid size-12 shrink-0 place-items-center rounded-full bg-sky">
+                        <ObjectIcon object={o} size={38} />
+                      </span>
+                    )}
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-semibold">{name}</span>
                       <span className="block truncate text-sm text-ink-soft">{subtitle}</span>
