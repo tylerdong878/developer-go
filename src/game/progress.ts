@@ -89,12 +89,6 @@ export function recordCatch(c: Omit<Catch, "id" | "at">) {
   });
 }
 
-/** Lets one go, like GO's transfer. The Pokédex still remembers you caught it. */
-export function releaseCatch(id: number) {
-  const p = current();
-  save({ ...p, history: p.history.filter((c) => c.id !== id) });
-}
-
 export function recordVisit(slug: string) {
   const p = current();
   if (!p.visited.includes(slug)) save({ ...p, visited: [...p.visited, slug] });

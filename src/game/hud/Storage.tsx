@@ -2,7 +2,7 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { spawns } from "@/content";
-import { type Catch, HISTORY_MAX, progressStore, releaseCatch } from "../progress";
+import { type Catch, HISTORY_MAX, progressStore } from "../progress";
 import { portrait } from "../shiny";
 import { Sheet } from "./Sheet";
 
@@ -41,26 +41,21 @@ function Detail({ c, onBack }: { c: Catch; onBack: () => void }) {
         No. {String(c.dex).padStart(4, "0")}. Caught {when(c.at)}
         {c.throw ? ` with ${c.throw === "Excellent" ? "an" : "a"} ${c.throw} throw` : ""}.
       </p>
-      <div className="mt-6 flex justify-center gap-2">
+      <div className="mt-6 flex justify-center">
         <button type="button" onClick={onBack} className="rounded-full bg-ink/6 px-5 py-2.5 font-display font-semibold transition hover:bg-ink/12">
           Back
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            releaseCatch(c.id);
-            onBack();
-          }}
-          className="go-pill rounded-full px-6 py-2.5 transition active:scale-95"
-        >
-          Transfer
         </button>
       </div>
     </div>
   );
 }
 
-/** GO's Pokémon screen: everything you've caught, newest first, with its CP. */
+/**
+ * GO's Pokémon screen: what this visitor has caught, newest first, with its
+ * CP. It's only theirs: catches live in their own browser, nobody else sees
+ * or touches them (the Community screen only adds up totals), so there's no
+ * transferring, just a keepsake of the visit. It keeps the last 300.
+ */
 export function PokemonPanel({ onClose }: { onClose: () => void }) {
   const { history } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
   const [by, setBy] = useState<Sort>("recent");
@@ -68,7 +63,11 @@ export function PokemonPanel({ onClose }: { onClose: () => void }) {
   const picked = history.find((c) => c.id === open);
 
   return (
-    <Sheet title="Pokémon" subtitle={`${history.length}/${HISTORY_MAX}`} onClose={onClose}>
+    <Sheet
+      title="Your Pokémon"
+      subtitle={`${history.length >= HISTORY_MAX ? `Your last ${HISTORY_MAX}` : `${history.length} caught`}, saved on this device`}
+      onClose={onClose}
+    >
       {picked ? (
         <Detail c={picked} onBack={() => setOpen(null)} />
       ) : history.length ? (
@@ -101,10 +100,10 @@ export function PokemonPanel({ onClose }: { onClose: () => void }) {
                     CP <span className="text-sm font-semibold text-ink">{c.cp}</span>
                   </span>
                   {/* eslint-disable-next-line @next/next/no-img-element -- tiny local sprite */}
-                  <img src={portrait(c.dex, c.shiny)} alt="" width={64} height={64} className="size-16 object-contain" />
+                  <img src={portrait(c.dex, c.shiny)} alt="" width={64} height={64} loading="lazy" className="size-16 object-contain" />
                   <span className="max-w-full truncate text-sm font-semibold">
                     {factDex.has(c.dex) ? "✦ " : ""}
-        {c.shiny ? <span className="text-[#2bb5a8]" title="Shiny">✧ </span> : null}
+                    {c.shiny ? <span className="text-[#2bb5a8]" title="Shiny">✧ </span> : null}
                     {c.name}
                   </span>
                 </button>
