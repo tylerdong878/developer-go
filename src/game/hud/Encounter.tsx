@@ -31,6 +31,8 @@ export type Foe = {
   premier?: { balls: number; rate: number };
   /** The weather boosting it, if any: GO shows its icon by the CP. */
   boost?: Weather;
+  /** Rolled shiny as the encounter opened: its shiny colors, a sparkle, and GO's three-sparkle icon. */
+  shiny?: boolean;
 };
 
 type Phase = "aim" | "flying" | "catching" | "caught" | "fled";
@@ -120,6 +122,11 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (result: CatchRes
     phaseNow.current = p;
     setPhase(p);
   }, []);
+
+  // a shiny sparkles and chimes as the encounter opens, like GO
+  useEffect(() => {
+    if (foe.shiny) window.setTimeout(sfx.shiny, 250);
+  }, [foe.shiny]);
 
   // A fact Pokémon never gets stuck behind an empty bag: it hands you a ball.
   useEffect(() => {
@@ -536,6 +543,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (result: CatchRes
           {caughtBefore ? <ItemIcon id="ball" size={18} /> : null}
           {foe.rare ? "✦ " : ""}
           {foe.name}
+          {foe.shiny ? <ShinyIcon /> : null}
           <span className="opacity-70">/</span>
           <span>
             <span className="text-xs">CP</span>
@@ -564,8 +572,10 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (result: CatchRes
             />
           </>
         ) : null}
+        {foe.shiny ? <ShinyBurst /> : null}
         <FoeView
           dex={foe.dex}
+          shiny={foe.shiny}
           name={foe.name}
           className={`relative size-56 ${phase === "fled" ? "foe-flee" : inBall ? "foe-in" : "foe-out"}`}
         />
@@ -653,6 +663,29 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (result: CatchRes
   );
 }
 
+/** GO's shiny icon: three teal four-point sparkles. */
+function ShinyIcon() {
+  const star = (x: number, y: number, r: number) => `M${x} ${y - r}Q${x} ${y} ${x + r} ${y}Q${x} ${y} ${x} ${y + r}Q${x} ${y} ${x - r} ${y}Q${x} ${y} ${x} ${y - r}Z`;
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-label="Shiny" role="img">
+      <path d={`${star(9, 13, 8)}${star(18, 6, 5)}${star(19, 18, 3.5)}`} fill="#7ef0e4" stroke="#ffffff" strokeWidth="1" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** GO's shiny reveal: big white four-point sparkles and light bursting round it as the encounter opens. */
+function ShinyBurst() {
+  return (
+    <span className="pointer-events-none absolute top-1/2 left-1/2 size-0" aria-hidden>
+      {Array.from({ length: 8 }, (_, i) => (
+        <span key={i} className="shiny-spark" style={{ "--a": `${i * 45 + 20}deg`, "--d": `${70 + (i % 3) * 22}px`, animationDelay: `${(i % 4) * 90}ms` } as CSSProperties}>
+          ✦
+        </span>
+      ))}
+    </span>
+  );
+}
+
 /** Sparkles round a spinning ball, ready for a curveball. */
 function Sparks() {
   return (
@@ -684,7 +717,10 @@ function Caught({ foe, rewards }: { foe: Foe; rewards: [string, number][] }) {
     <>
       <div className="throw-pop pointer-events-none absolute inset-x-0 top-[12%] text-center font-[family-name:var(--font-lato)] text-white drop-shadow-lg">
         <p className="text-5xl font-black">Gotcha!</p>
-        <p className="mt-1 text-lg font-bold">{foe.name} was caught!</p>
+        <p className={`mt-1 text-lg font-bold ${foe.shiny ? "text-[#ffe27a]" : ""}`}>
+          {foe.shiny ? "Shiny " : ""}
+          {foe.name} was caught!
+        </p>
       </div>
       <div className="absolute inset-x-0 bottom-28 flex justify-center px-6">
         <div className="go-sheet card-in w-full max-w-xs rounded-3xl px-6 py-5 text-center">

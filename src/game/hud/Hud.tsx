@@ -16,6 +16,7 @@ import { sfx } from "../sound";
 import { earned, visitorMedals } from "../visitorMedals";
 import { findWild, holdWild, removeWild } from "../wild";
 import { BOOST_CP, boosted } from "../species";
+import { RAID_SHINY_ODDS, rollShiny } from "../shiny";
 import { weatherStore } from "../weather";
 import { type CatchResult, Encounter, type Foe } from "./Encounter";
 import { FactToast, XpPops } from "./Xp";
@@ -133,7 +134,7 @@ export function Hud() {
         const weather = weatherStore.get();
         const boost = boosted(w.species.dex, weather);
         const cp = Math.round(cpFor(w.species.dex, false, Math.random()) * (boost ? BOOST_CP : 1));
-        return setFoe({ dex: w.species.dex, name: w.species.name, rare: false, cp, goal, boost: boost ? weather : undefined });
+        return setFoe({ dex: w.species.dex, name: w.species.name, rare: false, cp, goal, boost: boost ? weather : undefined, shiny: rollShiny(w.species.dex) });
       }
       const o = bySlug.get(goal);
       // the first time you walk up to a raid, its egg hatches (scene/objects/Gym.tsx), then the raid opens
@@ -144,7 +145,8 @@ export function Hud() {
         window.setTimeout(() => game.onArrive?.(goal), HATCH_MS);
         return;
       }
-      if (o?.kind === "spawn") return setFoe({ dex: o.pokemon.dex, name: o.pokemon.name, rare: true, cp: cpFor(o.pokemon.dex, true, Math.random()), goal });
+      if (o?.kind === "spawn")
+        return setFoe({ dex: o.pokemon.dex, name: o.pokemon.name, rare: true, cp: cpFor(o.pokemon.dex, true, Math.random()), goal, shiny: rollShiny(o.pokemon.dex) });
       setCard(goal);
       sfx.open();
       if (o && !progressStore.get().visited.includes(goal)) {
@@ -199,7 +201,7 @@ export function Hud() {
     const boss = RAID_BOSS[slug];
     if (raid?.kind !== "raid" || !boss || slug in progressStore.get().bonus) return;
     setCard(null);
-    setFoe({ dex: boss.dex, name: boss.name, rare: false, cp: bossCp(boss, Math.random()), goal: slug, premier: { balls: premierBalls(raid), rate: BONUS_RATE[raid.stars] } });
+    setFoe({ dex: boss.dex, name: boss.name, rare: false, cp: bossCp(boss, Math.random()), goal: slug, premier: { balls: premierBalls(raid), rate: BONUS_RATE[raid.stars] }, shiny: rollShiny(boss.dex, raid.stars === 5 ? RAID_SHINY_ODDS : undefined) });
   }, []);
   const closeFact = useCallback(() => setFact(null), []);
   const factSpawn = fact ? bySlug.get(fact) : undefined;
@@ -245,7 +247,7 @@ export function Hud() {
     if (w && outcome === "fled") gainXp(FLED_XP, "it fled");
     if (caught) {
       const rewards = catchRewards(foe.rare, best, !progressStore.get().caught[foe.dex], firstThrow, curve);
-      recordCatch({ dex: foe.dex, name: foe.name, cp: foe.cp, throw: best });
+      recordCatch({ dex: foe.dex, name: foe.name, cp: foe.cp, throw: best, shiny: foe.shiny });
       count("catches", { dex: foe.dex, cp: foe.cp });
       gainXp(
         rewards.reduce((sum, [, xp]) => sum + xp, 0),

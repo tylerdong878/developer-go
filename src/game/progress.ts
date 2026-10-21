@@ -12,7 +12,7 @@ export type ItemId = "ball" | "great" | "razz";
 export type Items = Record<ItemId, number>;
 
 /** One catch, for the Pokémon screen: who, how strong, when, and how good the throw was. */
-export type Catch = { id: number; dex: number; name: string; cp: number; at: number; throw: string | null };
+export type Catch = { id: number; dex: number; name: string; cp: number; at: number; throw: string | null; shiny?: boolean };
 
 /** The Pokémon screen keeps the most recent catches, like GO's storage. */
 export const HISTORY_MAX = 300;

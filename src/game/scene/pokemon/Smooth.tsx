@@ -23,6 +23,7 @@ import {
 import { renderBudget } from "../../device";
 import { goPatch } from "./kit";
 import { RECIPES } from "./recipes";
+import { SHINY, shinyRecipe } from "./sdf/shiny.js";
 import { ATLAS } from "./sdf/decals.js";
 import { featureAt, prepFeature } from "./sdf/face.js";
 import type { ModelProps } from "./types";
@@ -103,9 +104,19 @@ function getWorker() {
   return worker;
 }
 
+/** "shiny:25" is shiny Pikachu: the same recipe in its shiny colors. */
+const shinyOf = (key: Key) => {
+  const m = /^shiny:(\d+)$/.exec(String(key));
+  return m ? Number(m[1]) : null;
+};
+const baseOf = (key: Key) => shinyOf(key) ?? key;
+
 async function meshOnMain(dex: Key, grid: number): Promise<Meshed | null> {
   const { meshSpecies } = await import("./sdf/species.js");
-  return meshSpecies(RECIPES[dex], grid) as unknown as Meshed;
+  const { shinyRecipe } = await import("./sdf/shiny.js");
+  const n = shinyOf(dex);
+  const recipe = n === null ? RECIPES[dex] : (shinyRecipe(n, RECIPES[n]) ?? RECIPES[n]);
+  return meshSpecies(recipe, grid) as unknown as Meshed;
 }
 
 function mesh(dex: Key, grid: number): Promise<Meshed | null> {
@@ -477,17 +488,20 @@ function AuraCloud({ aura, seed }: { aura: Aura; seed: number }) {
 
 /** One smooth model, 1 tall (people and Teddy too, with `idle={false}` so their own code walks them), feet at y 0, facing +z. Until its mesh is ready, the fallback (the old model) stands in. */
 export function SmoothModel({
-  dex,
+  dex: base,
   seed = 0,
   asleep = false,
   idle = true,
+  shiny = false,
   fallback: Fallback,
 }: ModelProps & { dex: Key; idle?: boolean; fallback?: ComponentType<ModelProps> }) {
+  const dex: Key = shiny && SHINY[base as number] ? `shiny:${base}` : base;
   const b = useBuilt(dex);
   const object = useMemo(() => {
     if (!b) return null;
     const o = rig(b);
-    o.userData.key = dex;
+    // the idle (wings, tails) goes by the species
+    o.userData.key = baseOf(dex);
     return o;
   }, [b, dex]);
   const holder = useRef<Group>(null);
@@ -496,7 +510,8 @@ export function SmoothModel({
     if (idle && g?.userData.bones) animate(g, clock.elapsedTime + seed * 1.7, asleep);
   });
   if (!object) return Fallback ? <Fallback seed={seed} asleep={asleep} /> : null;
-  const aura = (RECIPES[dex] as { aura?: Aura }).aura;
+  const plain = (RECIPES[baseOf(dex)] as { aura?: Aura }).aura;
+  const aura = plain && shinyOf(dex) !== null ? ((shinyRecipe(shinyOf(dex)!, { aura: plain }) as { aura: Aura } | null)?.aura ?? plain) : plain;
   return (
     <group ref={holder}>
       <primitive object={object} />

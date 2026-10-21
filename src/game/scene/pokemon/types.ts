@@ -3,4 +3,4 @@
  * at y = 0 and faces +z; the map scales it to the right size and turns it to
  * face you.
  */
-export type ModelProps = { asleep?: boolean; seed?: number };
+export type ModelProps = { asleep?: boolean; seed?: number; /** in its shiny colors (the smooth models only) */ shiny?: boolean };
