@@ -1,37 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { eggs, gyms, type Link as ContentLink, medals, raids, type Role, skills, type SkillId, spawns, stops, trainer } from "@/content";
+import { eggs, gyms, medals, raids, spawns, stops, trainer } from "@/content";
+import { GymArticle, RaidArticle, Stack, StopArticle } from "../plain";
 
 export const metadata: Metadata = {
   title: "Tyler Dong, text version",
   description: "Everything from my Pokémon GO style portfolio on one plain page: jobs, projects, hackathons, awards, and facts.",
   alternates: { canonical: "/text" },
 };
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const month = (m: string) => {
-  const [y, mm] = m.split("-").map(Number);
-  return `${MONTHS[mm - 1]} ${y}`;
-};
-const span = (r: Role) => `${month(r.start)} - ${r.end ? month(r.end) : "present"}`;
-
-function Stack({ ids }: { ids: SkillId[] }) {
-  if (!ids.length) return null;
-  return <p className="mt-1 text-sm text-ink-soft">{ids.map((id) => skills[id].name).join(", ")}</p>;
-}
-
-function Links({ links }: { links: ContentLink[] }) {
-  if (!links.length) return null;
-  return (
-    <p className="mt-1 flex flex-wrap gap-x-3 text-sm">
-      {links.map((l) => (
-        <a key={l.href} href={l.href} className="font-semibold text-mystic-500 underline underline-offset-2">
-          {l.label}
-        </a>
-      ))}
-    </p>
-  );
-}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -79,71 +55,19 @@ export default function TextVersion() {
 
       <Section title="Experience">
         {gyms.map((g) => (
-          <article key={g.slug}>
-            <h3 className="text-lg font-semibold">
-              {g.org}
-              <span className="font-normal text-ink-soft">, {g.location}</span>
-            </h3>
-            {g.summary ? <p className="mt-1 leading-relaxed">{g.summary}</p> : null}
-            {g.stats?.length ? <p className="mt-1 text-sm">{g.stats.map((st) => `${st.value} ${st.label}`).join(" · ")}</p> : null}
-            {g.roles.map((r) => (
-              <div key={r.title + r.start} className="mt-2">
-                <p className="font-semibold">{r.title}</p>
-                <p className="text-sm text-ink-soft">{span(r)}</p>
-                <ul className="mt-1 list-disc space-y-1 pl-5 leading-relaxed">
-                  {r.bullets.map((b) => (
-                    <li key={b}>{b}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-            <Stack ids={g.stack} />
-          </article>
+          <GymArticle key={g.slug} g={g} own />
         ))}
       </Section>
 
       <Section title="Projects">
         {stops.map((s) => (
-          <article key={s.slug}>
-            <h3 className="text-lg font-semibold">{s.name}</h3>
-            <p className="text-sm text-ink-soft">
-              {s.period}, {s.role}
-            </p>
-            <p className="mt-1 leading-relaxed">{s.tagline}</p>
-            {s.stats.length ? (
-              <p className="mt-1 text-sm">{s.stats.map((st) => `${st.value} ${st.label}`).join(" · ")}</p>
-            ) : null}
-            <ul className="mt-1 list-disc space-y-1 pl-5 leading-relaxed">
-              {s.highlights.map((h) => (
-                <li key={h}>{h}</li>
-              ))}
-            </ul>
-            <Stack ids={s.stack} />
-            <Links links={s.links} />
-          </article>
+          <StopArticle key={s.slug} s={s} own />
         ))}
       </Section>
 
       <Section title="Hackathons">
         {raids.map((r) => (
-          <article key={r.slug}>
-            <h3 className="text-lg font-semibold">
-              {r.event}: {r.project.name}
-            </h3>
-            <p className="text-sm text-ink-soft">
-              {r.dates}, {r.venue}
-              {r.result ? `. ${r.result}` : ""}
-            </p>
-            <p className="mt-1 leading-relaxed">{r.project.tagline}</p>
-            <ul className="mt-1 list-disc space-y-1 pl-5 leading-relaxed">
-              {r.project.built.map((b) => (
-                <li key={b}>{b}</li>
-              ))}
-            </ul>
-            {r.project.team.length ? <p className="mt-1 text-sm text-ink-soft">With {r.project.team.join(", ")}</p> : null}
-            <Stack ids={r.project.stack} />
-            <Links links={r.project.links} />
-          </article>
+          <RaidArticle key={r.slug} r={r} own />
         ))}
       </Section>
 

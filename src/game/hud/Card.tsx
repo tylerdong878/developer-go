@@ -5,6 +5,7 @@ import { badgeTier, type Egg, type Gym, type MapObject, monthsAt, type Raid, typ
 import { GOLD_INK, LURE, MYSTIC, RAID_EGG } from "../colors";
 import { Sheet } from "./Sheet";
 import { BADGE, EggIcon, GymBadge, GymIcon, RaidIcon, StopIcon } from "./icons";
+import { ShareLink } from "./Share";
 import { SpinDisc } from "./SpinDisc";
 import { progressStore } from "../progress";
 import { premierBalls, type RaidBoss, RAID_BOSS } from "../raidBosses";
@@ -35,7 +36,10 @@ export function Card({
   const view = cardFor(object, onAbout, onBonus);
   return (
     <Sheet side title={view.title} onClose={onClose} art={view.art} kicker={view.kicker} accent={view.accent} subtitle={view.subtitle}>
-      <div className="space-y-5">{view.body}</div>
+      <div className="space-y-5">
+        {view.body}
+        {object.kind === "gym" || object.kind === "stop" || object.kind === "raid" ? <ShareLink slug={object.slug} title={view.title} /> : null}
+      </div>
     </Sheet>
   );
 }
