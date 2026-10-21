@@ -69,7 +69,7 @@ function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
     const age = now - s.born;
     const going = s.leaving === null ? -1 : (now - s.leaving) / LEAVE;
     // rustle, pop out, and later shrink away into a puff
-    fx.current = { age, going, size: Math.max(1.2, critterSize(s.species.dex) * 0.75), boost: boosted(s.species.dex, weatherStore.get()), lured: s.lured };
+    fx.current = { age, going, size: Math.max(0.6, critterSize(s.species.dex) * 0.85), boost: boosted(s.species.dex, weatherStore.get()), lured: s.lured };
     if (body.current) body.current.scale.setScalar(bodyScale(fx.current));
     if (!popped.current && age >= RUSTLE) {
       popped.current = true;

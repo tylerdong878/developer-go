@@ -572,8 +572,8 @@ export function Npcs({ few = false }: { few?: boolean }) {
       {list.map((npc, i) => (
         <Person key={npc.line} npc={npc} seed={i} />
       ))}
-      {/* Nurse Joy's Chansey, beside her at the door, like every anime Pokémon Center */}
-      <group position={[centerDoor[0] + 3.9, 0, centerDoor[1] - 0.7]} rotation-y={-0.35} scale={1.9} userData={{ noShadow: true }}>
+      {/* Nurse Joy's Chansey, beside her at the door, like every anime Pokémon Center: 1.1 m, and the cap on top */}
+      <group position={[centerDoor[0] + 3.4, 0, centerDoor[1] - 0.7]} rotation-y={-0.35} scale={1.1 * 1.09} userData={{ noShadow: true }}>
         <SmoothModel dex="chansey-nurse" />
       </group>
     </>

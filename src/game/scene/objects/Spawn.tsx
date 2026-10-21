@@ -33,7 +33,7 @@ export function Spawn({ spawn, x, z, grass }: { spawn: SpawnContent; x: number; 
   const asleep = dex === 143;
   const found = useSyncExternalStore(foundStore.subscribe, () => foundStore.get().has(spawn.slug), () => asleep);
   const body = useRef<Group>(null);
-  const fx = useRef<Appearing>({ age: -1, going: -1, size: Math.max(1.2, size * 0.75), boost: false, daily: true });
+  const fx = useRef<Appearing>({ age: -1, going: -1, size: Math.max(0.6, size * 0.85), boost: false, daily: true });
   /** When it popped out (on the clock); far in the past if it was already found. */
   const since = useRef<number | null>(null);
 

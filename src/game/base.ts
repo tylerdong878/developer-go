@@ -275,7 +275,7 @@ export function onLand(p: Vec2) {
 
 /** Things you have to walk around, like the Snorlax asleep across the road to the park. */
 export const blockers: { at: Vec2; r: number }[] = [
-  { at: slots.snorlax, r: 2.8 },
+  { at: slots.snorlax, r: 1.7 },
   // the fountain in the middle of the roundabout
   { at: [0, 0], r: 3.2 },
   // the lab's hill, and its gate

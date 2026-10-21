@@ -45,7 +45,7 @@ function Hearts() {
       const s = child as Sprite;
       s.visible = t > 0 && t < 1.6;
       if (!s.visible) return;
-      s.position.set((i - 1.5) * 0.35, 1.1 + t * 1.3, 0);
+      s.position.set((i - 1.5) * 0.25, 0.55 + t * 1.1, 0);
       s.scale.setScalar(0.35 + Math.min(t, 0.3));
       s.material.opacity = 1 - t / 1.6;
     });
@@ -89,8 +89,8 @@ const bodyCurls = (() => {
   return curls;
 })();
 
-/** Teddy's real height (his recipe is 1 tall), shown about twice life size so he reads on the map, like a GO buddy. */
-const HEIGHT = (RECIPES.teddy as { height: number }).height * 2.1;
+/** Teddy's real height (his recipe is 1 tall), true to size like the Pokémon around him. */
+const HEIGHT = (RECIPES.teddy as { height: number }).height;
 
 /**
  * Teddy, Tyler's Shih-Poo, as one fluffy smooth model (notes/research/model-people-items.md 3):
@@ -130,7 +130,7 @@ export function Teddy3D({ mover }: { mover: Mover }) {
   return (
     <group ref={root} onClick={onPet} {...hover}>
       <Hearts />
-      <Shadow size={1.2} opacity={0.5} />
+      <Shadow size={0.7} opacity={0.5} />
       <group name="body" scale={HEIGHT}>
         <SmoothModel dex="teddy" idle={false} fallback={OldTeddy} />
       </group>

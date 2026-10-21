@@ -24,7 +24,7 @@ import { progressStore } from "../../progress";
 import { HATCH, RAID_BOSS } from "../../raidBosses";
 import { POKEMON_3D } from "../pokemon/models";
 import { Shadow } from "../Shadow";
-import { critterSize } from "./Critter";
+import { gymSize } from "./Critter";
 import { Nameplate } from "./Nameplate";
 import { useOutOfTheWay } from "./outOfTheWay";
 import { hover, tapObject } from "./tap";
@@ -296,7 +296,7 @@ export function Gym(props: Props) {
   const boss = raid ? RAID_BOSS[raid.slug] : undefined;
   const Boss = boss ? POKEMON_3D[boss.dex] : null;
   // bosses stand bigger than defenders, like GO's, with a floor so small ones still read as bosses and a cap so the camera still sees the top
-  const bossScale = boss ? Math.min(Math.max(critterSize(boss.dex) * 1.5, 3.4), 4.6) / G : 1;
+  const bossScale = boss ? Math.min(Math.max(gymSize(boss.dex) * 1.5, 3.4), 4.6) / G : 1;
   const bossBadge = Math.max(3.75, 2.45 + (boss?.hover ?? 0) + bossScale + 0.45);
   /** How far the top (platform, crown, rings, marker) sits above the drum. */
   const top = tall ? 0 : -1.13;
@@ -377,7 +377,7 @@ export function Gym(props: Props) {
   });
 
   const name = raid ? `${"★".repeat(raid.stars)} ${raid.event}` : "gym" in props ? (SHORT[props.gym.org] ?? props.gym.org) : "";
-  const defenderScale = dex ? (critterSize(dex) * 1.25) / G : 1;
+  const defenderScale = dex ? (gymSize(dex) * 1.25) / G : 1;
 
   return (
     <group position={[x, 0, z]}>

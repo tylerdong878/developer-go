@@ -22,6 +22,6 @@ export function describe(o: MapObject): { name: string; subtitle: string } {
 /** How far in front of each kind of thing the trainer stops. */
 export function standOff(o: MapObject) {
   if (o.kind === "gym" || o.kind === "raid") return 5;
-  if (o.kind === "spawn" && o.pokemon.dex === 143) return 5;
+  if (o.kind === "spawn" && o.pokemon.dex === 143) return 3.6;
   return o.kind === "egg" ? 2.6 : 3.4;
 }

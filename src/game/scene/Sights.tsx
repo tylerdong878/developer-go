@@ -459,7 +459,8 @@ function Wingulls() {
     <group ref={flock}>
       {Array.from({ length: 5 }, (_, i) => (
         <group key={i} userData={{ noShadow: true }}>
-          <group scale={3.6} rotation-y={Math.PI}>
+          {/* true to size: a Wingull is 0.6 m */}
+          <group scale={0.6} rotation-y={Math.PI}>
             <SmoothModel dex={278} seed={i} />
           </group>
         </group>
@@ -481,7 +482,8 @@ function Lapras() {
   // waterline at 0.2 of its height
   return (
     <group ref={swim} userData={{ noShadow: true }}>
-      <group scale={5.2} position-y={-0.2 * 5.2}>
+      {/* true to size: Lapras is 2.5 m */}
+      <group scale={2.5} position-y={-0.2 * 2.5}>
         <SmoothModel dex={131} />
       </group>
     </group>
@@ -515,7 +517,8 @@ function SwanBoat() {
         </group>
       </group>
       <group ref={swan} userData={{ noShadow: true }}>
-        <group scale={2.2} position-y={-0.14 * 2.2}>
+        {/* true to size: Swanna is 1.3 m */}
+        <group scale={1.3} position-y={-0.14 * 1.3}>
           <SmoothModel dex={581} />
         </group>
       </group>

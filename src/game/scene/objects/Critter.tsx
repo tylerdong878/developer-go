@@ -11,13 +11,25 @@ import { hover } from "./tap";
 import { useSpriteTexture } from "./useSpriteTexture";
 
 /**
- * Height on the map, by dex number, from Pokémon GO's own game data
- * (modelHeight x modelScale, with Pikachu at 1.6). GO squeezes the range:
- * tiny bugs come out about twice their real size and Snorlax well under it,
- * which is why its map reads so well. Rotom is nudged up so it stays visible;
- * Alcremie isn't in the data, so it keeps a hand-picked size.
+ * How tall each one really is, in meters, from the Pokédex (PokéAPI), so they
+ * stand true to size next to Tyler (1.75 m) and Teddy: Pikachu and Geodude
+ * come up to his knee, Snorlax towers over him. Dratini's and Onix's Pokédex
+ * heights are their length (1.8 m and 8.8 m), so theirs are what those
+ * lengths make standing in our models' poses.
  */
-const SIZE: Record<number, number> = {
+const HEIGHT: Record<number, number> = {
+  1: 0.7, 4: 0.6, 7: 0.5, 10: 0.3, 13: 0.3, 16: 0.3, 19: 0.3, 25: 0.4, 39: 0.5, 41: 0.8,
+  43: 0.5, 52: 0.4, 54: 0.8, 56: 0.5, 58: 0.7, 60: 0.6, 63: 0.9, 66: 0.8, 74: 0.4, 81: 0.3,
+  92: 1.3, 95: 4.34, 100: 0.5, 106: 1.5, 113: 1.1, 129: 0.9, 131: 2.5, 132: 0.3, 133: 0.3, 137: 0.8,
+  143: 2.1, 144: 1.7, 147: 0.83, 255: 0.4, 278: 0.6, 479: 0.3, 488: 1.5, 581: 1.3, 865: 0.8, 869: 0.3,
+};
+
+/**
+ * How big one stands on a gym, from Pokémon GO's own game data (modelHeight x
+ * modelScale, with Pikachu at 1.6). GO squeezes the range so a defender or a
+ * raid boss reads on top of a gym, which is the one place we keep it.
+ */
+const GYM_SIZE: Record<number, number> = {
   1: 2.06, 4: 2.03, 7: 1.78, 25: 1.6, 16: 1.36, 19: 1.43, 10: 1.05, 13: 1.02, 41: 2.46,
   129: 2.46, 43: 1.82, 54: 2.36, 60: 2.03, 52: 1.73, 39: 1.94, 74: 3.24, 66: 2.38,
   58: 2.21, 92: 2.7, 63: 2.33, 147: 2.34, 143: 4.0, 106: 3.23, 865: 2.55, 95: 7.3,
@@ -59,7 +71,8 @@ function useTuft() {
   }, []);
 }
 
-export const critterSize = (dex: number) => SIZE[dex] ?? 1.6;
+export const critterSize = (dex: number) => HEIGHT[dex] ?? 0.6;
+export const gymSize = (dex: number) => GYM_SIZE[dex] ?? 1.6;
 export const critterLift = (dex: number) => HOVER[dex] ?? 0;
 
 /**
@@ -116,9 +129,15 @@ export function Critter({
 
   return (
     <group onClick={onClick} {...hover}>
-      <Shadow size={Math.max(1.4, size * 0.75)} opacity={lift ? 0.6 : 1} />
+      <Shadow size={Math.max(0.45, size * 0.85)} opacity={lift ? 0.6 : 1} />
+      {/* a tap target bigger than the little ones, so a Caterpie is as easy to tap as a Snorlax */}
+      <mesh position-y={lift + Math.max(0.5, size * 0.55)}>
+        <cylinderGeometry args={[Math.max(0.75, size * 0.55), Math.max(0.75, size * 0.55), Math.max(1, size * 1.1), 12]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+      {/* the rustling grass at its feet, in proportion to it */}
       {lift ? null : (
-        <group ref={tuft} scale={asleep ? 1.8 : 1}>
+        <group ref={tuft} scale={Math.max(0.3, size * 0.6)}>
           <mesh geometry={blades}>
             <meshLambertMaterial color={grass} flatShading />
           </mesh>
