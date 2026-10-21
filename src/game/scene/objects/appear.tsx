@@ -14,7 +14,7 @@ import { RUSTLE } from "../../wild";
  */
 
 /** What the effects need each frame: seconds since the rustle began (-1 before), how far through leaving (-1 if not), its size and boost. */
-export type Appearing = { age: number; going: number; size: number; boost: boolean; daily?: boolean };
+export type Appearing = { age: number; going: number; size: number; boost: boolean; daily?: boolean; lured?: boolean };
 
 /** GO's pop: overshoots a little and settles. */
 export const backOut = (k: number) => (k <= 0 ? 0 : k >= 1 ? 1 : 1 + 2.70158 * (k - 1) ** 3 + 1.70158 * (k - 1) ** 2);
@@ -57,13 +57,14 @@ function rustle(group: Group, age: number) {
   });
 }
 
-/** Three quick ripples on the pop, then the faint pulse while it's out (GO's Daily Encounter pulses brighter). */
-function ripples(group: Group, { age, going, size, boost, daily }: Appearing) {
+/** Three quick ripples on the pop, then the faint pulse while it's out (GO's Daily Encounter pulses brighter, a lured one is pink). */
+function ripples(group: Group, { age, going, size, boost, daily, lured }: Appearing) {
   const since = age - RUSTLE;
   group.visible = going < 0 && since > 0;
   if (!group.visible) return;
   group.children.forEach((ring, i) => {
     const m = (ring as Mesh).material as MeshBasicMaterial;
+    m.color.set(lured ? "#ff8fc8" : "#ffffff");
     const pop = (since - i * 0.14) / 0.75;
     if (pop < 1) {
       const k = Math.max(0, pop);
@@ -77,7 +78,7 @@ function ripples(group: Group, { age, going, size, boost, daily }: Appearing) {
     }
     const k = ((((since - 1.2 - i * 0.25) / PULSE) % 1) + 1) % 1;
     ring.scale.setScalar(size * (0.25 + k * 0.45));
-    m.opacity = (daily ? 0.6 : 0.3) * Math.sin(k * Math.PI);
+    m.opacity = (daily || lured ? 0.6 : 0.3) * Math.sin(k * Math.PI);
   });
 }
 

@@ -18,6 +18,8 @@ export type WildSpawn = {
   leaving: number | null;
   /** It got a few more seconds because he was right next to it. */
   lingered?: boolean;
+  /** Drawn in by a lured stop: it stands in pink petals and stays out of Nearby, like GO. */
+  lured?: boolean;
 };
 
 /**
@@ -36,6 +38,13 @@ const GONE = 28;
 const EVERY: [number, number] = [3, 7];
 /** The first one shows up this soon after the visit starts, inside the ring. */
 const FIRST = 1.6;
+/**
+ * A lured stop (notes/research/spawns.md 6, "For us"): while he's within 20,
+ * one comes every 15-20 s, 3-8 from the stop, up to 3 at a time, for a minute.
+ * Four of the lured stops stand together downtown, so all the lures together
+ * keep to 4 out at once.
+ */
+const LURE = { reach: 20, every: [15, 20] as const, near: 3, far: 8, most: 3, all: 4, life: 60 };
 /** The leaves rustle this long before it pops out, and it takes this long to go. */
 export const RUSTLE = 1.4;
 export const LEAVE = 0.6;
@@ -45,6 +54,8 @@ let nextId = 1;
 let nextAt: number | null = null;
 /** The one being caught, which never leaves mid-throw. */
 let held: number | null = null;
+/** When each lured stop next draws one in, by where it stands. */
+const lureNext = new Map<string, number>();
 /** The scene clock at the last refresh, so lists can tell which ones are out. */
 let clock = 0;
 const listeners = new Set<() => void>();
@@ -105,6 +116,8 @@ type Around = {
   /** The weather now (boosted types come out more) and whether it's night. */
   weather?: Weather | null;
   night?: boolean;
+  /** Where the lured stops stand. */
+  lures?: Vec2[];
 };
 
 /**
@@ -113,7 +126,7 @@ type Around = {
  * (a little later if he's right there), and ones he's left behind are forgotten.
  * Call it about once a second.
  */
-export function refreshWild(x: number, z: number, now: number, rand: () => number = Math.random, { ahead = null, goal = null, weather = null, night = false }: Around = {}) {
+export function refreshWild(x: number, z: number, now: number, rand: () => number = Math.random, { ahead = null, goal = null, weather = null, night = false, lures = [] }: Around = {}) {
   clock = now;
   let changed = false;
   if (nextAt === null) nextAt = now + FIRST;
@@ -138,7 +151,28 @@ export function refreshWild(x: number, z: number, now: number, rand: () => numbe
   const before = spawns.length;
   spawns = spawns.filter((s) => s.leaving === null || now - s.leaving < LEAVE);
   if (spawns.length !== before) changed = true;
-  const out = spawns.filter((s) => s.leaving === null).length;
+  // lured stops draw their own, on top of the usual ones
+  for (const at of lures) {
+    const key = at.join(",");
+    if (Math.hypot(at[0] - x, at[1] - z) > LURE.reach) continue;
+    const due = lureNext.get(key) ?? now + 2;
+    if (!lureNext.has(key)) lureNext.set(key, due);
+    if (now < due) continue;
+    lureNext.set(key, now + LURE.every[0] + rand() * (LURE.every[1] - LURE.every[0]));
+    const lured = spawns.filter((s) => s.lured && s.leaving === null);
+    const mine = lured.filter((s) => Math.hypot(s.x - at[0], s.z - at[1]) < LURE.far + 4).length;
+    if (mine >= LURE.most || lured.length >= LURE.all) continue;
+    for (let tries = 0; tries < 20; tries++) {
+      const a = rand() * Math.PI * 2;
+      const d = LURE.near + rand() * (LURE.far - LURE.near);
+      const p: Vec2 = [at[0] + Math.cos(a) * d, at[1] + Math.sin(a) * d];
+      if (!walkable(p) || spawns.some((s) => Math.hypot(p[0] - s.x, p[1] - s.z) < 4)) continue;
+      spawns = [...spawns, { id: nextId++, species: pick(rand, weather, night), x: p[0], z: p[1], born: now, until: now + LURE.life, leaving: null, lured: true }];
+      changed = true;
+      break;
+    }
+  }
+  const out = spawns.filter((s) => s.leaving === null && !s.lured).length;
   if (now >= nextAt && out < COUNT) {
     const firstOne = nextId === 1;
     for (let tries = 0; tries < 40; tries++) {
@@ -170,6 +204,7 @@ export function resetWild() {
   nextId = 1;
   nextAt = null;
   held = null;
+  lureNext.clear();
   clock = 0;
 }
 

@@ -45,6 +45,16 @@ describe("wild spawns", () => {
     expect(wildStore.get().includes(s)).toBe(false);
   });
 
+  it("draws extra ones to a lured stop while he's near it, up to three", () => {
+    const rand = seeded(3);
+    const lures: [number, number][] = [[40, 40]];
+    for (let t = 0; t <= 120; t++) refreshWild(40, 52, t, rand, { lures });
+    const lured = wildStore.get().filter((s) => s.lured && s.leaving === null);
+    expect(lured.length).toBeGreaterThan(0);
+    expect(lured.length).toBeLessThanOrEqual(3);
+    for (const s of lured) expect(Math.hypot(s.x - 40, s.z - 40)).toBeLessThanOrEqual(8.01);
+  });
+
   it("never leaves while it's being caught, or while he's walking to it", () => {
     const rand = seeded();
     refreshWild(0, 6, 0, rand);

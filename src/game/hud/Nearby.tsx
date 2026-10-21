@@ -69,8 +69,8 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
   const closest = [...everything].sort((a, b) => distanceFrom(spot, a) - distanceFrom(spot, b)).slice(0, 3);
   const current = TABS.find((t) => t.id === tab)!;
   const wildNow = useSyncExternalStore(wildStore.subscribe, wildStore.get, () => noWild);
-  // only the ones out on the map: not still rustling, not on their way off
-  const wildOut = wildNow.filter((w) => isOut(w));
+  // only the ones out on the map: not still rustling, not on their way off, and not lured (GO leaves those out too)
+  const wildOut = wildNow.filter((w) => isOut(w) && !w.lured);
   const wildList = [...wildOut].sort(
     (a, b) => Math.hypot(a.x - spot[0], a.z - spot[1]) - Math.hypot(b.x - spot[0], b.z - spot[1]),
   );

@@ -3,6 +3,7 @@
 import { type ThreeEvent, useFrame } from "@react-three/fiber";
 import { useRef, useSyncExternalStore } from "react";
 import { CanvasTexture, type Group, type Sprite, SRGBColorSpace } from "three";
+import { stops } from "@/content";
 import { sfx } from "../../sound";
 import { boosted } from "../../species";
 import { usePhase } from "../../useTimeOfDay";
@@ -10,6 +11,7 @@ import { weatherStore } from "../../weather";
 import { game } from "../../state";
 import { goTo } from "../../travel";
 import { goalId, isOut, LEAVE, moveWild, refreshWild, RUSTLE, wildStore, type WildSpawn } from "../../wild";
+import { slots } from "../../base";
 import { type Appearing, AppearFx, bodyScale } from "./appear";
 import { critterLift, critterSize, Critter } from "./Critter";
 
@@ -67,7 +69,7 @@ function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
     const age = now - s.born;
     const going = s.leaving === null ? -1 : (now - s.leaving) / LEAVE;
     // rustle, pop out, and later shrink away into a puff
-    fx.current = { age, going, size: Math.max(1.2, critterSize(s.species.dex) * 0.75), boost: boosted(s.species.dex, weatherStore.get()) };
+    fx.current = { age, going, size: Math.max(1.2, critterSize(s.species.dex) * 0.75), boost: boosted(s.species.dex, weatherStore.get()), lured: s.lured };
     if (body.current) body.current.scale.setScalar(bodyScale(fx.current));
     if (!popped.current && age >= RUSTLE) {
       popped.current = true;
@@ -135,6 +137,8 @@ function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
 }
 
 const none: never[] = [];
+/** Where the lured stops (the featured projects) stand. */
+const LURED: [number, number][] = stops.filter((s) => s.featured && slots[s.slug]).map((s) => slots[s.slug] as [number, number]);
 
 /**
  * Everyday wild Pokémon, just for fun. A few are always out in the grass a
@@ -158,6 +162,7 @@ export function WildSpawns({ grass }: { grass: string }) {
       goal: game.input.goal,
       weather: weatherStore.get(),
       night,
+      lures: LURED,
     });
   });
 
