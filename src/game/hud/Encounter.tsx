@@ -602,7 +602,8 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (result: CatchRes
         </div>
       ) : phase === "aim" && !holding ? (
         <p className="pointer-events-none absolute inset-x-0 bottom-[calc(min(32vw,150px)*0.85+28px)] text-center font-[family-name:var(--font-lato)] text-xs font-bold tracking-wide text-white drop-shadow">
-          Hold the ball and flick it up (or hold space). Circle it first for a curveball
+          <span className="pointer-coarse:hidden">Hold the ball and flick it up (or hold space). Circle it first for a curveball</span>
+          <span className="pointer-fine:hidden">Flick the ball up at it. Circle it first for a curveball</span>
         </p>
       ) : null}
 

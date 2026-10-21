@@ -96,8 +96,8 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
         className="panel flex h-14 items-center gap-0.5 rounded-full px-3 transition hover:scale-[1.03] active:scale-95"
       >
         <span className="flex items-end gap-0.5">
-          {closest.map((o) => (
-            <span key={o.slug} className="grid size-8 place-items-center">
+          {closest.map((o, i) => (
+            <span key={o.slug} className={`grid size-8 place-items-center ${i === 2 ? "max-sm:hidden" : ""}`}>
               <ObjectIcon object={o} size={24} />
             </span>
           ))}
@@ -118,22 +118,24 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
             </h2>
           </div>
 
-          <div role="tablist" aria-label="What's nearby" className="flex justify-center gap-1 overflow-x-auto px-4 pb-3">
-            {TABS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                role="tab"
-                aria-selected={tab === t.id}
-                onClick={() => setTab(t.id)}
-                className={`go-title shrink-0 border-b-2 px-2.5 pt-1 pb-1.5 text-[0.7rem] transition ${
-                  tab === t.id ? "border-[#30555d] text-ink" : "border-transparent text-ink-soft hover:text-ink"
-                }`}
-              >
-                {t.label}{" "}
-                <span className="opacity-70">{t.items.length + (t.id === "spawn" ? wildOut.length : 0)}</span>
-              </button>
-            ))}
+          <div className="overflow-x-auto px-3 pb-3">
+            <div role="tablist" aria-label="What's nearby" className="mx-auto flex w-max gap-0.5">
+              {TABS.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === t.id}
+                  onClick={() => setTab(t.id)}
+                  className={`go-title shrink-0 border-b-2 px-2 pt-1 pb-1.5 text-[0.66rem] transition sm:px-2.5 sm:text-[0.7rem] ${
+                    tab === t.id ? "border-[#30555d] text-ink" : "border-transparent text-ink-soft hover:text-ink"
+                  }`}
+                >
+                  {t.label}{" "}
+                  <span className="opacity-70">{t.items.length + (t.id === "spawn" ? wildOut.length : 0)}</span>
+                </button>
+              ))}
+            </div>
           </div>
           <p className="go-title px-5 pb-2 text-center text-[0.62rem] text-ink-soft">{current.hint}</p>
 
