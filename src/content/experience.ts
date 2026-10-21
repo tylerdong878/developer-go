@@ -9,6 +9,10 @@ export const gyms: Gym[] = [
     slug: "aws",
     org: "Amazon Web Services (AWS)",
     location: "Seaport, Boston",
+    stats: [
+      { value: "~30 ms", label: "worst-case key recovery, from 3.3 min" },
+      { value: "8,000+", label: "volume keys per host" },
+    ],
     roles: [
       {
         title: "Software Development Engineer Intern",
@@ -30,6 +34,11 @@ export const gyms: Gym[] = [
     slug: "philips",
     org: "Philips",
     location: "Cambridge, MA",
+    stats: [
+      { value: "15+", label: "repos migrated" },
+      { value: "25+", label: "pipelines off static tokens" },
+      { value: "7", label: "sub-workflows" },
+    ],
     roles: [
       {
         title: "Software Development Engineer Co-op",
@@ -50,6 +59,11 @@ export const gyms: Gym[] = [
     slug: "tetracorp",
     org: "Tetracorp",
     location: "Remote",
+    summary: "Bluffs: real-money iMessage games between friends.",
+    stats: [
+      { value: "26,000+", label: "users" },
+      { value: "#2", label: "contributor of about 7" },
+    ],
     roles: [
       {
         title: "Software Engineer",
@@ -73,6 +87,10 @@ export const gyms: Gym[] = [
     slug: "khoury",
     org: "Khoury College of Computer Sciences",
     location: "Northeastern University, Boston",
+    stats: [
+      { value: "400+", label: "students, CS 3100" },
+      { value: "70+", label: "students, CS 1800" },
+    ],
     roles: [
       {
         title: "Teaching Assistant, Object-Oriented Design (CS 3100)",
@@ -119,6 +137,10 @@ export const gyms: Gym[] = [
     slug: "quartzy",
     org: "Quartzy Capital Advisors, LLC",
     location: "New York, NY",
+    stats: [
+      { value: "95%+", label: "less processing time" },
+      { value: "500+", label: "securities in the database" },
+    ],
     roles: [
       {
         title: "Data Research Intern",

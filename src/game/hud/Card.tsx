@@ -66,6 +66,8 @@ function gymCard(g: Gym): View {
     subtitle: g.location,
     body: (
       <>
+        {g.summary ? <p className="text-base leading-relaxed">{g.summary}</p> : null}
+        <Stats stats={g.stats ?? []} />
         <Badge gym={g} />
         {g.roles.map((r) => (
           <div key={r.title + r.start}>
@@ -113,16 +115,7 @@ function stopCard(s: Stop): View {
     body: (
       <>
         <p className="text-base leading-relaxed">{s.tagline}</p>
-        {s.stats.length ? (
-          <ul className="flex flex-wrap gap-2" aria-label="Numbers">
-            {s.stats.map((stat) => (
-              <li key={stat.label} className="item-pop rounded-2xl bg-ink/5 px-3.5 py-2">
-                <span className="block font-display text-xl font-semibold">{stat.value}</span>
-                <span className="block text-xs font-semibold text-ink-soft">{stat.label}</span>
-              </li>
-            ))}
-          </ul>
-        ) : null}
+        <Stats stats={s.stats} />
         <Bullets items={s.highlights} />
         <Stack ids={s.stack} />
         <Links links={s.links} />
@@ -250,23 +243,44 @@ function eggCard(e: Egg): View {
 }
 
 /** The first point, with the rest a tap away, so a card reads at a glance. */
+/** The headline numbers, popping in like a stop's items. */
+function Stats({ stats }: { stats: { value: string; label: string }[] }) {
+  if (!stats.length) return null;
+  return (
+    <ul className="flex flex-wrap gap-2" aria-label="Numbers">
+      {stats.map((stat) => (
+        <li key={stat.label} className="item-pop rounded-2xl bg-ink/5 px-3.5 py-2">
+          <span className="block font-display text-xl font-semibold">{stat.value}</span>
+          <span className="block text-xs font-semibold text-ink-soft">{stat.label}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** The best bullet (two on a wider screen), and the rest a tap away. */
 function Bullets({ items }: { items: string[] }) {
   const [all, setAll] = useState(false);
   if (!items.length) return null;
-  const shown = all ? items : items.slice(0, 1);
+  const shown = all ? items : items.slice(0, 2);
   return (
     <div className="mt-2">
       <ul className="space-y-1.5">
-        {shown.map((b) => (
-          <li key={b} className="flex gap-2 leading-relaxed">
+        {shown.map((b, i) => (
+          <li key={b} className={`gap-2 leading-relaxed ${!all && i === 1 ? "hidden sm:flex" : "flex"}`}>
             <span aria-hidden className="mt-2.5 size-1.5 shrink-0 rounded-full bg-mystic-400" />
             <span>{b}</span>
           </li>
         ))}
       </ul>
       {items.length > 1 && !all ? (
-        <button type="button" onClick={() => setAll(true)} className="mt-1.5 pl-3.5 text-sm font-bold text-mystic-500 hover:underline">
-          {items.length - 1} more
+        <button
+          type="button"
+          onClick={() => setAll(true)}
+          className={`mt-1.5 pl-3.5 text-sm font-bold text-mystic-500 hover:underline ${items.length === 2 ? "sm:hidden" : ""}`}
+        >
+          <span className="sm:hidden">{items.length - 1} more</span>
+          <span className="max-sm:hidden">{items.length - 2} more</span>
         </button>
       ) : null}
     </div>

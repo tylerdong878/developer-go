@@ -84,6 +84,8 @@ export default function TextVersion() {
               {g.org}
               <span className="font-normal text-ink-soft">, {g.location}</span>
             </h3>
+            {g.summary ? <p className="mt-1 leading-relaxed">{g.summary}</p> : null}
+            {g.stats?.length ? <p className="mt-1 text-sm">{g.stats.map((st) => `${st.value} ${st.label}`).join(" · ")}</p> : null}
             {g.roles.map((r) => (
               <div key={r.title + r.start} className="mt-2">
                 <p className="font-semibold">{r.title}</p>

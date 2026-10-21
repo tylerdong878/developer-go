@@ -35,6 +35,10 @@ export type Gym = {
   slug: string;
   org: string;
   location: string;
+  /** What the place or product is, in a line, when the name doesn't say. */
+  summary?: string;
+  /** The headline numbers, straight from the bullets. */
+  stats?: Stat[];
   roles: Role[];
   stack: SkillId[];
   where: Where;
