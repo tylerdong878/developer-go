@@ -21,13 +21,15 @@ const REVEAL = 24;
 /**
  * A rare Pokémon at a fixed spot, one per fun fact about me, like GO's Daily
  * Encounter: it waits unseen until you first come close, then leaves rustle,
- * it pops out, and it stays, on a brighter pulsing ring. It sparkles so it
- * stands out from the everyday wild ones (include then prune: GO's map has no
- * sparkles). Snorlax is asleep, so it gets Zzz's instead. Its name shows once
+ * it pops out, and it stays, on a brighter pulsing ring. It glows softly so it
+ * stands out from the everyday wild ones (no sparkles: on GO's map those would
+ * read as shiny, and shinies never show on the map). Ditto hides as a Pidgey,
+ * the way GO's only ever appears disguised. Snorlax is asleep, so it gets Zzz's instead. Its name shows once
  * you're about at your ring, since GO doesn't label Pokémon from afar.
  */
 export function Spawn({ spawn, x, z, grass }: { spawn: SpawnContent; x: number; z: number; grass: string }) {
-  const { dex, name } = spawn.pokemon;
+  // a disguised one (Ditto) looks and is named like its disguise on the map
+  const { dex, name } = spawn.disguise ?? spawn.pokemon;
   const size = critterSize(dex);
   const lift = critterLift(dex);
   const asleep = dex === 143;
@@ -59,7 +61,7 @@ export function Spawn({ spawn, x, z, grass }: { spawn: SpawnContent; x: number; 
     <group position={[x, 0, z]}>
       <group ref={body} scale={0}>
         <Critter dex={dex} grass={grass} asleep={asleep} onClick={tapObject(spawn.slug)} seed={x} />
-        {asleep ? <Zzz y={size * 0.9} /> : <Sparkles height={size + lift} />}
+        {asleep ? <Zzz y={size * 0.9} /> : <Glow height={size} lift={lift} />}
       </group>
       <AppearFx state={fx} />
       {found ? <Nameplate text={name} accent="#f6c453" x={x} z={z} y={size + lift + 1.1} within={REACH + 3} /> : null}
@@ -91,21 +93,14 @@ const zzz = () =>
     g.fillText("Z", 32, 34);
   }));
 
-const star = () =>
+const glow = () =>
   (starTexture ??= canvasTexture((g) => {
-    const glow = g.createRadialGradient(32, 32, 0, 32, 32, 30);
-    glow.addColorStop(0, "rgba(255, 246, 200, 0.9)");
-    glow.addColorStop(1, "rgba(255, 220, 120, 0)");
-    g.fillStyle = glow;
+    const halo = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    halo.addColorStop(0, "rgba(255, 238, 170, 0.75)");
+    halo.addColorStop(0.45, "rgba(255, 222, 120, 0.32)");
+    halo.addColorStop(1, "rgba(255, 210, 100, 0)");
+    g.fillStyle = halo;
     g.fillRect(0, 0, 64, 64);
-    g.fillStyle = "#ffffff";
-    g.beginPath();
-    for (let i = 0; i < 8; i++) {
-      const r = i % 2 ? 5 : 26;
-      const a = (i / 8) * Math.PI * 2;
-      g.lineTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r);
-    }
-    g.fill();
   }));
 
 /** Three Z's drifting up off a sleeping Pokémon. */
@@ -131,23 +126,21 @@ function Zzz({ y }: { y: number }) {
   );
 }
 
-/** Twinkling stars around a rare Pokémon. */
-function Sparkles({ height }: { height: number }) {
+/** A soft, steady golden glow round a fact Pokémon, breathing slowly (like Sword and Shield's Brilliant Pokémon), with no star shapes. */
+function Glow({ height, lift }: { height: number; lift: number }) {
   const group = useRef<Group>(null);
-  const map = useMemo(() => star(), []);
+  const map = useMemo(() => glow(), []);
   useFrame(({ clock }) => {
-    group.current?.children.forEach((child, i) => {
-      const t = clock.elapsedTime * 0.8 + i * 1.7;
-      const a = t * 0.6 + i;
-      child.position.set(Math.cos(a) * 1.3, 0.4 + ((i * 0.37 + t * 0.15) % 1) * height, Math.sin(a) * 1.3);
-      const s = 0.2 + Math.max(0, Math.sin(t * 2.2)) * 0.45;
-      child.scale.setScalar(s);
-    });
+    const s = group.current?.children[0] as Sprite | undefined;
+    if (!s) return;
+    const k = 0.5 + Math.sin(clock.elapsedTime * 1.6) * 0.5;
+    s.scale.setScalar(Math.max(1, height * 2.1) * (0.94 + k * 0.08));
+    s.material.opacity = 0.55 + k * 0.2;
   });
   return (
-    <group ref={group}>
-      {[0, 1, 2, 3, 4].map((i) => (
-        <sprite key={i}>
+    <group ref={group} position-y={lift + height * 0.5}>
+      {[0].map((i) => (
+        <sprite key={i} renderOrder={-1}>
           <spriteMaterial map={map} transparent depthWrite={false} />
         </sprite>
       ))}

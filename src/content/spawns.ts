@@ -96,6 +96,8 @@ export const spawns: Spawn[] = [
     kind: "spawn",
     slug: "ditto",
     pokemon: { name: "Ditto", dex: 132 },
+    // in GO, Ditto only ever appears as something else; you find out when you catch it
+    disguise: { name: "Pidgey", dex: 16 },
     title: "More games I love",
     body: "Clash of Clans, Clash Royale, Fortnite, Valorant, and Mario & Luigi: Bowser's Inside Story.",
     where: places.bostonCommon,

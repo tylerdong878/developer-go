@@ -33,6 +33,8 @@ export type Foe = {
   boost?: Weather;
   /** Rolled shiny as the encounter opened: its shiny colors, a sparkle, and GO's three-sparkle icon. */
   shiny?: boolean;
+  /** Ditto: looks and is named like this until it's caught. */
+  disguise?: { name: string; dex: number };
 };
 
 type Phase = "aim" | "flying" | "catching" | "caught" | "fled";
@@ -116,7 +118,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (result: CatchRes
   const [premierLeft, setPremierLeft] = useState(round?.balls ?? 0);
   /** The bonus round is over once the last Premier Ball misses or breaks open. */
   const spent = () => !!round && left.current <= 0;
-  const move = movementOf(foe.dex);
+  const move = movementOf(foe.disguise?.dex ?? foe.dex);
 
   const go = useCallback((p: Phase) => {
     phaseNow.current = p;
@@ -509,6 +511,8 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (result: CatchRes
   });
 
   const done = phase === "caught" || phase === "fled";
+  // Ditto keeps its disguise until it's caught
+  const looks = phase !== "caught" && foe.disguise ? foe.disguise : { name: foe.name, dex: foe.dex };
   // Worked out when the encounter starts, so a catch doesn't count itself as already in the Pokédex.
   const rewards = catchRewards(foe.rare, label, firstOfKind, phase === "caught" && firstBall, phase === "caught" && curved);
   const ringPx = "min(42vw, 200px)";
@@ -518,7 +522,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (result: CatchRes
       ref={field}
       role="dialog"
       aria-modal="true"
-      aria-label={round ? `Raid boss ${foe.name}` : `Wild ${foe.name}`}
+      aria-label={round ? `Raid boss ${foe.name}` : `Wild ${looks.name}`}
       className="encounter fixed inset-0 z-50 touch-none overflow-hidden select-none"
       onPointerMove={onMove}
       onPointerUp={onUp}
@@ -541,8 +545,8 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (result: CatchRes
       <div className={`pointer-events-none absolute inset-x-0 top-[22%] flex justify-center px-6 transition-opacity ${phase === "caught" ? "opacity-0" : ""}`}>
         <p className="flex items-center gap-2 rounded-full bg-black/45 px-5 py-1.5 font-[family-name:var(--font-lato)] text-lg font-bold text-white">
           {caughtBefore ? <ItemIcon id="ball" size={18} /> : null}
-          {foe.rare ? "✦ " : ""}
-          {foe.name}
+          {foe.rare && !foe.disguise ? "✦ " : ""}
+          {looks.name}
           {foe.shiny ? <ShinyIcon /> : null}
           <span className="opacity-70">/</span>
           <span>
@@ -574,9 +578,9 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (result: CatchRes
         ) : null}
         {foe.shiny ? <ShinyBurst /> : null}
         <FoeView
-          dex={foe.dex}
+          dex={looks.dex}
           shiny={foe.shiny}
-          name={foe.name}
+          name={looks.name}
           className={`relative size-56 ${phase === "fled" ? "foe-flee" : inBall ? "foe-in" : "foe-out"}`}
         />
         {phase === "fled" ? <span className={`foe-puff ${round ? "foe-puff-glow" : ""}`} aria-hidden /> : null}
@@ -717,10 +721,9 @@ function Caught({ foe, rewards }: { foe: Foe; rewards: [string, number][] }) {
     <>
       <div className="throw-pop pointer-events-none absolute inset-x-0 top-[12%] text-center font-[family-name:var(--font-lato)] text-white drop-shadow-lg">
         <p className="text-5xl font-black">Gotcha!</p>
-        <p className={`mt-1 text-lg font-bold ${foe.shiny ? "text-[#ffe27a]" : ""}`}>
-          {foe.shiny ? "Shiny " : ""}
-          {foe.name} was caught!
-        </p>
+        {foe.disguise ? <p className="mt-1 text-base font-bold">Oh? It was {foe.name}!</p> : null}
+        {/* like GO, a shiny's name just turns yellow */}
+        <p className={`mt-1 text-lg font-bold ${foe.shiny ? "text-[#ffe27a]" : ""}`}>{foe.name} was caught!</p>
       </div>
       <div className="absolute inset-x-0 bottom-28 flex justify-center px-6">
         <div className="go-sheet card-in w-full max-w-xs rounded-3xl px-6 py-5 text-center">

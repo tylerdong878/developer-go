@@ -12,7 +12,8 @@ import { useOutOfTheWay } from "./objects/outOfTheWay";
  * statues flank a gym's entrance, and reading one gives the gym, its Leader,
  * and the winning trainers. Ours are the Indigo Plateau's stone Poké Balls
  * on square pedestals (a stone figure of a real species would need its own
- * model), with a plaque: "<COMPANY> GYM / LEADER: <Tyler's title>".
+ * model), with a plaque like FRLG's ("PEWTER POKéMON GYM / LEADER: BROCK"):
+ * "<COMPANY> GYM / LEADER: TYLER", and his title there underneath.
  */
 
 const STONE = "#b8b6ba";
@@ -55,9 +56,9 @@ function plaqueTexture(lines: string[]) {
   g.textBaseline = "middle";
   g.font = `900 40px ${family}`;
   g.fillText(lines[0], 192, 58);
-  g.font = `700 22px ${family}`;
-  g.fillText("LEADER:", 192, 112);
-  g.font = `700 26px ${family}`;
+  g.font = `900 30px ${family}`;
+  g.fillText("LEADER: TYLER", 192, 108);
+  g.font = `700 21px ${family}`;
   // wrap the title onto up to three lines
   const words = lines[1].split(" ");
   const out: string[] = [];
@@ -70,7 +71,7 @@ function plaqueTexture(lines: string[]) {
     } else line = next;
   }
   out.push(line);
-  out.slice(0, 3).forEach((l, i) => g.fillText(l, 192, 148 + i * 32));
+  out.slice(0, 3).forEach((l, i) => g.fillText(l, 192, 150 + i * 28));
   const t = new CanvasTexture(c);
   t.colorSpace = SRGBColorSpace;
   t.anisotropy = 4;

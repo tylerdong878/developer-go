@@ -87,7 +87,7 @@ function signTexture() {
   g.font = `900 64px ${family}`;
   g.fillText("NORTHEASTERN", 256, 92);
   g.font = `700 38px ${family}`;
-  g.fillText("LAB", 256, 156);
+  g.fillText("RESEARCH LAB", 256, 156);
   const t = new CanvasTexture(c);
   t.colorSpace = SRGBColorSpace;
   t.anisotropy = 4;

@@ -2,7 +2,7 @@
 
 import { type ThreeEvent, useFrame } from "@react-three/fiber";
 import { useRef, useSyncExternalStore } from "react";
-import { CanvasTexture, type Group, type Sprite, SRGBColorSpace } from "three";
+import type { Group } from "three";
 import { stops } from "@/content";
 import { sfx } from "../../sound";
 import { boosted } from "../../species";
@@ -13,53 +13,27 @@ import { goTo } from "../../travel";
 import { goalId, isOut, LEAVE, moveWild, refreshWild, RUSTLE, wildStore, type WildSpawn } from "../../wild";
 import { slots } from "../../base";
 import { type Appearing, AppearFx, bodyScale } from "./appear";
-import { critterLift, critterSize, Critter } from "./Critter";
+import { critterSize, Critter } from "./Critter";
 
 /** When a wild one notices you, and how far it strays from where it appeared. */
 const NOTICE = 13;
 const ROAM = 4;
 const PACE = 1.3;
 
-/** The "!" a Pokémon gets when it spots you, drawn once and shared. */
-let alertMark: CanvasTexture | null = null;
-function alertTexture() {
-  if (alertMark) return alertMark;
-  const c = document.createElement("canvas");
-  c.width = c.height = 96;
-  const g = c.getContext("2d")!;
-  g.fillStyle = "#ffffff";
-  g.beginPath();
-  g.arc(48, 48, 42, 0, Math.PI * 2);
-  g.fill();
-  g.strokeStyle = "#e3350d";
-  g.lineWidth = 6;
-  g.stroke();
-  g.fillStyle = "#e3350d";
-  g.font = "900 64px sans-serif";
-  g.textAlign = "center";
-  g.textBaseline = "middle";
-  g.fillText("!", 48, 52);
-  alertMark = new CanvasTexture(c);
-  alertMark.colorSpace = SRGBColorSpace;
-  return alertMark;
-}
-
 /**
  * One wild Pokémon. Leaves rustle where it's about to appear and it pops out;
- * then it potters around near there, and when you come close it stops and a
- * "!" pops up over it, like the games. When its time's up it goes in a puff.
+ * then it potters around near there, and when you come close it stops and
+ * turns to you (no "!": in the games that's only trainers spotting you, and
+ * GO's wild ones get no mark). When its time's up it goes in a puff.
  */
 function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
   const root = useRef<Group>(null);
   const body = useRef<Group>(null);
   const fx = useRef<Appearing>({ age: -1, going: -1, size: 1, boost: false });
   const popped = useRef(false);
-  const mark = useRef<Sprite>(null);
   const home = useRef<[number, number]>([s.x, s.z]);
   const to = useRef<[number, number] | null>(null);
   const rest = useRef((s.id % 5) * 0.4);
-  const seen = useRef(false);
-  const pop = useRef(0);
 
   useFrame(({ clock }, frame) => {
     const g = root.current;
@@ -80,8 +54,6 @@ function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
     const out = isOut(s, now);
     const { position } = game.player.trainer;
     const near = out && Math.hypot(position.x - s.x, position.z - s.z) < NOTICE;
-    if (near && !seen.current) pop.current = 1.4;
-    seen.current = near;
     if (out && !near) {
       rest.current -= dt;
       if (rest.current <= 0 && !to.current) {
@@ -105,13 +77,6 @@ function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
       }
     }
     g.position.set(s.x, 0, s.z);
-    pop.current = Math.max(0, pop.current - dt);
-    if (mark.current) {
-      const k = pop.current > 0 ? Math.min(1, (1.4 - pop.current) * 8, pop.current * 4) : 0;
-      mark.current.visible = k > 0.01;
-      mark.current.scale.setScalar(0.9 * k);
-      mark.current.position.y = critterLift(s.species.dex) + critterSize(s.species.dex) + 0.5 + Math.sin(k * Math.PI) * 0.15;
-    }
   });
 
   return (
@@ -129,9 +94,6 @@ function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
         />
       </group>
       <AppearFx state={fx} />
-      <sprite ref={mark} visible={false} renderOrder={7}>
-        <spriteMaterial map={alertTexture()} transparent depthWrite={false} />
-      </sprite>
     </group>
   );
 }

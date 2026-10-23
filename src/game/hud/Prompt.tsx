@@ -19,6 +19,8 @@ function label(goal: string) {
   const o = bySlug.get(goal);
   if (!o) return null;
   const verb = o.kind === "spawn" ? "Catch" : o.kind === "stop" ? "Spin" : o.kind === "egg" ? "Check" : "Visit";
+  // Ditto's disguise holds until you catch it
+  if (o.kind === "spawn" && o.disguise) return { verb, name: o.disguise.name, icon: <WildIcon dex={o.disguise.dex} /> };
   return { verb, name: describe(o).name, icon: <ObjectIcon object={o} size={26} /> };
 }
 

@@ -1,6 +1,6 @@
 # developer-go
 
-My portfolio, built like Pokémon GO. Walk my trainer around a 3D home base: gyms are jobs, PokéStops are projects, raids are hackathons, and the sparkly Pokémon are facts about me.
+My portfolio, built like Pokémon GO. Walk my trainer around a 3D home base: gyms are jobs, PokéStops are projects, raids are hackathons, and the glowing Pokémon are facts about me.
 
 **Live:** https://developer-go.vercel.app, a plain [text version](https://developer-go.vercel.app/text), and my [resume](https://developer-go.vercel.app/resume)
 
@@ -8,7 +8,7 @@ My portfolio, built like Pokémon GO. Walk my trainer around a 3D home base: gym
 - **The base:** a small hand-built 3D neighborhood with some Boston in it. Every job's gym stands in front of its own building (an AWS tower in the Seaport, red brick for Khoury), with offices downtown, Northeastern as Professor Oak's lab on a hill, houses on the south side, a park with a pond, a harbor with a ferry and a crane, and courts. The sky follows the visitor's own sunrise and sunset, and Boston's real weather rains, snows or fogs on it.
 - **Playing:** WASD or the arrows walk, Shift runs; click or tap the ground to walk there. Walk up to anything and press E (or tap the prompt) to open it. Drag to spin the camera, scroll or pinch to zoom. The minimap in the corner opens a full map that takes you anywhere.
 - **Around town:** trainers walk the streets and point you at things, wild Pokémon wander and notice you, and Teddy follows you everywhere.
-- **Catching:** like GO, wild Pokémon trickle in around you once you start: leaves rustle, they pop out, and they leave when their time's up. The weather boosts types the way GO's does. The catch follows GO's real formula with each species' capture and flee rates, and you can throw curveballs while they attack and dodge. The 13 sparkly ones each hold a fact about me, and they wait hidden until you find them.
+- **Catching:** like GO, wild Pokémon trickle in around you once you start: leaves rustle, they pop out, and they leave when their time's up. The weather boosts types the way GO's does. The catch follows GO's real formula with each species' capture and flee rates, and you can throw curveballs while they attack and dodge. The 13 glowing ones each hold a fact about me, and they wait hidden until you find them.
 - **Game stuff:** every catch has a CP and lands on your Pokémon screen. Spin stops for Poké Balls and berries, earn XP and levels, fill in the Pokédex, earn medals, and kick balls around. Raids hatch into real GO raid bosses you can catch with Premier Balls, jobs earn gym badges by how long I was there, and Teddy earns buddy hearts as you walk together. Your progress stays in your browser.
 - **Community:** every visitor's catches, spins, and visits add up on the Community screen, with a live feed of what people just caught, the strongest catch, and the most-caught species.
 - **Reading:** walk up to anything to open its card. Highlights and Nearby list everything and dash you straight to it. Every job, project and hackathon has its own page (like `/w/aws`) to share, `/text` has it all on one plain page, and `/resume` is one printable page.

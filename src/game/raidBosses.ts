@@ -12,9 +12,9 @@ export const RAID_BOSS: Record<string, RaidBoss> = {
   "civic-tech-2025": { dex: 144, name: "Articuno", nod: "Team Mystic's legendary bird, for Pokémon GO with real animals", cp: [1665, 1743], hover: 0.5 },
   "hackillinois-2025": { dex: 113, name: "Chansey", nod: "it carries a nest egg, for a savings app", cp: [654, 717] },
   "sthacks-2025": { dex: 143, name: "Snorlax", nod: "the Sleeping Pokémon, for a project called ManImTired", cp: [1760, 1843] },
-  "hack-at-brown-2025": { dex: 74, name: "Geodude", nod: "basically a floating asteroid", cp: [688, 739], hover: 0.3 },
-  "hackbeanpot-2025": { dex: 1, name: "Bulbasaur", nod: "it's based on a frog, so it's the toad", cp: [590, 637] },
-  "hackharvard-2025": { dex: 4, name: "Charmander", nod: "a fireball on its tail", cp: [516, 560] },
+  "hack-at-brown-2025": { dex: 74, name: "Geodude", nod: "a boulder that floats in GO, basically a tiny asteroid", cp: [688, 739], hover: 0.3 },
+  "hackbeanpot-2025": { dex: 1, name: "Bulbasaur", nod: "it's based on a frog, which is close enough to a toad", cp: [590, 637] },
+  "hackharvard-2025": { dex: 4, name: "Charmander", nod: "the flame on its tail, for a fireball duel", cp: [516, 560] },
   "babson-buildathon-2026": { dex: 63, name: "Abra", nod: "it reads minds, for brain analytics", cp: [712, 767] },
 };
 

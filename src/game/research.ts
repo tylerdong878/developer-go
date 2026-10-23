@@ -6,7 +6,7 @@ import type { Items, Progress } from "./progress";
  * short line from Tyler and three tasks, with a reward to claim at the end
  * of every step. The tasks walk a visitor through the whole portfolio (his
  * jobs are gyms, his projects are stops, his hackathons are raids, the
- * sparkly Pokémon are facts about him), and the last step ends on his
+ * glowing Pokémon are facts about him), and the last step ends on his
  * trainer card: how to reach him. Progress comes from what the visitor has
  * already done; only the claimed steps are stored.
  */
@@ -56,9 +56,9 @@ export const STEPS: Step[] = [
   },
   {
     title: "Trainer Tyler",
-    story: "The sparkly ones know the rest: the games I play, the sports, the dog. Find a few and you know me.",
+    story: "The glowing ones know the rest: the games I play, the sports, the dog. Find a few and you know me.",
     tasks: [
-      { text: "Catch 3 sparkly Pokémon", need: 3, count: (p) => Object.keys(p.caught).filter((d) => factDex.has(Number(d))).length },
+      { text: "Catch 3 glowing Pokémon", need: 3, count: (p) => Object.keys(p.caught).filter((d) => factDex.has(Number(d))).length },
       { text: "Catch 10 Pokémon", need: 10, count: caughtTotal },
       { text: "Spin 6 PokéStops", need: 6, count: (p) => p.spun.filter((s) => stopSlugs.has(s)).length },
     ],

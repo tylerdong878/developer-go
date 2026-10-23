@@ -93,6 +93,8 @@ export type Spawn = {
   body: string;
   /** Snorlax: waking it opens the About card. */
   opensAbout?: boolean;
+  /** What it looks like until it's caught (Ditto, disguised as an everyday Pokémon like in GO). */
+  disguise?: { name: string; dex: number };
   where: LatLon;
 };
 

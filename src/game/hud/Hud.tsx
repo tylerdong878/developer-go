@@ -146,7 +146,15 @@ export function Hud() {
         return;
       }
       if (o?.kind === "spawn")
-        return setFoe({ dex: o.pokemon.dex, name: o.pokemon.name, rare: true, cp: cpFor(o.pokemon.dex, true, Math.random()), goal, shiny: rollShiny(o.pokemon.dex) });
+        return setFoe({
+          dex: o.pokemon.dex,
+          name: o.pokemon.name,
+          rare: true,
+          cp: cpFor(o.pokemon.dex, true, Math.random()),
+          goal,
+          shiny: rollShiny(o.pokemon.dex),
+          disguise: o.disguise,
+        });
       setCard(goal);
       sfx.open();
       if (o && !progressStore.get().visited.includes(goal)) {
