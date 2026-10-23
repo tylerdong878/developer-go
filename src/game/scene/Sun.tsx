@@ -33,6 +33,15 @@ const ahead = new Vector3();
 const want = new Color();
 /** The catcher's material, eased toward the time of day like the light. */
 const catcher = { color: new Color(), opacity: 0, first: true };
+/**
+ * The shadow map used to redraw every frame, a third of all draws
+ * (notes/research/perf.md, fix 2). Now it redraws when the shadow box moves
+ * (he walked a texel or the camera turned) or the sun does, and otherwise
+ * about 15 times a second, so the things that move on their own (walkers,
+ * spinning gym fins, boats on the swell) keep their shadows.
+ */
+const IDLE_REDRAW = 1 / 15;
+const shadowed = { center: new Vector3(Infinity, 0, 0), dir: new Vector3(), since: Infinity };
 
 /**
  * The sun, casting real shadows. Its shadow box follows what the camera sees,
@@ -42,9 +51,10 @@ const catcher = { color: new Color(), opacity: 0, first: true };
 export function Sun({ color, intensity, shadow, mapSize }: { color: string; intensity: number; shadow: { color: string; opacity: number }; mapSize: number }) {
   const light = useRef<DirectionalLight>(null);
   const target = useMemo(() => new Object3D(), []);
-  useFrame(({ camera }, dt) => {
+  useFrame(({ camera, gl }, dt) => {
     const l = light.current;
     if (!l) return;
+    gl.shadowMap.autoUpdate = false;
     // ease toward the time of day, so day and night glide
     const k = catcher.first ? 1 : 1 - Math.exp(-2.4 * dt);
     catcher.first = false;
@@ -66,6 +76,15 @@ export function Sun({ color, intensity, shadow, mapSize }: { color: string; inte
     l.position.copy(center).addScaledVector(DIR, 80);
     target.position.copy(center);
     target.updateMatrixWorld();
+    // redraw the shadow map only when something calls for it
+    const s = shadowed;
+    s.since += dt;
+    if (s.center.distanceToSquared(center) > 1e-8 || s.dir.distanceToSquared(DIR) > 1e-8 || s.since >= IDLE_REDRAW) {
+      s.center.copy(center);
+      s.dir.copy(DIR);
+      s.since = 0;
+      gl.shadowMap.needsUpdate = true;
+    }
   });
   return (
     <>
