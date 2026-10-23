@@ -15,7 +15,7 @@ import { Teddy3D } from "./scene/Teddy3D";
 import { Trainer3D } from "./scene/Trainer3D";
 import { Dust } from "./scene/Dust";
 import { Npcs } from "./scene/Npcs";
-import { AdaptiveDpr, WarmUp } from "./scene/Perf";
+import { AdaptiveDpr, Throttle, WarmUp } from "./scene/Perf";
 import { CastShadows } from "./scene/Sun";
 import { patchLook } from "./scene/look";
 import { World } from "./scene/World";
@@ -54,6 +54,7 @@ export default function Game() {
           camera={{ fov: 56, near: 0.3, far: 2500, position: [0, 6.5, 17] }}
         >
           <WarmUp />
+          <Throttle />
           <AdaptiveDpr range={budget.dpr} />
           <Controller />
           <World phase={phase} shadowMap={budget.shadowMap} light={budget.light} />

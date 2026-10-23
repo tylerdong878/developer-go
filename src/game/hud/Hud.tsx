@@ -33,6 +33,7 @@ import { PokemonPanel } from "./Storage";
 import { CommunityPanel } from "./Community";
 import { BagPanel, BuddyPanel, HighlightsPanel, PokedexPanel, ProfilePanel, TeddyFace, TrainerPanel } from "./Panels";
 import { clearScreenRequest, screenRequest } from "./request";
+import { setCover } from "../renderMode";
 
 /** Swings the camera round to put a map object ahead of the trainer. */
 function face(slug: string) {
@@ -170,9 +171,14 @@ export function Hud() {
     };
   }, []);
 
-  // The keys don't walk the trainer around behind an open screen.
+  // The keys don't walk the trainer around behind an open screen, and the map
+  // works less behind it: not at all behind the catch screen or a phone's
+  // full-screen sheet, slower behind a side sheet on a bigger screen.
   useEffect(() => {
-    game.input.paused = card !== null || screen !== null || menu || nearby || foe !== null || buddy;
+    const open = card !== null || screen !== null || menu || nearby || buddy;
+    game.input.paused = open || foe !== null;
+    const phone = window.matchMedia("(max-width: 639px)").matches;
+    setCover(foe !== null ? "encounter" : open ? (phone ? "full" : "side") : "none");
   }, [card, screen, menu, nearby, foe, buddy]);
 
   // Opening a card frames its object: the camera swings around to put it
