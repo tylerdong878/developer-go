@@ -372,7 +372,7 @@ function scaleRecipe(r, s) {
 const C = {
   skin: "#f2c39c", hair: "#4b4d4f", top: "#bedeee", sleeve: "#bedeee", bottom: "#3e4652", shoe: "#2c2c2c", sole: "#1e1e1e",
 };
-const APRON = "#3892d2", STRAP = "#3892d2", GLASSES = "#2a2a2a", COLLAR = "#d6ebf5";
+const APRON = "#ee6a32", STRAP = "#3892d2", GLASSES = "#2a2a2a", COLLAR = "#d6ebf5";
 
 export default person({
   name: "Poké Mart clerk",

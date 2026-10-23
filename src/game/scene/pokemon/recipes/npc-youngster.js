@@ -397,7 +397,8 @@ export default person({
   extra: (L) => {
     const H = L.H, c = L.head.cranium;
     const capBase = c.at[1] + 0.14 * H;
-    const capTurn = [-0.12, 0, 0];
+    // Let's Go's Youngster wears it backward: the cap rides up a little at the front
+    const capTurn = [0.08, 0, 0];
     return {
       pieces: [
         // spiky tufts sticking out under the cap at the back and sides
@@ -407,7 +408,7 @@ export default person({
         // the cap: a dome over the crown and a brim out the front, tipped down a touch (hard unions: a blend this close
         // to the carved hair would pick up its color)
         { name: "cap", kind: "lathe", profile: [[0, 0.58 * H], [0.3 * H, 0.55 * H], [0.49 * H, 0.38 * H], [0.585 * H, 0.12 * H], [0.6 * H, 0], [0, 0]], at: [0, capBase, c.at[2] - 0.1 * H], turn: capTurn, color: CAP, bone: "head" },
-        { name: "brim", kind: "slab", outline: [[-0.42 * H, 0], [-0.4 * H, 0.22 * H], [-0.24 * H, 0.42 * H], [0, 0.48 * H], [0.24 * H, 0.42 * H], [0.4 * H, 0.22 * H], [0.42 * H, 0]], smooth: true, depth: 0.11 * H, round: 0.05 * H, at: [0, capBase + 0.06 * H, c.at[2] + 0.22 * H], turn: [Math.PI / 2 - 0.2, 0, 0], color: BRIM, bone: "head" },
+        { name: "brim", kind: "slab", outline: [[-0.42 * H, 0], [-0.4 * H, 0.22 * H], [-0.24 * H, 0.42 * H], [0, 0.48 * H], [0.24 * H, 0.42 * H], [0.4 * H, 0.22 * H], [0.42 * H, 0]], smooth: true, depth: 0.11 * H, round: 0.05 * H, at: [0, capBase + 0.06 * H, c.at[2] - 0.42 * H], turn: [-(Math.PI / 2 + 0.15), 0, 0], color: BRIM, bone: "head" },
       ],
       spots: [
         // the little yellow print on the tee

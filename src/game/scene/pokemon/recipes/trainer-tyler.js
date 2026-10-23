@@ -20,7 +20,7 @@ const BAG = true; // a small backpack like GO's avatars wear (navy straps over t
 
 const C = {
   skin: "#f2cfb0", neck: "#e8bf9c",
-  hair: "#2c2830", hairTop: "#46434f", hairHi: "#7d819b", part: "#18151a",
+  hair: "#2c2830", hairTop: "#46434f", short: "#3a3943", hairHi: "#7d819b", part: "#18151a",
   jacket: "#0b84d6", sleeve: "#0a7cca", rib: "#0a4f8c", lining: "#e6f6ff", zip: "#c4e8fb", cord: "#f2fbff", pocket: "#0a5f9f",
   tee: "#1e2227", pantsL: "#2b323d", pantsR: "#343c48",
   shoe: "#f7f7f5", sole: "#e1e5ea", gum: "#4a505a", lace: "#aab5c2",
@@ -246,6 +246,9 @@ function tyler(o) {
     paint.push({ name: "sideHair", color: C.hair, shape: prof([[zf, hi], ...L, [back, L[L.length - 1][1]], [back, hi]]), bones: ["head"] });
     paint.push({ name: "faceSkin", color: C.skin, shape: { kind: "sphere", at: jaw.at, r: jaw.r + 0.012 * H }, bones: ["head"] });
     paint.push({ name: "sideSkin", color: C.skin, shape: prof([...L, [back, L[L.length - 1][1]], [back, lo], [zf, lo]]), bones: ["head"] });
+    // his short sides are short hair, not skin: a band of a shade lighter than his hair under the hairline, from in
+    // front of the ear round to the nape, so from the side and back his head reads as one dark shape (not shaved)
+    paint.push({ name: "shortSides", color: C.short, shape: prof([...L, ...[...L].reverse().map(([z, y]) => [z, y - 0.13 * H])]), bones: ["head"] });
     paint.push({ name: "earSkin", color: C.skin, shape: { kind: "ellipsoid", at: [0.42 * H, chin + 0.42 * H, -0.03 * H], r: [0.08 * H, 0.115 * H, 0.1 * H], turn: [0, 0.15, 0] }, bones: ["head"], mirror: true });
     paint.push({ name: "handSkin", color: C.skin, shape: { kind: "box", at: [0, 0.5, 0], size: [2, 1, 1] }, bones: ["handL", "handR"] });
   }

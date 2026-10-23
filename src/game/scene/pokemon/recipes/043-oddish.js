@@ -5,7 +5,7 @@
 
 const BLUE = "#5f9fc8";
 const FEET = "#4f86ad";
-const LEAF = "#4fb33c";
+const LEAF = "#45a83a";
 const TIP = "#a8e878";
 const RIB = "#2f7a2a";
 const IRIS = "#f06a78";
@@ -52,9 +52,9 @@ const ribOutline = (L) => [[-0.008, -0.02], [0.008, -0.02], [0.003, L * 0.9], [-
 const BASE = [0, 0.425, -0.03];
 // th: lean off vertical, ph: azimuth from straight back toward +x, tw: twist about the blade axis
 const LEAVES = [
-  { name: "leafMid", th: 20 * D, ph: 0, tw: 0, L: 0.6, W: 0.1 },
-  { name: "leafInL", th: 40 * D, ph: 58 * D, tw: 0, L: 0.58, W: 0.105 },
-  { name: "leafOutL", th: 66 * D, ph: 76 * D, tw: 0, L: 0.54, W: 0.1 },
+  { name: "leafMid", th: 20 * D, ph: 0, tw: 0, L: 0.6, W: 0.15 },
+  { name: "leafInL", th: 40 * D, ph: 58 * D, tw: 0, L: 0.58, W: 0.15 },
+  { name: "leafOutL", th: 66 * D, ph: 76 * D, tw: 0, L: 0.54, W: 0.14 },
 ];
 const turnOf = (l) => aim(dir(l.th, l.ph), l.tw);
 const atOf = (l) => place(BASE, turnOf(l), [0, -0.02, 0]);
@@ -89,10 +89,6 @@ const recipe = {
     { name: "floor", kind: "half", at: [0, 0, 0], dir: [0, -1, 0], carve: true },
   ],
   paint: [
-    ...LEAVES.map((l) => ({
-      name: `${l.name}Tip`, color: TIP, shape: { kind: "slab", outline: tipOutline(l.L, l.W), depth: 0.2, at: atOf(l), turn: turnOf(l) },
-      bones: [l.name], mirror: l.ph !== 0,
-    })),
     ...LEAVES.map((l) => ({
       name: `${l.name}Rib`, color: RIB, shape: { kind: "slab", outline: ribOutline(l.L), depth: 0.2, at: atOf(l), turn: turnOf(l) },
       bones: [l.name], mirror: l.ph !== 0,
