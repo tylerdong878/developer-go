@@ -125,6 +125,34 @@ export const landmarks: Landmark[] = [
 ];
 
 /**
+ * Every road segment, filed in a grid of cells by the cells it passes near,
+ * so a "how close is the nearest road" test only looks at the few segments
+ * around a spot. Placing the trees, flowers and buildings asks this thousands
+ * of times while the page loads (notes/research/perf.md: it was 2.4 s).
+ */
+type Segment = { ax: number; az: number; dx: number; dz: number; len2: number; half: number };
+const CELL = 12;
+/** The widest a margin gets plus the widest road's half, so a query never needs more than the cells next door. */
+const REACH = 6 + Math.max(...roads.map((r) => r.width / 2));
+const grid = new Map<string, Segment[]>();
+const cellOf = (v: number) => Math.floor(v / CELL);
+for (const r of roads) {
+  const n = r.loop ? r.points.length : r.points.length - 1;
+  for (let i = 0; i < n; i++) {
+    const a = r.points[i];
+    const b = r.points[(i + 1) % r.points.length];
+    const seg: Segment = { ax: a[0], az: a[1], dx: b[0] - a[0], dz: b[1] - a[1], len2: (b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2, half: r.width / 2 };
+    for (let cx = cellOf(Math.min(a[0], b[0]) - REACH); cx <= cellOf(Math.max(a[0], b[0]) + REACH); cx++)
+      for (let cz = cellOf(Math.min(a[1], b[1]) - REACH); cz <= cellOf(Math.max(a[1], b[1]) + REACH); cz++) {
+        const key = `${cx},${cz}`;
+        const list = grid.get(key);
+        if (list) list.push(seg);
+        else grid.set(key, [seg]);
+      }
+  }
+}
+
+/**
  * A spot for every gym, stop, raid, Pokémon, and egg, keyed by slug.
  * Featured things sit close to home or on the way to the harbor.
  */
@@ -193,7 +221,7 @@ export const trees: Vec2[] = (() => {
   const clear = (p: Vec2, gap: number) =>
     !areas.some((a) => (a.kind === "water" || a.kind === "grass") && pointInPolygon(p, a.points)) &&
     !Object.values(slots).some(([x, z]) => Math.hypot(p[0] - x, p[1] - z) < gap) &&
-    !roads.some((r) => nearLine(p, r.points, r.loop, r.width / 2 + 3.2));
+    clearOfRoads(p, 3.2);
   for (let i = 0; out.length < 48 && i < 4000; i++) {
     const p: Vec2 = [-156 + rand() * 116, -52 + rand() * 82];
     if (pointInPolygon(p, park) && clear(p, 7) && out.every((q) => Math.hypot(p[0] - q[0], p[1] - q[1]) > 7.5)) {
@@ -250,20 +278,28 @@ export const places: Record<string, Vec2> = {
 
 /** Is this spot at least `margin` from every road's edge? */
 export function clearOfRoads(p: Vec2, margin: number) {
-  return !roads.some((r) => nearLine(p, r.points, r.loop, r.width / 2 + margin));
+  const near = grid.get(`${cellOf(p[0])},${cellOf(p[1])}`);
+  if (!near) return true;
+  if (margin > 6) return clearOfRoadsSlow(p, margin);
+  for (const s of near) {
+    const t = s.len2 ? Math.max(0, Math.min(1, ((p[0] - s.ax) * s.dx + (p[1] - s.az) * s.dz) / s.len2)) : 0;
+    const ex = p[0] - (s.ax + t * s.dx);
+    const ez = p[1] - (s.az + t * s.dz);
+    const d = s.half + margin;
+    if (ex * ex + ez * ez < d * d) return false;
+  }
+  return true;
 }
 
-function nearLine(p: Vec2, points: readonly Vec2[], loop: boolean | undefined, d: number) {
-  const n = loop ? points.length : points.length - 1;
-  for (let i = 0; i < n; i++) {
-    const a = points[i];
-    const b = points[(i + 1) % points.length];
-    const dx = b[0] - a[0];
-    const dz = b[1] - a[1];
-    const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dz) / (dx * dx + dz * dz)));
-    if (Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dz)) < d) return true;
-  }
-  return false;
+/** The plain way, for a margin wider than the grid was built for. */
+function clearOfRoadsSlow(p: Vec2, margin: number) {
+  for (const segs of grid.values())
+    for (const s of segs) {
+      const t = s.len2 ? Math.max(0, Math.min(1, ((p[0] - s.ax) * s.dx + (p[1] - s.az) * s.dz) / s.len2)) : 0;
+      const d = s.half + margin;
+      if ((p[0] - (s.ax + t * s.dx)) ** 2 + (p[1] - (s.az + t * s.dz)) ** 2 < d * d) return false;
+    }
+  return true;
 }
 
 /** Inside the base and not in the water (the pier is fine). */

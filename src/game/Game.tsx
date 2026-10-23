@@ -52,6 +52,10 @@ export default function Game() {
           shadows="percentage"
           dpr={budget.dpr}
           camera={{ fov: 56, near: 0.3, far: 2500, position: [0, 6.5, 17] }}
+          onCreated={({ gl }) => {
+            // checking each shader's log waits for it to finish compiling, which blocks the page as it loads (notes/research/perf.md)
+            if (process.env.NODE_ENV === "production") gl.debug.checkShaderErrors = false;
+          }}
         >
           <WarmUp />
           <Throttle />
