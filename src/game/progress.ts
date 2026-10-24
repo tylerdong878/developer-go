@@ -1,5 +1,6 @@
 "use client";
 
+import { type FieldEvent, type FieldTask, progressWith, receive } from "./field";
 import { sfx } from "./sound";
 
 /**
@@ -29,6 +30,8 @@ export type Progress = {
   hatched: string[];
   bonus: Record<string, boolean>;
   bond: Bond;
+  /** Field Research held right now (three at most). */
+  field: FieldTask[];
   xp: number;
   items: Items;
 };
@@ -37,7 +40,7 @@ export type Progress = {
 export const STARTER_ITEMS: Items = { ball: 20, great: 0, razz: 2 };
 
 const KEY = "developer-go:progress";
-const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: NO_BOND, xp: 0, items: STARTER_ITEMS };
+const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: NO_BOND, field: [], xp: 0, items: STARTER_ITEMS };
 
 function load(): Progress {
   try {
@@ -103,6 +106,28 @@ export function recordHatch(slug: string) {
 export function recordBonus(slug: string, caught: boolean) {
   const p = current();
   if (!(slug in p.bonus)) save({ ...p, bonus: { ...p.bonus, [slug]: caught } });
+}
+
+/** A stop was spun: its Field Research task, if there's room. Returns the new task, if one was added. */
+export function receiveField(stop: string) {
+  const p = current();
+  const next = receive(p.field, stop);
+  if (!next) return null;
+  save({ ...p, field: next });
+  return next[next.length - 1];
+}
+
+/** Count something toward the Field Research you hold. */
+export function fieldEvent(e: FieldEvent) {
+  const p = current();
+  const next = progressWith(p.field, e);
+  if (next.some((t, i) => t.have !== p.field[i].have)) save({ ...p, field: next });
+}
+
+/** A finished task's reward is claimed. */
+export function claimField(stop: string, day: string) {
+  const p = current();
+  save({ ...p, field: p.field.map((t) => (t.stop === stop && t.day === day ? { ...t, claimed: true } : t)) });
 }
 
 export function saveBond(bond: Bond) {

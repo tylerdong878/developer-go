@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useSyncExternalStore } from "react";
-import { trainer } from "@/content";
-import { addItems, gainXp, progressStore } from "../progress";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { stops, trainer } from "@/content";
+import type { FieldTask } from "../field";
+import { addItems, claimField, gainXp, progressStore } from "../progress";
+import { nameOf } from "../spawnPoints";
+import { ItemIcon } from "./icons";
 import { claimStep, researchState, researchStore, STEPS } from "../research";
 import { sfx } from "../sound";
 import { Sheet } from "./Sheet";
@@ -62,9 +65,85 @@ export function ResearchButton({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-export function ResearchPanel({ onClose }: { onClose: () => void }) {
+/** GO's research tabs. */
+type Tab = "field" | "special";
+
+/** One Field Research task, like GO's: what to do, a progress bar, the reward, and Claim once it's done. */
+function FieldCard({ t, onEncounter }: { t: FieldTask; onEncounter: (dex: number, key: string) => void }) {
+  const done = t.have >= t.need;
+  const from = stops.find((s) => s.slug === t.stop)?.name ?? t.stop;
+  const claim = () => {
+    sfx.open();
+    const r = t.reward;
+    // an encounter stays claimable until it's caught: run from it and it waits, like GO's
+    if ("encounter" in r) return onEncounter(r.encounter, `${t.stop}|${t.day}`);
+    claimField(t.stop, t.day);
+    if ("xp" in r) gainXp(r.xp, "field research");
+    else {
+      addItems(r.items);
+      gainXp(100, "field research");
+    }
+  };
+  const r = t.reward;
+  return (
+    <li className={`rounded-2xl px-3.5 py-3 ${done ? "bg-[#e9f8ee]" : "bg-ink/5"}`}>
+      <div className="flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-[15px] font-semibold">{t.text}</p>
+          <p className="truncate text-xs text-ink-soft">From {from}</p>
+        </div>
+        {/* the reward, like GO's: an encounter shows the Pokémon */}
+        <span className="grid size-11 shrink-0 place-items-center rounded-full bg-surface" title={"encounter" in r ? `${nameOf(r.encounter)} encounter` : "Items"}>
+          {"encounter" in r ? (
+            // eslint-disable-next-line @next/next/no-img-element -- tiny local portrait
+            <img src={`/portraits/${r.encounter}.webp`} alt={`${nameOf(r.encounter)} encounter`} width={36} height={36} className="size-9 object-contain" />
+          ) : "items" in r && r.items.great ? (
+            <ItemIcon id="great" size={26} />
+          ) : (
+            <ItemIcon id="ball" size={26} />
+          )}
+        </span>
+      </div>
+      <div className="mt-2 flex items-center gap-2">
+        <span className="h-2 flex-1 overflow-hidden rounded-full bg-ink/10">
+          <span className="block h-full rounded-full bg-gradient-to-r from-[#f7b03e] to-[#f08a3c]" style={{ width: `${(Math.min(t.have, t.need) / t.need) * 100}%` }} />
+        </span>
+        <span className="text-xs font-bold tabular-nums text-ink-soft">
+          {Math.min(t.have, t.need)}/{t.need}
+        </span>
+        {done ? (
+          <button type="button" onClick={claim} className="go-pill rounded-full px-4 py-1 text-xs font-bold text-white">
+            Claim
+          </button>
+        ) : null}
+      </div>
+    </li>
+  );
+}
+
+function FieldTab({ onEncounter }: { onEncounter: (dex: number, key: string) => void }) {
+  const { field } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const open = field.filter((t) => !t.claimed);
+  return (
+    <div>
+      {open.length ? (
+        <ul className="space-y-2.5">
+          {open.map((t) => (
+            <FieldCard key={`${t.stop}:${t.day}`} t={t} onEncounter={onEncounter} />
+          ))}
+        </ul>
+      ) : (
+        <p className="rounded-2xl bg-ink/5 px-4 py-6 text-center text-sm text-ink-soft">Spin a PokéStop to get its Field Research task. You can hold three.</p>
+      )}
+      <p className="mt-3 text-xs text-ink-soft">Like GO: each stop gives one task a day, the same one for everyone. Some rewards are encounters with Pokémon you can&apos;t find in the wild.</p>
+    </div>
+  );
+}
+
+export function ResearchPanel({ onClose, onEncounter }: { onClose: () => void; onEncounter: (dex: number, key: string) => void }) {
   const r = useResearch();
   const step = STEPS[r.step];
+  const [tab, setTab] = useState<Tab>("field");
   const claim = () => {
     if (!step || !r.claimable) return;
     sfx.open();
@@ -73,7 +152,28 @@ export function ResearchPanel({ onClose }: { onClose: () => void }) {
     claimStep();
   };
   return (
-    <Sheet title="Research" subtitle="Special Research" onClose={onClose}>
+    <Sheet title="Research" onClose={onClose}>
+      <div role="tablist" aria-label="Research" className="mb-4 flex justify-center gap-1">
+        {(
+          [
+            ["field", "Field"],
+            ["special", "Special"],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={tab === id}
+            onClick={() => setTab(id)}
+            className={`go-title border-b-2 px-4 py-1.5 text-xs transition ${tab === id ? "border-ink text-ink" : "border-transparent text-ink-soft hover:text-ink"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {tab === "field" ? <FieldTab onEncounter={onEncounter} /> : null}
+      {tab === "special" ? (
       <div className="rounded-3xl bg-surface p-4 shadow-[0_2px_10px_rgba(48,85,93,0.12)]">
         <p className="text-xs font-bold tracking-[0.14em] text-[#e8913a] uppercase">Tyler&apos;s Journey</p>
         <p className="mt-0.5 text-sm font-semibold text-ink-soft">
@@ -127,7 +227,8 @@ export function ResearchPanel({ onClose }: { onClose: () => void }) {
           <TrainerCard />
         )}
       </div>
-      {step ? (
+      ) : null}
+      {tab === "special" && step ? (
         <p className="mt-4 text-sm text-ink-soft">
           Want it all at once? The <a href="/text" className="font-semibold text-[#24828b] underline">plain version</a> has everything on one page.
         </p>

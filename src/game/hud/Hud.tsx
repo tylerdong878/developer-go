@@ -6,7 +6,7 @@ import { bySlug } from "../objects";
 import { slots } from "../base";
 import { game, ZOOM } from "../state";
 import { goTo } from "../travel";
-import { gainXp, progressStore, recordBonus, recordCatch, recordHatch, recordVisit } from "../progress";
+import { claimField, fieldEvent, gainXp, progressStore, recordBonus, recordCatch, recordHatch, recordVisit } from "../progress";
 import { BONUS_RATE, bossCp, HATCH_MS, premierBalls, RAID_BOSS } from "../raidBosses";
 import { played } from "../bond";
 import { buddyStore } from "../buddy";
@@ -15,7 +15,8 @@ import { catchRewards, cpFor, FLED_XP } from "../cp";
 import { sfx } from "../sound";
 import { earned, visitorMedals } from "../visitorMedals";
 import { endWild, findWild, holdWild } from "../wild";
-import { hash } from "../spawnPoints";
+import { hash, nameOf } from "../spawnPoints";
+import { allObjects } from "@/content";
 import { BOOST_CP, boosted } from "../species";
 import { RAID_SHINY_ODDS, rollShiny } from "../shiny";
 import { weatherStore } from "../weather";
@@ -240,6 +241,12 @@ export function Hud() {
   const closeFact = useCallback(() => setFact(null), []);
   const factSpawn = fact ? bySlug.get(fact) : undefined;
   const closeScreen = useCallback(() => setScreen(null), []);
+  // a research reward encounter: it never flees, like GO's
+  const researchEncounter = useCallback((dex: number, key: string) => {
+    setScreen(null);
+    const fact = allObjects.find((o) => o.kind === "spawn" && o.pokemon.dex === dex);
+    setFoe({ dex, name: nameOf(dex), rare: true, fact: fact?.slug, cp: cpFor(dex, false, Math.random()), goal: `research:${key}`, shiny: rollShiny(dex) });
+  }, []);
   const pickTab = useCallback((tab: "tyler" | "you") => setScreen(tab === "tyler" ? "about" : "profile"), []);
   // a highlight: close the list and dash there, and its card opens on arrival
   const goHighlight = useCallback((slug: string) => {
@@ -282,6 +289,7 @@ export function Hud() {
     if (caught) {
       const rewards = catchRewards(!!foe.fact && !progressStore.get().caught[foe.dex], best, !progressStore.get().caught[foe.dex], firstThrow, curve);
       recordCatch({ dex: foe.dex, name: foe.name, cp: foe.cp, throw: best, shiny: foe.shiny });
+      fieldEvent({ kind: "catch", dex: foe.dex, throw: best, curve, boosted: !!foe.boost });
       count("catches", { dex: foe.dex, cp: foe.cp });
       gainXp(
         rewards.reduce((sum, [, xp]) => sum + xp, 0),
@@ -295,6 +303,11 @@ export function Hud() {
     }
     // a caught fact Pokémon drops its fact in as a toast
     if (caught && foe.fact) setFact(foe.fact);
+    // a research encounter is done once it's caught
+    if (caught && foe.goal.startsWith("research:")) {
+      const [stop, day] = foe.goal.slice(9).split("|");
+      claimField(stop, day);
+    }
   };
 
   if (!started) return null;
@@ -358,7 +371,7 @@ export function Hud() {
         {screen === "profile" ? <ProfilePanel onClose={closeScreen} onTab={pickTab} /> : null}
         {screen === "about" ? <TrainerPanel onClose={closeScreen} onTab={pickTab} /> : null}
         {screen === "highlights" ? <HighlightsPanel onClose={closeScreen} onGo={goHighlight} /> : null}
-        {screen === "research" ? <ResearchPanel onClose={closeScreen} /> : null}
+        {screen === "research" ? <ResearchPanel onClose={closeScreen} onEncounter={researchEncounter} /> : null}
         {screen === "pokedex" ? (
           <PokedexPanel
             onClose={closeScreen}
