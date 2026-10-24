@@ -21,11 +21,8 @@ export type { SkillId, SkillKind } from "./skills";
 export { trainer } from "./trainer";
 export type * from "./types";
 
-/** Everything that lives on the map. */
-export const mapObjects: MapObject[] = [
-  ...gyms,
-  ...stops,
-  ...raids,
-  ...spawns,
-  ...eggs,
-];
+/** Everything that stands at a fixed spot on the map. (The fact Pokémon spawn at random, like any wild Pokémon.) */
+export const mapObjects: MapObject[] = [...gyms, ...stops, ...raids, ...eggs];
+
+/** Everything with a card: the map's objects and the fact Pokémon (whose cards open from the Pokédex). */
+export const allObjects: MapObject[] = [...mapObjects, ...spawns];

@@ -84,7 +84,7 @@ export const signposts: Signpost[] = [
   { kind: "route", at: [-22, -4.4], turn: Math.PI / 2, title: "ROUTE 3", text: "HOME - PARK" },
   { kind: "route", at: [-4.4, 20], turn: Math.PI, title: "ROUTE 4", text: "HOME - CAMPUS" },
   { kind: "tips", at: [6.5, 7.5], turn: 0, title: "TRAINER TIPS", text: "Walk up to anything and press E, or tap the prompt, to open it." },
-  { kind: "tips", at: [-44.5, 4.5], turn: Math.PI / 2, title: "TRAINER TIPS", text: "Glowing Pokémon know facts about Tyler. Catch one to find out!" },
+  { kind: "tips", at: [-44.5, 4.5], turn: Math.PI / 2, title: "TRAINER TIPS", text: "Some wild Pokémon know facts about Tyler: Snorlax, Eevee, Voltorb... Catch them to find out!" },
   { kind: "tips", at: [44.5, -4.5], turn: -Math.PI / 2, title: "TRAINER TIPS", text: "PokéStops are Tyler's projects. Spin one for items!" },
 ];
 

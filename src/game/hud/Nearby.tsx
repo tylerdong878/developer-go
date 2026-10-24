@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { eggs, gyms, type MapObject, media, raids, spawns, stops } from "@/content";
+import { eggs, gyms, type MapObject, media, raids, stops } from "@/content";
 import { slots, START } from "../base";
 import { describe } from "../objects";
 import { game } from "../state";
 import { goTo } from "../travel";
-import { foundStore } from "../discovered";
 import { goalId, isOut, wildStore } from "../wild";
 import { ObjectIcon } from "./icons";
 
@@ -14,7 +13,7 @@ const TABS = [
   { id: "gym", label: "Gyms", hint: "Jobs", items: gyms },
   { id: "stop", label: "PokéStops", hint: "Projects", items: stops },
   { id: "raid", label: "Raids", hint: "Hackathons", items: raids },
-  { id: "spawn", label: "Wild", hint: "Fun facts", items: spawns },
+  { id: "spawn", label: "Wild", hint: "Pokémon near you", items: [] },
   { id: "egg", label: "Eggs", hint: "In progress", items: eggs },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
@@ -70,14 +69,13 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
   const current = TABS.find((t) => t.id === tab)!;
   const wildNow = useSyncExternalStore(wildStore.subscribe, wildStore.get, () => noWild);
   // only the ones out on the map: not still rustling, not on their way off, and not lured (GO leaves those out too)
-  const wildOut = wildNow.filter((w) => isOut(w) && !w.lured);
+  // like GO's Nearby: what's out near you, not lured ones or your Daily Encounter
+  const wildOut = wildNow.filter((w) => isOut(w) && !w.lured && !w.daily);
   const wildList = [...wildOut].sort(
     (a, b) => Math.hypot(a.x - spot[0], a.z - spot[1]) - Math.hypot(b.x - spot[0], b.z - spot[1]),
   );
-  const found = useSyncExternalStore(foundStore.subscribe, foundStore.get, foundStore.server);
-  const hidden = (o: MapObject) => o.kind === "spawn" && !found.has(o.slug);
   // like GO, the ones you haven't found yet come first
-  const list = [...current.items].sort((a, b) => Number(hidden(b)) - Number(hidden(a)) || distanceFrom(spot, a) - distanceFrom(spot, b));
+  const list = [...current.items].sort((a, b) => distanceFrom(spot, a) - distanceFrom(spot, b));
 
   const pick = (slug: string) => {
     setOpen(false);
@@ -164,11 +162,10 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
                     </button>
                   </li>
                 ))}
-                <li className="px-2 pt-3 pb-1 text-xs font-bold tracking-wide text-ink-soft uppercase">✦ Facts about me</li>
               </>
             ) : null}
             {list.map((o) => {
-              const { name, subtitle } = hidden(o) ? { name: "???", subtitle: "Somewhere nearby. Go find it!" } : describe(o);
+              const { name, subtitle } = describe(o);
               return (
                 <li key={o.slug}>
                   <button

@@ -14,7 +14,8 @@ import { count } from "../community";
 import { catchRewards, cpFor, FLED_XP } from "../cp";
 import { sfx } from "../sound";
 import { earned, visitorMedals } from "../visitorMedals";
-import { findWild, holdWild, removeWild } from "../wild";
+import { endWild, findWild, holdWild } from "../wild";
+import { hash } from "../spawnPoints";
 import { BOOST_CP, boosted } from "../species";
 import { RAID_SHINY_ODDS, rollShiny } from "../shiny";
 import { weatherStore } from "../weather";
@@ -34,6 +35,20 @@ import { CommunityPanel } from "./Community";
 import { BagPanel, BuddyPanel, HighlightsPanel, PokedexPanel, ProfilePanel, TeddyFace, TrainerPanel } from "./Panels";
 import { clearScreenRequest, screenRequest } from "./request";
 import { setCover } from "../renderMode";
+
+/** A random id for this browser, so a shiny is yours alone but stays shiny if you come back to it. */
+function visitor() {
+  try {
+    let id = localStorage.getItem("developer-go:visitor");
+    if (!id) {
+      id = Math.random().toString(36).slice(2);
+      localStorage.setItem("developer-go:visitor", id);
+    }
+    return id;
+  } catch {
+    return "guest";
+  }
+}
 
 /** Swings the camera round to put a map object ahead of the trainer. */
 function face(slug: string) {
@@ -133,9 +148,24 @@ export function Hud() {
         holdWild(w.id);
         // boosted by the weather: stronger, like GO's five extra levels
         const weather = weatherStore.get();
-        const boost = boosted(w.species.dex, weather);
-        const cp = Math.round(cpFor(w.species.dex, false, Math.random()) * (boost ? BOOST_CP : 1));
-        return setFoe({ dex: w.species.dex, name: w.species.name, rare: false, cp, goal, boost: boost ? weather : undefined, shiny: rollShiny(w.species.dex) });
+        const looks = w.looks?.dex ?? w.species.dex;
+        const boost = boosted(looks, weather);
+        // its CP and whether it's shiny for you are fixed per spawn, so running and coming back finds the same one, like GO
+        const roll = (k: number) => hash(k, ...[...w.id].map((c) => c.charCodeAt(0))) / 4294967296;
+        const cp = Math.round(cpFor(w.species.dex, false, roll(1)) * (boost ? BOOST_CP : 1));
+        const mine = hash(...[...visitor()].map((c) => c.charCodeAt(0)), ...[...w.id].map((c) => c.charCodeAt(0))) / 4294967296;
+        return setFoe({
+          dex: w.species.dex,
+          name: w.species.name,
+          // the Daily Encounter never flees, like GO's
+          rare: !!w.daily,
+          fact: w.fact,
+          cp,
+          goal,
+          boost: boost ? weather : undefined,
+          shiny: rollShiny(w.species.dex, undefined, mine),
+          disguise: w.looks,
+        });
       }
       const o = bySlug.get(goal);
       // the first time you walk up to a raid, its egg hatches (scene/objects/Gym.tsx), then the raid opens
@@ -146,16 +176,6 @@ export function Hud() {
         window.setTimeout(() => game.onArrive?.(goal), HATCH_MS);
         return;
       }
-      if (o?.kind === "spawn")
-        return setFoe({
-          dex: o.pokemon.dex,
-          name: o.pokemon.name,
-          rare: true,
-          cp: cpFor(o.pokemon.dex, true, Math.random()),
-          goal,
-          shiny: rollShiny(o.pokemon.dex),
-          disguise: o.disguise,
-        });
       setCard(goal);
       sfx.open();
       if (o && !progressStore.get().visited.includes(goal)) {
@@ -255,12 +275,12 @@ export function Hud() {
     if (!foe) return;
     const caught = outcome === "caught";
     holdWild(null);
-    // running away leaves it where it was, like GO; caught or fled, it's gone
+    // running away leaves it where it was, like GO; caught or fled, it's gone for you
     const w = findWild(foe.goal);
-    if (w && outcome !== "ran") removeWild(w.id);
+    if (w) endWild(w.id, outcome);
     if (w && outcome === "fled") gainXp(FLED_XP, "it fled");
     if (caught) {
-      const rewards = catchRewards(foe.rare, best, !progressStore.get().caught[foe.dex], firstThrow, curve);
+      const rewards = catchRewards(!!foe.fact && !progressStore.get().caught[foe.dex], best, !progressStore.get().caught[foe.dex], firstThrow, curve);
       recordCatch({ dex: foe.dex, name: foe.name, cp: foe.cp, throw: best, shiny: foe.shiny });
       count("catches", { dex: foe.dex, cp: foe.cp });
       gainXp(
@@ -273,11 +293,8 @@ export function Hud() {
       recordBonus(foe.goal, caught);
       return setCard(foe.goal);
     }
-    if (!caught || !foe.rare) return;
-    // A caught fact Pokémon drops its fact in as a toast. Snorlax still opens its card: waking it leads to About.
-    const o = bySlug.get(foe.goal);
-    if (o?.kind === "spawn" && !o.opensAbout) setFact(foe.goal);
-    else setCard(foe.goal);
+    // a caught fact Pokémon drops its fact in as a toast
+    if (caught && foe.fact) setFact(foe.fact);
   };
 
   if (!started) return null;

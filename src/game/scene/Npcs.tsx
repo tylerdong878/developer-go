@@ -251,7 +251,7 @@ const NPCS: Npc[] = [
   {
     route: ellipse(-95, -2, 34, 24, 24),
     loop: true,
-    line: "Hey, wait up! The glowing ones in the grass know stuff about Tyler. Catch one!",
+    line: "Hey, wait up! Some of the Pokémon round here know stuff about Tyler. Catch a Snorlax!",
     look: LOOKS.bugCatcher,
     speed: 2.3,
   },

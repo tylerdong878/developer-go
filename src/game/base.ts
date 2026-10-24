@@ -195,19 +195,6 @@ export const slots: Record<string, Vec2> = {
   "babson-buildathon-2026": [22, 110],
 
   // wild Pokémon (fun facts): Snorlax naps across the road to the park
-  snorlax: [-31, 0],
-  hitmonlee: [-54, 62],
-  sirfetchd: [4, 55],
-  onix: [-7, 88],
-  porygon: [-62, -28],
-  rotom: [-132, -22],
-  eevee: [-126, 16],
-  mankey: [-72, 19],
-  voltorb: [-108, -40],
-  alcremie: [-84, -38],
-  ditto: [-140, -8],
-  torchic: [24, -18],
-  magnemite: [-28, -88],
 
   // eggs (in progress): incubating at home
   aerobloom: [-4.5, -4],
@@ -311,7 +298,6 @@ export function onLand(p: Vec2) {
 
 /** Things you have to walk around, like the Snorlax asleep across the road to the park. */
 export const blockers: { at: Vec2; r: number }[] = [
-  { at: slots.snorlax, r: 1.7 },
   // the fountain in the middle of the roundabout
   { at: [0, 0], r: 3.2 },
   // the lab's hill, and its gate

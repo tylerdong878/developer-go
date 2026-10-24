@@ -12,15 +12,13 @@ const never = () => () => {};
 /** What to call the thing in reach, and what opening it does. */
 function label(goal: string) {
   const w = findWild(goal);
-  if (w) return { verb: "Catch", name: w.species.name, icon: <WildIcon dex={w.species.dex} /> };
+  if (w) return { verb: "Catch", name: w.looks?.name ?? w.species.name, icon: <WildIcon dex={w.looks?.dex ?? w.species.dex} /> };
   if (goal === "place:center") return { verb: "Enter", name: "the Pokémon Center", icon: <BallIcon top="#e3342f" /> };
   if (goal === "place:mart") return { verb: "Enter", name: "the Poké Mart", icon: <BallIcon top="#2f6fd6" /> };
   if (goal === "place:lab") return { verb: "Enter", name: "Northeastern's lab", icon: <BallIcon top="#c8323a" /> };
   const o = bySlug.get(goal);
   if (!o) return null;
   const verb = o.kind === "spawn" ? "Catch" : o.kind === "stop" ? "Spin" : o.kind === "egg" ? "Check" : "Visit";
-  // Ditto's disguise holds until you catch it
-  if (o.kind === "spawn" && o.disguise) return { verb, name: o.disguise.name, icon: <WildIcon dex={o.disguise.dex} /> };
   return { verb, name: describe(o).name, icon: <ObjectIcon object={o} size={26} /> };
 }
 

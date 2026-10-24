@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { mapObjects, medals, signposts, trainer } from ".";
+import { allObjects as mapObjects, medals, signposts, trainer } from ".";
 import type { LatLon, Where } from "./types";
 
 /** Every string anywhere inside a value. */

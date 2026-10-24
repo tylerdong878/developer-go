@@ -56,11 +56,6 @@ describe("home base", () => {
     }
   });
 
-  it("makes you walk around Snorlax", () => {
-    expect(walkable(slots.snorlax)).toBe(false);
-    expect(walkable([slots.snorlax[0], slots.snorlax[1] + 4])).toBe(true);
-  });
-
   it("starts the trainer on open ground at home", () => {
     expect(walkable(START)).toBe(true);
     expect(distance(START, [0, 0])).toBeLessThan(10);

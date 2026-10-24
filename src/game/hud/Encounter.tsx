@@ -26,7 +26,10 @@ import type { Weather } from "../weather";
 export type Foe = {
   dex: number;
   name: string;
+  /** The Daily Encounter: it never flees and the second ball that hits always catches it, like GO's special encounters. */
   rare: boolean;
+  /** One of the fact Pokémon: catching it shows the fact. */
+  fact?: string;
   cp: number;
   premier?: { balls: number; rate: number };
   /** The weather boosting it, if any: GO shows its icon by the CP. */
@@ -514,7 +517,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (result: CatchRes
   // Ditto keeps its disguise until it's caught
   const looks = phase !== "caught" && foe.disguise ? foe.disguise : { name: foe.name, dex: foe.dex };
   // Worked out when the encounter starts, so a catch doesn't count itself as already in the Pokédex.
-  const rewards = catchRewards(foe.rare, label, firstOfKind, phase === "caught" && firstBall, phase === "caught" && curved);
+  const rewards = catchRewards(!!foe.fact && firstOfKind, label, firstOfKind, phase === "caught" && firstBall, phase === "caught" && curved);
   const ringPx = "min(42vw, 200px)";
 
   return (
@@ -545,7 +548,6 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (result: CatchRes
       <div className={`pointer-events-none absolute inset-x-0 top-[22%] flex justify-center px-6 transition-opacity ${phase === "caught" ? "opacity-0" : ""}`}>
         <p className="flex items-center gap-2 rounded-full bg-black/45 px-5 py-1.5 font-[family-name:var(--font-lato)] text-lg font-bold text-white">
           {caughtBefore ? <ItemIcon id="ball" size={18} /> : null}
-          {foe.rare && !foe.disguise ? "✦ " : ""}
           {looks.name}
           {foe.shiny ? <ShinyIcon /> : null}
           <span className="opacity-70">/</span>

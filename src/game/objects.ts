@@ -1,7 +1,7 @@
-import { mapObjects, type MapObject } from "@/content";
+import { allObjects, type MapObject } from "@/content";
 
-/** Everything on the map by slug, for the HUD and the scene. */
-export const bySlug = new Map<string, MapObject>(mapObjects.map((o) => [o.slug, o]));
+/** Everything with a card by slug, for the HUD and the scene. */
+export const bySlug = new Map<string, MapObject>(allObjects.map((o) => [o.slug, o]));
 
 /** A short name and a one-line subtitle for lists and cards. */
 export function describe(o: MapObject): { name: string; subtitle: string } {

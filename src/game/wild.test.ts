@@ -1,70 +1,73 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { holdWild, isOut, LEAVE, refreshWild, resetWild, RUSTLE, wildStore } from "./wild";
+import { appearanceAt, buildPoints, CYCLE } from "./spawnPoints";
+import { endWild, holdWild, LEAVE, refreshWild, resetWild, spawnPoints, wildStore } from "./wild";
 
-/** A steady fake random, so spots and timers repeat. */
-function seeded(seed = 7) {
-  let s = seed;
-  return () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646;
-}
+const T = Date.UTC(2026, 9, 24, 15, 0, 0);
+const env = { weather: null, night: false, at: T };
+/** Somewhere with points round it: the park. */
+const PARK: [number, number] = [-100, 10];
 
-describe("wild spawns", () => {
+describe("spawn points", () => {
+  it("are the same on every load, and the same Pokémon is on a point for everyone", () => {
+    const a = buildPoints();
+    const b = buildPoints();
+    expect(a.length).toBeGreaterThan(200);
+    expect(a.map((p) => [p.x, p.z])).toEqual(b.map((p) => [p.x, p.z]));
+    for (const p of a.slice(0, 40)) expect(appearanceAt(p, T, env)).toEqual(appearanceAt(b[p.id], T, env));
+  });
+
+  it("fire once a cycle, out for half of it (the long kind for all of it)", () => {
+    const p = spawnPoints.find((q) => !q.long)!;
+    let out = 0;
+    for (let s = 0; s < CYCLE; s++) if (appearanceAt(p, T + s * 1000, env)) out++;
+    expect(out).toBe(CYCLE / 2);
+  });
+
+  it("put water types by the water", () => {
+    const water = spawnPoints.filter((p) => p.habitat === "water");
+    const seen = new Set<number>();
+    for (const p of water) for (let k = 0; k < 20; k++) seen.add(appearanceAt(p, T + k * CYCLE * 1000, env)?.looks ?? 0);
+    expect(seen.has(129) || seen.has(54) || seen.has(60)).toBe(true);
+    expect(seen.has(74)).toBe(false); // no Geodude in the pond
+  });
+});
+
+describe("the wild Pokémon round the trainer", () => {
   beforeEach(() => resetWild());
 
-  it("trickles in one at a time instead of filling the map, the first one inside the ring", () => {
-    const rand = seeded();
-    refreshWild(0, 6, 0, rand);
-    expect(wildStore.get()).toHaveLength(0);
-    refreshWild(0, 6, 2, rand);
-    expect(wildStore.get()).toHaveLength(1);
-    const [s] = wildStore.get();
-    expect(Math.hypot(s.x, s.z - 6)).toBeLessThan(9);
-    refreshWild(0, 6, 3, rand);
-    expect(wildStore.get()).toHaveLength(1);
-    for (let t = 4; t <= 60; t++) refreshWild(0, 6, t, rand);
-    expect(wildStore.get().length).toBeGreaterThan(4);
+  it("shows what's out on the points near him", () => {
+    refreshWild(...PARK, 0, { at: T });
+    expect(wildStore.get().length).toBeGreaterThan(2);
+    for (const s of wildStore.get()) if (!s.daily) expect(Math.hypot(s.x - PARK[0], s.z - PARK[1])).toBeLessThanOrEqual(27);
   });
 
-  it("rustles first, then pops out", () => {
-    refreshWild(0, 6, 8, seeded());
-    refreshWild(0, 6, 10, seeded());
-    const [s] = wildStore.get();
-    expect(isOut(s, 10.5)).toBe(false);
-    expect(isOut(s, 10 + RUSTLE)).toBe(true);
+  it("a caught one is gone for you, a run-from one stays", () => {
+    refreshWild(...PARK, 0, { at: T });
+    const [a, b] = wildStore.get().filter((s) => !s.daily);
+    endWild(a.id, "caught");
+    endWild(b.id, "ran");
+    refreshWild(...PARK, 1, { at: T + 1000 });
+    const ids = wildStore.get().map((s) => s.id);
+    expect(ids).not.toContain(a.id);
+    expect(ids).toContain(b.id);
   });
 
-  it("leaves when its time is up, then is gone", () => {
-    const rand = seeded();
-    refreshWild(0, 6, 0, rand);
-    refreshWild(0, 6, 2, rand);
-    const [s] = wildStore.get();
-    // far enough from him that it doesn't linger
-    refreshWild(20, 6, s.until, rand);
-    expect(s.leaving).toBe(s.until);
-    expect(isOut(s, s.until)).toBe(false);
-    refreshWild(20, 6, s.until + LEAVE + 0.01, rand);
-    expect(wildStore.get().includes(s)).toBe(false);
+  it("leaves in a puff when its time is up, unless it's being caught", () => {
+    refreshWild(...PARK, 0, { at: T });
+    const [a, b] = wildStore.get().filter((s) => !s.daily);
+    holdWild(b.id);
+    const later = Math.max(a.until, b.until) + 1000;
+    refreshWild(...PARK, 5, { at: later });
+    expect(wildStore.get().find((s) => s.id === a.id)?.leaving).toBe(5);
+    expect(wildStore.get().find((s) => s.id === b.id)?.leaving).toBe(null);
+    refreshWild(...PARK, 5 + LEAVE + 0.1, { at: later + 1000 });
+    expect(wildStore.get().find((s) => s.id === a.id)).toBeUndefined();
   });
 
-  it("draws extra ones to a lured stop while he's near it, up to three", () => {
-    const rand = seeded(3);
-    const lures: [number, number][] = [[40, 40]];
-    for (let t = 0; t <= 120; t++) refreshWild(40, 52, t, rand, { lures });
-    const lured = wildStore.get().filter((s) => s.lured && s.leaving === null);
-    expect(lured.length).toBeGreaterThan(0);
-    expect(lured.length).toBeLessThanOrEqual(3);
-    for (const s of lured) expect(Math.hypot(s.x - 40, s.z - 40)).toBeLessThanOrEqual(8.01);
-  });
-
-  it("never leaves while it's being caught, or while he's walking to it", () => {
-    const rand = seeded();
-    refreshWild(0, 6, 0, rand);
-    refreshWild(0, 6, 2, rand);
-    const [s] = wildStore.get();
-    holdWild(s.id);
-    refreshWild(20, 6, s.until + 5, rand);
-    expect(s.leaving).toBe(null);
-    holdWild(null);
-    refreshWild(20, 6, s.until + 6, rand, { goal: `wild:${s.id}` });
-    expect(s.leaving).toBe(null);
+  it("gives each visitor a Daily Encounter, Snorlax first", () => {
+    refreshWild(0, 6, 0, { at: T, heading: Math.PI });
+    const d = wildStore.get().find((s) => s.daily);
+    expect(d?.species.dex).toBe(143);
+    expect(d?.fact).toBe("snorlax");
   });
 });
