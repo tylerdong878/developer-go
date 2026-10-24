@@ -31,12 +31,33 @@ export function patchLook() {
   ShaderChunk.fog_vertex = ShaderChunk.fog_vertex.replace("vFogDepth = - mvPosition.z;", "vFogPosition = mvPosition.xyz;");
   ShaderChunk.fog_pars_fragment = ShaderChunk.fog_pars_fragment.replace("varying float vFogDepth;", "varying vec3 vFogPosition;");
   ShaderChunk.fog_fragment = ShaderChunk.fog_fragment.replace("#ifdef USE_FOG", "#ifdef USE_FOG\n\tfloat vFogDepth = length( vFogPosition );");
+  // A building in the way used to dissolve into random static (three's alpha hash). Now it's a fine,
+  // even 4x4 screen in 2 px cells, and what's left is one pale frosted tint, so it reads as a ghost of the
+  // building you can see through (notes/research/town-polish.md 1).
+  ShaderChunk.alphahash_fragment = /* glsl */ `
+#ifdef USE_ALPHAHASH
+  if ( diffuseColor.a < 0.999 ) {
+    vec2 cell = floor( gl_FragCoord.xy / 2.0 );
+    vec2 m = mod( cell, 4.0 );
+    // a 4x4 Bayer matrix, built from two 2x2 ones
+    vec2 m2 = mod( m, 2.0 );
+    vec2 m4 = floor( m / 2.0 );
+    float b2 = m2.x * 2.0 + abs( m2.x - m2.y ) - 0.0;
+    float b4 = m4.x * 2.0 + abs( m4.x - m4.y );
+    float bayer = ( ( 4.0 * b2 + b4 ) + 0.5 ) / 16.0;
+    if ( diffuseColor.a < bayer ) discard;
+    #ifdef LAMBERT
+    diffuseColor.rgb = mix( diffuseColor.rgb, vec3( 0.90, 0.94, 0.98 ), ( 1.0 - diffuseColor.a ) * 0.6 );
+    #endif
+  }
+#endif
+`;
   ShaderChunk.opaque_fragment =
     /* glsl */ `
 #if defined( LAMBERT ) && NUM_DIR_LIGHTS > 0 && NUM_HEMI_LIGHTS > 0
 {
   // soft terminator, plus the cast shadow
-  float core = smoothstep( 1.0, -0.25, dot( normal, directionalLights[ 0 ].direction ) );
+  float core = smoothstep( 0.75, -0.3, dot( normal, directionalLights[ 0 ].direction ) );
   float shade = max( core, 1.0 - sunLit );
   vec3 lit = diffuseColor.rgb * directionalLights[ 0 ].color;
   vec3 dark = diffuseColor.rgb * hemisphereLights[ 0 ].skyColor;

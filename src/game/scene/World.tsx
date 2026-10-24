@@ -237,7 +237,7 @@ function Glide({ palette, stars, night }: { palette: Weathered; stars: number; n
   return null;
 }
 
-const DAY_LIGHT: [number, number, number] = [0.416, 0.832, 0.277];
+const DAY_LIGHT: [number, number, number] = [0.503, 0.704, 0.503];
 const NIGHT_LIGHT: [number, number, number] = [-0.3, 0.8, 0.52];
 const sunTarget = new Vector3();
 /** How much night is in the sky (stars, the moon, water and ground at night), and whether lamps and windows are on. */

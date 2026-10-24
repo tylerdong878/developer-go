@@ -51,7 +51,7 @@ export function phaseAt(now: Date): Phase {
  * height is kept between `low` and `high` degrees so shadows stay inside the
  * shadow box and the disc stays in the sky.
  */
-export function sunDirection(now: Date, low = 22, high = 62): [number, number, number] {
+export function sunDirection(now: Date, low = 22, high = 46): [number, number, number] {
   const { elevation, hourAngle } = sunNow(now);
   const el = Math.min(high, Math.max(low, elevation)) * RAD;
   // the hour angle sweeps the sun's bearing round from east (morning) through south to west
