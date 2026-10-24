@@ -89,11 +89,11 @@ function parts(b: Building, i: number): Box[] {
     if (hash(i + 9) > 0.5) out.push(roofUnit(W * 0.22, -D * 0.2));
   } else if (recipe === "stone") {
     const accent = pick(["#2c3d5c", "#b04a48"], i);
-    out.push(blank([W + 0.1, 0.5, D + 0.1], [0, 0.25, 0], "#9a8670", [1.4, 0.08, 1.4]));
-    out.push({ at: [0, (H - 0.4) / 2, 0], size: [W, H - 0.4, D], round: [1.4, 0.1, 1.4], facade: [2.2, 3.2, 4.6, TALL], color: "#ecdcbc", glass: "#8fa6e3", trim: "#f6eedd" });
-    out.push(blank([W + 0.25, 0.25, D + 0.25], [0, 4.6, 0], "#f6eedd", [1.5, 0.1, 1.5]));
+    out.push(blank([W + 0.1, 0.5, D + 0.1], [0, 0.25, 0], "#9a8670", [0.8, 0.08, 0.8]));
+    out.push({ at: [0, (H - 0.4) / 2, 0], size: [W, H - 0.4, D], round: [0.8, 0.1, 0.8], facade: [2.2, 3.2, 4.6, TALL], color: "#ecdcbc", glass: "#8fa6e3", trim: "#f6eedd" });
+    out.push(blank([W + 0.25, 0.25, D + 0.25], [0, 4.6, 0], "#f6eedd", [0.9, 0.08, 0.9]));
     out.push(blank([W - 3, 0.9, 0.3], [0, 3.9, D / 2 + 0.1], accent));
-    out.push(blank([W + 0.4, 0.4, D + 0.4], [0, H - 0.2, 0], "#f6eedd", [1.6, 0.15, 1.6]));
+    out.push(blank([W + 0.4, 0.4, D + 0.4], [0, H - 0.2, 0], "#f6eedd", [1.0, 0.08, 1.0]));
     // the mansard: a slate roof with rolled edges
     out.push(blank([W - 0.6, 2.4, D - 0.6], [0, H + 1.0, 0], "#4d5a78", [1.2, 0.9, 1.2]));
     out.push(door(W * 0.22, "#8fa6e3", "#f6eedd"));
@@ -172,22 +172,35 @@ diffuseColor.a *= vFade;
   float span = max(W - 2.0 * R - 0.6, 0.5);
   float nb = max(1.0, floor(span / vFacade.x + 0.5));
   float g0 = vFacade.z; float fl = vFacade.y;
-  float nf = max(0.0, floor((vBSize.y - g0 - 0.6) / fl));
+  float nf = max(0.0, floor((vBSize.y - g0) / fl + 0.02));
   vec2 c = vec2((u + 0.5 * span) * nb / span, (h - g0) / fl);
   vec2 id = floor(c); vec2 f = fract(c);
   vec2 aa = fwidth(c) * 1.2;
   float far = smoothstep(0.12, 0.3, max(aa.x, aa.y));
   float windows = step(style, 1.5) + step(2.5, style) * step(style, 4.5);
   float cells = wallM * step(0.0, c.x) * step(c.x, nb) * step(0.0, c.y) * step(c.y, nf) * windows;
-  vec2 lo = style > 0.5 && style < 1.5 ? vec2(0.06, 0.18) : style > 2.5 && style < 3.5 ? vec2(0.24, 0.12) : vec2(0.22, 0.2);
-  vec2 hi = style > 0.5 && style < 1.5 ? vec2(0.94, 0.97) : style > 2.5 && style < 3.5 ? vec2(0.76, 0.9) : vec2(0.78, 0.84);
+  // windows 60% of the bay and 70% of the floor, like real punched windows
+  vec2 lo = style > 0.5 && style < 1.5 ? vec2(0.06, 0.18) : style > 2.5 && style < 3.5 ? vec2(0.22, 0.1) : vec2(0.2, 0.16);
+  vec2 hi = style > 0.5 && style < 1.5 ? vec2(0.94, 0.97) : style > 2.5 && style < 3.5 ? vec2(0.78, 0.9) : vec2(0.8, 0.86);
   float pane = box2(f, lo, hi, aa) * cells;
   float frame = box2(f, lo - vec2(0.05, 0.05), hi + vec2(0.05, 0.03), aa) * cells - pane;
+  // a stone sill with its shadow under it and a lintel over (punched, tall and brick walls)
+  float pl = step(style, 0.5) + step(2.5, style) * step(style, 4.5);
+  float sill = box2(f, vec2(lo.x - 0.07, lo.y - 0.075), vec2(hi.x + 0.07, lo.y - 0.03), aa) * cells * pl;
+  float sillS = box2(f, vec2(lo.x - 0.07, lo.y - 0.12), vec2(hi.x + 0.07, lo.y - 0.075), aa) * cells * pl;
+  float lintel = box2(f, vec2(lo.x - 0.04, hi.y + 0.035), vec2(hi.x + 0.04, hi.y + 0.075), aa) * cells * pl;
+  // ground-floor windows on the sides and back, one a bay, so no wall is blank at eye level
+  float base = wallM * step(0.0, c.x) * step(c.x, nb) * pl * step(2.5, g0) * (1.0 - step(0.6, vBNrm.z));
+  vec2 gs = vec2(fract(c.x), h);
+  float gpane = box2(gs, vec2(lo.x, 0.9), vec2(hi.x, g0 - 1.0), vec2(aa.x, 0.03)) * base;
+  float gframe = box2(gs, vec2(lo.x - 0.05, 0.78), vec2(hi.x + 0.05, g0 - 0.88), vec2(aa.x, 0.03)) * base - gpane;
   vec2 q = clamp((f - lo) / (hi - lo), 0.0, 1.0);
   float d = q.x + 0.6 * q.y;
   float streak = 1.0 - smoothstep(0.05, 0.08, abs(d - 0.55));
   streak += 0.6 * (1.0 - smoothstep(0.02, 0.04, abs(d - 0.85)));
   vec3 glass = mix(vGlass * 0.8, vGlass * 1.12, q.y) + streak * 0.3 * (1.0 - far);
+  // the glass sits back in the wall: a shadow along its top and one side
+  float reveal = pane * max(smoothstep(0.82, 0.9, q.y), 0.6 * (1.0 - smoothstep(0.04, 0.1, q.x)));
   // the shop glass on the street face, under a fascia
   vec2 s = vec2(fract(c.x), h);
   float shop = step(0.6, vBNrm.z) * wallM * step(0.0, c.x) * step(c.x, nb) * windows * step(2.5, g0)
@@ -197,16 +210,26 @@ diffuseColor.a *= vFade;
     float row = abs(fract(h / 0.5) - 0.5);
     diffuseColor.rgb *= 1.0 - 0.07 * (1.0 - smoothstep(0.0, fwidth(h / 0.5) * 1.5 + 0.04, row)) * (1.0 - far) * (1.0 - pane - frame) * wallM;
   }
-  diffuseColor.rgb = mix(diffuseColor.rgb, vTrim, frame);
+  // pilasters between the bays above the shop floor, the Saffron street look
+  float pil = wallM * step(style, 0.5) * step(0.0, c.x) * step(c.x, nb) * step(g0, h) * step(h, vBSize.y - 0.1)
+            * (1.0 - smoothstep(0.035, 0.035 + aa.x, abs(fract(c.x + 0.5) - 0.5)));
+  diffuseColor.rgb = mix(diffuseColor.rgb, vTrim, pil);
+  diffuseColor.rgb = mix(diffuseColor.rgb, vTrim, frame + gframe);
+  diffuseColor.rgb = mix(diffuseColor.rgb, vTrim * 1.08, sill * (1.0 - far));
+  diffuseColor.rgb *= 1.0 - 0.22 * sillS * (1.0 - far);
+  diffuseColor.rgb = mix(diffuseColor.rgb, vTrim, lintel * (1.0 - far));
   diffuseColor.rgb = mix(diffuseColor.rgb, glass, pane);
+  diffuseColor.rgb = mix(diffuseColor.rgb, mix(vGlass * 0.85, vGlass * 1.1, smoothstep(0.9, g0 - 1.0, h)), gpane);
+  diffuseColor.rgb *= 1.0 - 0.3 * reveal * (1.0 - far);
   diffuseColor.rgb = mix(diffuseColor.rgb, mix(vGlass, vec3(1.0), 0.15), shop);
-  bWin = pane; bShop = shop;
+  bWin = pane + gpane; bShop = shop;
   bLit = step(1.0 - uLitShare, hash12(id + vec2(vSeed, dot(vBNrm, vec3(3.0, 0.0, 7.0)))));
   // the rolled edges catch a little more light, like LGPE's glossy toy plastic
   float curve = 1.0 - max(max(abs(vBNrm.x), abs(vBNrm.y)), abs(vBNrm.z));
-  diffuseColor.rgb *= 1.0 + 0.3 * smoothstep(0.04, 0.3, curve);
-  // soft contact shade where the walls meet the ground
+  diffuseColor.rgb *= 1.0 + 0.12 * smoothstep(0.04, 0.3, curve) * (1.0 - step(0.6, abs(vBNrm.y)));
+  // soft contact shade where the walls meet the ground, and a touch lighter up high
   diffuseColor.rgb *= mix(0.72, 1.0, smoothstep(0.0, 1.6, vWorldY));
+  diffuseColor.rgb *= mix(0.95, 1.04, smoothstep(1.5, 14.0, vWorldY));
 }`,
     )
     .replace(

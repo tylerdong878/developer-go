@@ -51,7 +51,7 @@ const roofUnit = (x: number, y: number, z: number): Box => blank([2.4, 1.1, 1.8]
 function aws(W: number, D: number): Hero {
   const boxes: Box[] = [
     blank([W + 0.4, 0.5, D + 0.4], [0, 0.25, 0], "#2e3442", [1.1, 0.1, 1.1]),
-    { at: [0, 4.2, 0], size: [W, 8.4, D], round: [1.2, 0.2, 1.2], facade: [1.5, 4, 4.4, STYLE.curtain], color: "#39465e", glass: "#8cc4ee", trim: "#2b3446" },
+    { at: [0, 4.2, 0], size: [W, 8.4, D], round: [1.2, 0.2, 1.2], facade: [1.5, 3.6, 4.4, STYLE.curtain], color: "#39465e", glass: "#8cc4ee", trim: "#2b3446" },
     blank([7.5, 0.35, 2.4], [0, 4.55, D / 2 + 1.1], "#f4f6f8", [0.3, 0.1, 0.3]),
     door(0, D / 2 + 0.12, "#bfe3f7", "#2b3446"),
     blank([2.4, 0.8, 1.1], [-4.4, 0.4, D / 2 + 0.9], "#c9c2b6"),
@@ -61,7 +61,7 @@ function aws(W: number, D: number): Hero {
   // four glass trays, shifting against each other, a warm wood soffit under each (111 Harbor Way)
   for (let k = 0; k < 4; k++) {
     const s = k % 2 ? -1 : 1;
-    boxes.push({ at: [s * 0.8, 11.5 + 6.2 * k, s * 0.6], size: [W, 6.2, D], round: [1.4, 0.3, 1.4], facade: [1.5, 3.1, 0, STYLE.curtain], color: "#34425e", glass: "#7fb2e6", trim: "#34425e" });
+    boxes.push({ at: [s * 0.8, 11.5 + 6.2 * k, s * 0.6], size: [W, 6.2, D], round: [1.4, 0.3, 1.4], facade: [1.5, 2.9, 0, STYLE.curtain], color: "#34425e", glass: "#7fb2e6", trim: "#34425e" });
     boxes.push(glow([W + 0.3, 0.35, D + 0.3], [s * 0.8, 8.4 + 6.2 * k, s * 0.6], "#e0874a", [1.4, 0.08, 1.4]));
   }
   boxes.push(blank([W + 0.6, 1, D + 0.6], [0, 33.7, 0], "#f4f6f8", [1.6, 0.3, 1.6]));
@@ -131,11 +131,11 @@ function tetracorp(W: number, D: number, H: number): Hero {
 
 function quartzy(W: number, D: number, H: number): Hero {
   const boxes: Box[] = [
-    blank([W + 0.1, 0.5, D + 0.1], [0, 0.25, 0], "#9a8670", [1.2, 0.08, 1.2]),
-    { at: [0, (H - 0.4) / 2, 0], size: [W, H - 0.4, D], round: [1.2, 0.1, 1.2], facade: [2.2, 3.2, 4.6, STYLE.tall], color: "#ecdcbc", glass: "#8fa6e3", trim: "#f6eedd" },
-    blank([W + 0.25, 0.25, D + 0.25], [0, 4.6, 0], "#f6eedd", [1.3, 0.1, 1.3]),
+    blank([W + 0.1, 0.5, D + 0.1], [0, 0.25, 0], "#9a8670", [0.8, 0.08, 0.8]),
+    { at: [0, (H - 0.4) / 2, 0], size: [W, H - 0.4, D], round: [0.8, 0.1, 0.8], facade: [2.2, 3.2, 4.6, STYLE.tall], color: "#ecdcbc", glass: "#8fa6e3", trim: "#f6eedd" },
+    blank([W + 0.25, 0.25, D + 0.25], [0, 4.6, 0], "#f6eedd", [0.9, 0.08, 0.9]),
     blank([W - 3, 0.9, 0.3], [0, 3.9, D / 2 + 0.1], "#2f6b4f"),
-    blank([W + 0.4, 0.4, D + 0.4], [0, H - 0.2, 0], "#f6eedd", [1.4, 0.15, 1.4]),
+    blank([W + 0.4, 0.4, D + 0.4], [0, H - 0.2, 0], "#f6eedd", [1.0, 0.08, 1.0]),
     blank([W - 0.6, 2.6, D - 0.6], [0, H + 1.1, 0], "#4d5a78", [1.1, 0.9, 1.1]),
     door(W * 0.24, D / 2 + 0.12, "#8fa6e3", "#f6eedd", 2.4, 2.9),
     blank([3.7, 3.7, 0.25], [-W * 0.12, 6.6, D / 2 + 0.12], "#f6f7fa", [0.6, 0.6, 0.1]),
