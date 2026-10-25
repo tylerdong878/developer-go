@@ -3,6 +3,9 @@ import { allObjects, type MapObject } from "@/content";
 /** Everything with a card by slug, for the HUD and the scene. */
 export const bySlug = new Map<string, MapObject>(allObjects.map((o) => [o.slug, o]));
 
+/** The Pokémon on top of each of Tyler's gyms. */
+export const DEFENDER: Record<string, number> = { aws: 25, philips: 7, khoury: 1, tetracorp: 4, quartzy: 54, outamation: 100, homegoods: 39 };
+
 /** A short name and a one-line subtitle for lists and cards. */
 export function describe(o: MapObject): { name: string; subtitle: string } {
   switch (o.kind) {

@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { stops, trainer } from "@/content";
-import type { FieldTask } from "../field";
-import { addItems, claimField, gainXp, progressStore } from "../progress";
+import { gyms, spawns, stops, trainer } from "@/content";
+import { monthsAt } from "@/content/badges";
+import { BREAKTHROUGH_DEX, STAMPS, streakNow, type Streak } from "../daily";
+import { activeEvents, type GoEvent, upcomingEvents, whenIs } from "../events";
+import { bostonDay, type FieldTask } from "../field";
+import { DEFENDER } from "../objects";
+import { addItems, claimBreakthrough, claimField, gainXp, progressStore } from "../progress";
 import { nameOf } from "../spawnPoints";
 import { ItemIcon } from "./icons";
 import { claimStep, researchState, researchStore, STEPS } from "../research";
@@ -11,11 +15,12 @@ import { sfx } from "../sound";
 import { Sheet } from "./Sheet";
 
 /*
- * GO's research screen, for Tyler's Special Research (src/game/research.ts):
- * the step you're on, Tyler's line, three tasks with orange progress bars,
- * and the step's reward, claimable once all three are done. The last step
- * ends on his trainer card. A binoculars button sits over Nearby, with a red
- * dot when there's a reward to claim, and finishing a task pops a little XP.
+ * GO's Today View (notes/research/go-round-3.md 3 and 4), behind the
+ * binoculars: TODAY has your Field Research, the Breakthrough stamps,
+ * what's happening now and your daily streaks; EVENTS what's coming up and a
+ * Collection Challenge; SPECIAL is Tyler's Special Research (research.ts), the
+ * step you're on, his line, three tasks and a reward, ending on his trainer
+ * card. The button turns orange when there's something to claim, like GO's.
  */
 
 function useResearch() {
@@ -37,9 +42,11 @@ function Binoculars({ size = 28 }: { size?: number }) {
   );
 }
 
-/** The round research button, with a red dot when a step's reward is waiting. */
+/** The round research button: orange when there's a reward to claim anywhere in it, like GO's. */
 export function ResearchButton({ onOpen }: { onOpen: () => void }) {
   const r = useResearch();
+  const p = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const ready = r.claimable || p.stamps.length >= STAMPS || p.field.some((t) => !t.claimed && t.have >= t.need);
   // finishing a task (not a whole step) is worth a little XP, like GO's field research
   const seen = useRef<string | null>(null);
   useEffect(() => {
@@ -56,17 +63,21 @@ export function ResearchButton({ onOpen }: { onOpen: () => void }) {
     <button
       type="button"
       onClick={onOpen}
-      aria-label={r.claimable ? "Research: a reward is ready" : "Research"}
-      className="panel relative grid size-14 place-items-center rounded-full transition hover:scale-[1.04] active:scale-95"
+      aria-label={ready ? "Today: a reward is ready" : "Today"}
+      className={`panel relative grid size-14 place-items-center rounded-full transition hover:scale-[1.04] active:scale-95 ${ready ? "bg-[#f89800]!" : ""}`}
     >
       <Binoculars />
-      {r.claimable ? <span className="absolute top-1 right-1 size-3.5 rounded-full bg-[#f2342a] ring-2 ring-white" /> : null}
     </button>
   );
 }
 
-/** GO's research tabs. */
-type Tab = "field" | "special";
+/** GO's Today View tabs. */
+type Tab = "today" | "events" | "special";
+
+/** GO's small uppercase section heads. */
+function Head({ children }: { children: string }) {
+  return <h3 className="mt-6 mb-2 text-xs font-bold tracking-[0.16em] text-ink-soft uppercase first:mt-0">{children}</h3>;
+}
 
 /** One Field Research task, like GO's: what to do, a progress bar, the reward, and Claim once it's done. */
 function FieldCard({ t, onEncounter }: { t: FieldTask; onEncounter: (dex: number, key: string) => void }) {
@@ -121,7 +132,77 @@ function FieldCard({ t, onEncounter }: { t: FieldTask; onEncounter: (dex: number
   );
 }
 
-function FieldTab({ onEncounter }: { onEncounter: (dex: number, key: string) => void }) {
+/** One stamp: ours are a Poké Ball, Tyler's initials and Teddy's paw, in GO's red and blue ink. */
+function Stamp({ kind }: { kind: number }) {
+  return (
+    <svg viewBox="0 0 32 32" className="size-full" aria-hidden>
+      <circle cx="16" cy="16" r="14" fill="#fff8ec" stroke={kind === 1 ? "#2f6fd0" : "#d8463c"} strokeWidth="2" strokeDasharray="3 1.6" />
+      {kind === 0 ? (
+        <g fill="none" stroke="#d8463c" strokeWidth="2.2">
+          <circle cx="16" cy="16" r="7.5" />
+          <path d="M8.5 16h15" />
+          <circle cx="16" cy="16" r="2.4" fill="#fff8ec" />
+        </g>
+      ) : kind === 1 ? (
+        <text x="16" y="20.5" textAnchor="middle" fontSize="12" fontWeight="900" fill="#2f6fd0" fontFamily="sans-serif">
+          TD
+        </text>
+      ) : (
+        <g fill="#d8463c">
+          <ellipse cx="16" cy="19.5" rx="4.6" ry="3.8" />
+          <circle cx="10.6" cy="14.4" r="2" />
+          <circle cx="14" cy="11.4" r="2" />
+          <circle cx="18" cy="11.4" r="2" />
+          <circle cx="21.4" cy="14.4" r="2" />
+        </g>
+      )}
+    </svg>
+  );
+}
+
+/** GO's Breakthrough box: a brown parcel tied with twine. */
+function Parcel({ ready }: { ready: boolean }) {
+  return (
+    <svg viewBox="0 0 40 40" className={`size-full ${ready ? "" : "opacity-45 grayscale"}`} aria-hidden>
+      <rect x="5" y="11" width="30" height="24" rx="3" fill="#c48a52" />
+      <rect x="5" y="11" width="30" height="7" rx="3" fill="#d9a06a" />
+      <path d="M20 11v24M5 22h30" stroke="#f3e2c2" strokeWidth="2.4" />
+      <path d="M20 11c-3-6-10-6-8-1 1 2 5 2 8 1Zm0 0c3-6 10-6 8-1-1 2-5 2-8 1Z" fill="none" stroke="#f3e2c2" strokeWidth="2.2" />
+      <circle cx="29" cy="29" r="3.2" fill="none" stroke="#d8463c" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
+/** The stamp row: six stamps, the seventh opens the box. */
+function Stamps({ onEncounter }: { onEncounter: (dex: number, key: string) => void }) {
+  const { stamps } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const ready = stamps.length >= STAMPS;
+  const left = STAMPS - stamps.length;
+  const open = () => {
+    if (!claimBreakthrough()) return;
+    sfx.open();
+    onEncounter(BREAKTHROUGH_DEX, `breakthrough|${bostonDay()}`);
+  };
+  return (
+    <div className="mt-3 rounded-2xl bg-ink/5 px-3 pt-3 pb-2.5">
+      <div className="flex items-center justify-between gap-1">
+        {Array.from({ length: STAMPS - 1 }, (_, k) => (
+          <span key={k} className={`grid size-9 place-items-center rounded-full ${k < stamps.length ? "" : "border-2 border-dashed border-ink/15"}`}>
+            {k < stamps.length ? <Stamp kind={k % 3} /> : null}
+          </span>
+        ))}
+        <button type="button" disabled={!ready} onClick={open} aria-label={ready ? "Open your Research Breakthrough" : "Research Breakthrough"} className={`size-12 ${ready ? "animate-bounce" : ""}`}>
+          <Parcel ready={ready} />
+        </button>
+      </div>
+      <p className="mt-1.5 text-center text-xs font-semibold text-ink-soft">
+        {ready ? "Your Breakthrough is ready. Tap the box!" : `Next Breakthrough in ${left} more stamp${left === 1 ? "" : "s"}: one a day, for the first reward you claim.`}
+      </p>
+    </div>
+  );
+}
+
+function FieldList({ onEncounter }: { onEncounter: (dex: number, key: string) => void }) {
   const { field } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
   const open = field.filter((t) => !t.claimed);
   return (
@@ -133,9 +214,127 @@ function FieldTab({ onEncounter }: { onEncounter: (dex: number, key: string) => 
           ))}
         </ul>
       ) : (
-        <p className="rounded-2xl bg-ink/5 px-4 py-6 text-center text-sm text-ink-soft">Spin a PokéStop to get its Field Research task. You can hold three.</p>
+        <p className="rounded-2xl bg-ink/5 px-4 py-5 text-center text-sm text-ink-soft">Spin a PokéStop to get its Field Research task. You can hold three.</p>
       )}
-      <p className="mt-3 text-xs text-ink-soft">Like GO: each stop gives one task a day, the same one for everyone. Some rewards are encounters with Pokémon you can&apos;t find in the wild.</p>
+      <Stamps onEncounter={onEncounter} />
+    </div>
+  );
+}
+
+/** An event, GO's news-card style. */
+function EventCard({ e, live }: { e: GoEvent; live: boolean }) {
+  return (
+    <div className="overflow-hidden rounded-2xl bg-surface shadow-[0_2px_10px_rgba(48,85,93,0.12)]">
+      <div className={`px-3.5 py-2 text-white ${e.id.startsWith("halloween") ? "bg-gradient-to-r from-[#7a3fc0] to-[#f87010]" : "bg-gradient-to-r from-[#24828b] to-[#2fd3c6]"}`}>
+        <p className="font-display text-base font-black">{e.name}</p>
+        <p className="text-xs font-semibold opacity-90">{live ? `Until ${whenIs(e.to)}` : `${whenIs(e.from)} to ${whenIs(e.to)}`}</p>
+      </div>
+      <p className="px-3.5 py-2.5 text-sm leading-snug">{e.blurb}</p>
+    </div>
+  );
+}
+
+/** A streak: seven circles, filled for the days done in a row, today's ringed, day 7 a little bigger. */
+function StreakRow({ label, s, note }: { label: string; s: Streak; note: string }) {
+  const { n, today } = streakNow(s);
+  return (
+    <div className="rounded-2xl bg-ink/5 px-3.5 py-3">
+      <div className="flex items-center justify-between">
+        <span className="text-[15px] font-semibold">{label}</span>
+        <span className="text-xs font-bold text-ink-soft">{n ? `Day ${n}` : "Not started"}</span>
+      </div>
+      <div className="mt-2 flex items-center gap-1.5">
+        {Array.from({ length: 7 }, (_, k) => (
+          <span
+            key={k}
+            className={`rounded-full ${k === 6 ? "size-5" : "size-4"} ${k < n ? "bg-[#2ccda9]" : "bg-ink/12"} ${today && k === n - 1 ? "ring-2 ring-[#24828b] ring-offset-1" : ""}`}
+          />
+        ))}
+      </div>
+      <p className="mt-1.5 text-xs text-ink-soft">{note}</p>
+    </div>
+  );
+}
+
+function TodayTab({ onEncounter, now }: { onEncounter: (dex: number, key: string) => void; now: number }) {
+  const { streaks } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const live = activeEvents(now);
+  const next = upcomingEvents(now)[0];
+  return (
+    <div>
+      <Head>Field Research</Head>
+      <FieldList onEncounter={onEncounter} />
+      <Head>Happening now</Head>
+      {live.length ? (
+        <div className="space-y-2.5">
+          {live.map((e) => (
+            <EventCard key={e.id} e={e} live />
+          ))}
+        </div>
+      ) : (
+        <p className="rounded-2xl bg-ink/5 px-4 py-4 text-sm text-ink-soft">Nothing&apos;s on right now.{next ? ` Next up: ${next.name}, from ${whenIs(next.from)}.` : ""}</p>
+      )}
+      <Head>Daily activities</Head>
+      <div className="space-y-2.5">
+        <StreakRow label="Catch streak" s={streaks.catch} note="First catch of the day: 1,500 XP, and 6,000 on day 7." />
+        <StreakRow label="Spin streak" s={streaks.spin} note="First spin of the day: 500 XP and a few balls, and 2,000 on day 7." />
+      </div>
+      <Head>Pokémon in Gyms</Head>
+      <ul className="grid grid-cols-2 gap-2">
+        {gyms.map((g) => (
+          <li key={g.slug} className="flex items-center gap-2 rounded-2xl bg-ink/5 px-2.5 py-2">
+            {/* eslint-disable-next-line @next/next/no-img-element -- tiny local portrait */}
+            <img src={`/portraits/${DEFENDER[g.slug] ?? 25}.webp`} alt="" width={34} height={34} className="size-8.5 shrink-0 object-contain" />
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold">{g.org.replace(/ \(.*\)$/, "")}</span>
+              <span className="block text-xs text-ink-soft">{monthsAt(g)} months held</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function EventsTab({ now }: { now: number }) {
+  const { caught } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const soon = upcomingEvents(now);
+  const got = spawns.filter((s) => caught[s.pokemon.dex]).length;
+  return (
+    <div>
+      <Head>Upcoming events</Head>
+      {soon.length ? (
+        <div className="space-y-2.5">
+          {soon.map((e) => (
+            <EventCard key={e.id} e={e} live={false} />
+          ))}
+        </div>
+      ) : (
+        <p className="rounded-2xl bg-ink/5 px-4 py-4 text-sm text-ink-soft">Nothing new on the calendar yet.</p>
+      )}
+      <Head>Collection challenge</Head>
+      <div className="rounded-2xl bg-ink/5 px-3.5 py-3">
+        <div className="flex items-center justify-between">
+          <span className="text-[15px] font-semibold">Facts about Tyler</span>
+          <span className="text-xs font-bold text-ink-soft tabular-nums">
+            {got}/{spawns.length}
+          </span>
+        </div>
+        <p className="mt-0.5 text-xs text-ink-soft">Catch every Pokémon that knows a fact about him.</p>
+        <div className="mt-2.5 grid grid-cols-7 gap-1.5">
+          {spawns.map((s) => (
+            // eslint-disable-next-line @next/next/no-img-element -- tiny local portrait
+            <img
+              key={s.slug}
+              src={`/portraits/${s.pokemon.dex}.webp`}
+              alt={caught[s.pokemon.dex] ? s.pokemon.name : "Not caught yet"}
+              width={36}
+              height={36}
+              className={`size-9 object-contain ${caught[s.pokemon.dex] ? "" : "brightness-0 opacity-30"}`}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -143,7 +342,8 @@ function FieldTab({ onEncounter }: { onEncounter: (dex: number, key: string) => 
 export function ResearchPanel({ onClose, onEncounter }: { onClose: () => void; onEncounter: (dex: number, key: string) => void }) {
   const r = useResearch();
   const step = STEPS[r.step];
-  const [tab, setTab] = useState<Tab>("field");
+  const [tab, setTab] = useState<Tab>("today");
+  const [now] = useState(Date.now);
   const claim = () => {
     if (!step || !r.claimable) return;
     sfx.open();
@@ -152,11 +352,12 @@ export function ResearchPanel({ onClose, onEncounter }: { onClose: () => void; o
     claimStep();
   };
   return (
-    <Sheet title="Research" onClose={onClose}>
-      <div role="tablist" aria-label="Research" className="mb-4 flex justify-center gap-1">
+    <Sheet title="Today" onClose={onClose}>
+      <div role="tablist" aria-label="Today View" className="mb-4 flex justify-center gap-1">
         {(
           [
-            ["field", "Field"],
+            ["today", "Today"],
+            ["events", "Events"],
             ["special", "Special"],
           ] as const
         ).map(([id, label]) => (
@@ -172,7 +373,8 @@ export function ResearchPanel({ onClose, onEncounter }: { onClose: () => void; o
           </button>
         ))}
       </div>
-      {tab === "field" ? <FieldTab onEncounter={onEncounter} /> : null}
+      {tab === "today" ? <TodayTab onEncounter={onEncounter} now={now} /> : null}
+      {tab === "events" ? <EventsTab now={now} /> : null}
       {tab === "special" ? (
       <div className="rounded-3xl bg-surface p-4 shadow-[0_2px_10px_rgba(48,85,93,0.12)]">
         <p className="text-xs font-bold tracking-[0.14em] text-[#e8913a] uppercase">Tyler&apos;s Journey</p>

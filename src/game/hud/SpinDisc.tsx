@@ -1,7 +1,7 @@
 "use client";
 
 import { type PointerEvent, useRef, useState, useSyncExternalStore } from "react";
-import { addItems, fieldEvent, gainXp, type Items, progressStore, receiveField, recordSpin, toast } from "../progress";
+import { addItems, dailySpin, fieldEvent, gainXp, type Items, progressStore, receiveField, recordSpin, toast } from "../progress";
 import { count } from "../community";
 import { sfx } from "../sound";
 import { ItemIcon, StopIcon } from "./icons";
@@ -56,6 +56,7 @@ export function SpinDisc({ slug, lured, photo }: { slug: string; lured: boolean;
       recordSpin(slug);
       gainXp(50, "spun a stop");
     }
+    dailySpin();
     fieldEvent({ kind: "spin", slug });
     // like GO, a stop hands out its Field Research task for the day
     const task = receiveField(slug);

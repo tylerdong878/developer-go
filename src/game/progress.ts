@@ -2,6 +2,7 @@
 
 import { type FieldEvent, type FieldTask, progressWith, receive } from "./field";
 import { levelFor, rewardsFor } from "./levels";
+import { BREAKTHROUGH_XP, catchBonus, mysteryItem, NO_STREAK, nextStreak, spinBonus, STAMPS, type Streak, stampWith } from "./daily";
 import { sfx } from "./sound";
 
 /**
@@ -33,6 +34,9 @@ export type Progress = {
   bond: Bond;
   /** Field Research held right now (three at most). */
   field: FieldTask[];
+  /** GO's daily catch and spin streaks, and the Breakthrough stamps since the last one (daily.ts). */
+  streaks: { catch: Streak; spin: Streak };
+  stamps: string[];
   xp: number;
   items: Items;
 };
@@ -41,14 +45,14 @@ export type Progress = {
 export const STARTER_ITEMS: Items = { ball: 20, great: 0, razz: 2 };
 
 const KEY = "developer-go:progress";
-const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: NO_BOND, field: [], xp: 0, items: STARTER_ITEMS };
+const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: NO_BOND, field: [], streaks: { catch: NO_STREAK, spin: NO_STREAK }, stamps: [], xp: 0, items: STARTER_ITEMS };
 
 function load(): Progress {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const saved = JSON.parse(raw);
-      return { ...empty, ...saved, bond: { ...NO_BOND, ...saved.bond }, items: { ...STARTER_ITEMS, ...saved.items } };
+      return { ...empty, ...saved, bond: { ...NO_BOND, ...saved.bond }, streaks: { ...empty.streaks, ...saved.streaks }, items: { ...STARTER_ITEMS, ...saved.items } };
     }
   } catch {
     // Private mode or blocked storage: start fresh.
@@ -86,11 +90,29 @@ export function recordCatch(c: Omit<Catch, "id" | "at">) {
   const p = current();
   const at = Date.now();
   const entry: Catch = { ...c, id: at + Math.random(), at };
+  // the day's first catch keeps GO's catch streak going
+  const streak = nextStreak(p.streaks.catch);
   save({
     ...p,
     caught: { ...p.caught, [c.dex]: (p.caught[c.dex] ?? 0) + 1 },
     history: [entry, ...p.history].slice(0, HISTORY_MAX),
+    streaks: streak ? { ...p.streaks, catch: streak } : p.streaks,
   });
+  if (streak) {
+    const bonus = catchBonus(streak.n);
+    gainXp(bonus.xp, bonus.why);
+  }
+}
+
+/** Any spin counts toward GO's daily spin streak; the first of the day gets its bonus. */
+export function dailySpin() {
+  const p = current();
+  const streak = nextStreak(p.streaks.spin);
+  if (!streak) return;
+  const bonus = spinBonus(streak.n);
+  save({ ...p, streaks: { ...p.streaks, spin: streak } });
+  addItems(bonus.items);
+  gainXp(bonus.xp, bonus.why);
 }
 
 export function recordVisit(slug: string) {
@@ -125,10 +147,24 @@ export function fieldEvent(e: FieldEvent) {
   if (next.some((t, i) => t.have !== p.field[i].have)) save({ ...p, field: next });
 }
 
-/** A finished task's reward is claimed. */
+/** A finished task's reward is claimed, and the first claim of the day earns a Breakthrough stamp. */
 export function claimField(stop: string, day: string) {
   const p = current();
-  save({ ...p, field: p.field.map((t) => (t.stop === stop && t.day === day ? { ...t, claimed: true } : t)) });
+  const task = p.field.find((t) => t.stop === stop && t.day === day && !t.claimed);
+  if (!task) return;
+  const stamps = stampWith(p.stamps);
+  save({ ...p, field: p.field.map((t) => (t === task ? { ...t, claimed: true } : t)), stamps: stamps ?? p.stamps });
+  if (stamps) toast(stamps.length >= STAMPS ? "Research stamp! Your Breakthrough is ready" : `Research stamp! ${STAMPS - stamps.length} more for a Breakthrough`);
+}
+
+/** Seven stamps open a Breakthrough: its XP and a mystery item go in now, its encounter comes next. */
+export function claimBreakthrough() {
+  const p = current();
+  if (p.stamps.length < STAMPS) return false;
+  save({ ...p, stamps: [] });
+  addItems(mysteryItem(Math.random()));
+  gainXp(BREAKTHROUGH_XP, "research breakthrough");
+  return true;
 }
 
 export function saveBond(bond: Bond) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { DEFENDER } from "@/game/objects";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef, useState } from "react";
 import {
@@ -50,7 +51,6 @@ const WHITE = "#ffffff";
 const CORE = "#374049";
 
 /** Which of Tyler's Pokémon defends each job's gym (include then prune). */
-const DEFENDER: Record<string, number> = { aws: 25, philips: 7, khoury: 1, tetracorp: 4, quartzy: 54, outamation: 100, homegoods: 39 };
 /** The big jobs get the tall form with pillars; the rest are compact. */
 const TALL = new Set(["aws", "philips", "khoury"]);
 const RAID_TEAMS = [VALOR, INSTINCT, MYSTIC];
