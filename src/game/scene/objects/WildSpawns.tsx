@@ -2,7 +2,7 @@
 
 import { type ThreeEvent, useFrame } from "@react-three/fiber";
 import { useRef, useSyncExternalStore } from "react";
-import type { Group } from "three";
+import { BoxGeometry, type Group, MeshLambertMaterial, SphereGeometry } from "three";
 import { sfx } from "../../sound";
 import { boosted } from "../../species";
 import { usePhase } from "../../useTimeOfDay";
@@ -20,6 +20,45 @@ import { critterSize, Critter } from "./Critter";
  * now and then, like GO's (they don't wander, and get no "!"). When its time's
  * up it goes in a puff. Ditto looks like its disguise until it's caught.
  */
+/** Halloween's spooky surprise, our own box: orange with a purple lid and ribbon, a bow, a jack-o'-lantern grin. */
+const boxBody = new BoxGeometry(0.62, 0.5, 0.62).translate(0, 0.25, 0);
+const boxLid = new BoxGeometry(0.7, 0.14, 0.7).translate(0, 0.55, 0);
+const ribbonX = new BoxGeometry(0.66, 0.52, 0.12).translate(0, 0.26, 0);
+const ribbonZ = new BoxGeometry(0.12, 0.52, 0.66).translate(0, 0.26, 0);
+const bow = new SphereGeometry(0.11, 10, 8);
+const eye = new BoxGeometry(0.1, 0.1, 0.02);
+const mouth = new BoxGeometry(0.28, 0.06, 0.02);
+const ORANGE = new MeshLambertMaterial({ color: "#f07a18" });
+const PURPLE = new MeshLambertMaterial({ color: "#7a3fc0" });
+const FACE = new MeshLambertMaterial({ color: "#3a1a08", emissive: "#ffb040", emissiveIntensity: 0.25 });
+
+function SurpriseBox({ seed, onClick }: { seed: number; onClick: (e: ThreeEvent<MouseEvent>) => void }) {
+  const box = useRef<Group>(null);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime + seed;
+    if (!box.current) return;
+    // a little hop and a wiggle now and then, like something's inside
+    const hop = Math.max(0, Math.sin(t * 2.2)) ** 6;
+    box.current.position.y = hop * 0.18;
+    box.current.rotation.z = Math.sin(t * 9) * 0.08 * hop;
+    box.current.rotation.y = seed + t * 0.25;
+  });
+  return (
+    <group ref={box} onClick={onClick} scale={1.2}>
+      <mesh geometry={boxBody} material={ORANGE} castShadow />
+      <mesh geometry={ribbonX} material={PURPLE} />
+      <mesh geometry={ribbonZ} material={PURPLE} />
+      <mesh geometry={boxLid} material={PURPLE} castShadow />
+      <mesh geometry={bow} material={PURPLE} position={[-0.1, 0.68, 0]} scale={[1, 0.7, 0.7]} />
+      <mesh geometry={bow} material={PURPLE} position={[0.1, 0.68, 0]} scale={[1, 0.7, 0.7]} />
+      {[-1, 1].map((s) => (
+        <mesh key={s} geometry={eye} material={FACE} position={[s * 0.13, 0.33, 0.315]} rotation={[0, 0, Math.PI / 4]} />
+      ))}
+      <mesh geometry={mouth} material={FACE} position={[0, 0.17, 0.315]} />
+    </group>
+  );
+}
+
 function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
   const root = useRef<Group>(null);
   const body = useRef<Group>(null);
@@ -49,16 +88,27 @@ function Wanderer({ s, grass }: { s: WildSpawn; grass: string }) {
   return (
     <group ref={root} position={[s.x, 0, s.z]}>
       <group ref={body} scale={0}>
-        <Critter
-          dex={looks}
-          grass={grass}
-          seed={seed}
-          onClick={(e: ThreeEvent<MouseEvent>) => {
-            if (e.delta > 6 || !isOut(s)) return;
-            e.stopPropagation();
-            goTo(goalId(s));
-          }}
-        />
+        {s.surprise ? (
+          <SurpriseBox
+            seed={seed}
+            onClick={(e) => {
+              if (e.delta > 6 || !isOut(s)) return;
+              e.stopPropagation();
+              goTo(goalId(s));
+            }}
+          />
+        ) : (
+          <Critter
+            dex={looks}
+            grass={grass}
+            seed={seed}
+            onClick={(e: ThreeEvent<MouseEvent>) => {
+              if (e.delta > 6 || !isOut(s)) return;
+              e.stopPropagation();
+              goTo(goalId(s));
+            }}
+          />
+        )}
       </group>
       <AppearFx state={fx} />
     </group>

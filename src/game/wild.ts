@@ -1,5 +1,6 @@
 import { spawns as facts, stops } from "@/content";
 import { slots, walkable } from "./base";
+import { halloweenPart } from "./events";
 import type { Vec2 } from "./geometry";
 import { type Appearance, appearanceAt, buildPoints, type Env, hash, nameOf, PointGrid, tableFor, habitatOf, type SpawnPoint } from "./spawnPoints";
 import { random } from "./geometry";
@@ -35,6 +36,8 @@ export type WildSpawn = {
   daily?: boolean;
   /** One of GO's first-catch starters, round a new trainer: never flees, out of Nearby. */
   starter?: boolean;
+  /** Halloween's spooky surprise: a box on the ground with a Pokémon or a treat in it. */
+  surprise?: "pokemon" | "treat";
   /** One of the fact Pokémon: catching it shows the fact. */
   fact?: string;
 };
@@ -138,6 +141,38 @@ function dailyAppearance(x: number, z: number, heading: number, at: number, caug
   return { key: `daily:${day}`, point, dex: daily.dex, looks: daily.dex, x: daily.x, z: daily.z, from: 0, until: end };
 }
 
+/* ---------------- Halloween's spooky surprises ---------------- */
+
+/**
+ * GO's Trick or Treat (Halloween 2026 Part I, notes/research/go-round-4.md 4):
+ * "spooky surprises left behind by mischievous Pokémon in the wild", boxes you
+ * tap like GO's apples. GO hasn't shown them yet, so the box is ours, and so
+ * are the odds: mostly an encounter with an event Pokémon, now and then a
+ * treat. A few round you at once, a fresh set every minute and a half, the
+ * same for everyone.
+ */
+export const SURPRISE = { window: 90, every: 6, max: 4 };
+const SPOOKY = [41, 41, 41, 92, 92, 92, 25];
+
+function surpriseAppearances(x: number, z: number, at: number): Appearance[] {
+  if (halloweenPart(at) !== 1) return [];
+  const w = Math.floor(at / 1000 / SURPRISE.window);
+  const out: Appearance[] = [];
+  for (const p of grid.near(x, z, RANGE)) {
+    if (out.length >= SURPRISE.max) break;
+    if (hash(p.id, w, 31) % SURPRISE.every) continue;
+    const roll = hash(p.id, w, 37);
+    const dex = SPOOKY[roll % SPOOKY.length];
+    const treat = roll % 10 < 3;
+    // a step off the point, so it never sits on a Pokémon
+    const [sx, sz] = [p.x + 1.3, p.z + 0.6];
+    if (!walkable([sx, sz])) continue;
+    const from = w * SURPRISE.window * 1000;
+    out.push({ key: `surprise:${p.id}:${w}:${treat ? "treat" : "pokemon"}`, point: p, dex, looks: dex, x: sx, z: sz, from, until: from + SURPRISE.window * 1000 });
+  }
+  return out;
+}
+
 /* ---------------- the first catch ---------------- */
 
 /**
@@ -227,6 +262,7 @@ function toWild(a: Appearance, scene: number, at: number): WildSpawn {
     ...(a.key.startsWith("lure:") ? { lured: true } : {}),
     ...(a.key.startsWith("daily:") ? { daily: true } : {}),
     ...(a.key.startsWith("starter:") ? { starter: true } : {}),
+    ...(a.key.startsWith("surprise:") ? { surprise: a.key.endsWith(":treat") ? ("treat" as const) : ("pokemon" as const) } : {}),
     ...(FACT_OF.has(real) ? { fact: FACT_OF.get(real) } : {}),
   };
 }
@@ -247,6 +283,7 @@ export function refreshWild(x: number, z: number, scene: number, { goal = null, 
     if (a && !gone.has(a.key)) want.set(a.key, a);
   }
   for (const a of lureAppearances(x, z, at, env)) if (!gone.has(a.key) && Math.hypot(a.x - x, a.z - z) <= RANGE) want.set(a.key, a);
+  for (const a of surpriseAppearances(x, z, at)) if (!gone.has(a.key)) want.set(a.key, a);
   // a new trainer's three starters come first; the Daily Encounter waits until one's caught
   if (fresh && !starterDone) for (const a of starterAppearances(x, z, heading, at)) want.set(a.key, a);
   else {

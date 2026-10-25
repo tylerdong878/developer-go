@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { appearanceAt, buildPoints, CYCLE } from "./spawnPoints";
-import { endWild, holdWild, LEAVE, PIKACHU_AFTER, refreshWild, resetWild, spawnPoints, wildStore } from "./wild";
+import { endWild, holdWild, LEAVE, PIKACHU_AFTER, refreshWild, resetWild, spawnPoints, SURPRISE, wildStore } from "./wild";
 
 const T = Date.UTC(2026, 9, 24, 15, 0, 0);
 const env = { weather: null, night: false, at: T };
@@ -75,6 +75,19 @@ describe("the wild Pokémon round the trainer", () => {
     expect(starters()).toHaveLength(0);
     refreshWild(80, 6, 9, { at: T + 9000, fresh: true });
     expect(starters()).toHaveLength(0);
+  });
+
+  it("leaves spooky surprises round you in Halloween's first part, and none before it", () => {
+    refreshWild(...PARK, 0, { at: T });
+    expect(wildStore.get().some((s) => s.surprise)).toBe(false);
+    const halloween = Date.UTC(2026, 9, 28, 18);
+    refreshWild(...PARK, 1, { at: halloween });
+    const boxes = wildStore.get().filter((s) => s.surprise);
+    expect(boxes.length).toBeGreaterThan(0);
+    expect(boxes.length).toBeLessThanOrEqual(SURPRISE.max);
+    endWild(boxes[0].id, "caught");
+    refreshWild(...PARK, 2, { at: halloween + 1000 });
+    expect(wildStore.get().some((s) => s.id === boxes[0].id)).toBe(false);
   });
 
   it("gives each visitor a Daily Encounter, Snorlax first", () => {

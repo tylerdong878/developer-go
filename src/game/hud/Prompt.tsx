@@ -10,8 +10,22 @@ const coarse = () => window.matchMedia("(pointer: coarse)").matches;
 const never = () => () => {};
 
 /** What to call the thing in reach, and what opening it does. */
+/** Halloween's spooky surprise box, small. */
+function SurpriseIcon() {
+  return (
+    <svg viewBox="0 0 32 32" width={26} height={26} aria-hidden>
+      <rect x="5" y="13" width="22" height="15" rx="2.5" fill="#f07a18" />
+      <rect x="3.5" y="9" width="25" height="6" rx="2" fill="#7a3fc0" />
+      <rect x="14" y="9" width="4" height="19" fill="#7a3fc0" />
+      <path d="M16 9c-3-5-9-4-7-1 1 1.5 4 1.5 7 1Zm0 0c3-5 9-4 7-1-1 1.5-4 1.5-7 1Z" fill="#9a5ee0" />
+      <path d="m8.5 18 2.5-2 2.5 2Zm10 0 2.5-2 2.5 2ZM9 23h5l2 1.5 2-1.5h5" fill="#3a1a08" stroke="#3a1a08" strokeWidth="1.2" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function label(goal: string) {
   const w = findWild(goal);
+  if (w?.surprise) return { verb: "Open", name: "spooky surprise", icon: <SurpriseIcon /> };
   if (w) return { verb: "Catch", name: w.looks?.name ?? w.species.name, icon: <WildIcon dex={w.looks?.dex ?? w.species.dex} /> };
   if (goal === "place:center") return { verb: "Enter", name: "the Pokémon Center", icon: <BallIcon top="#e3342f" /> };
   if (goal === "place:mart") return { verb: "Enter", name: "the Poké Mart", icon: <BallIcon top="#2f6fd6" /> };

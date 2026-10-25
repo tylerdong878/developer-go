@@ -6,7 +6,7 @@ import { bySlug } from "../objects";
 import { slots } from "../base";
 import { game, ZOOM } from "../state";
 import { goTo } from "../travel";
-import { claimField, fieldEvent, gainXp, levelFor, progressStore, recordBonus, recordCatch, recordHatch, recordVisit } from "../progress";
+import { addItems, claimField, fieldEvent, gainXp, levelFor, progressStore, recordBonus, recordCatch, recordHatch, recordVisit, toast } from "../progress";
 import { BONUS_RATE, bossCp, HATCH_MS, premierBalls, RAID_BOSS } from "../raidBosses";
 import { played } from "../bond";
 import { buddyStore } from "../buddy";
@@ -161,6 +161,13 @@ export function Hud() {
         return setScreen(goal === "place:mart" ? "bag" : "about");
       }
       const w = findWild(goal);
+      // a spooky surprise with a treat in it: the items, and it's gone
+      if (w?.surprise === "treat") {
+        endWild(w.id, "caught");
+        sfx.open();
+        addItems({ razz: 2 });
+        return toast("A treat! 2 Razz Berries");
+      }
       if (w) {
         // it stays on the map until the catch is over
         holdWild(w.id);
