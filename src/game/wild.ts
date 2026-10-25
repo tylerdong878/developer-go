@@ -57,6 +57,8 @@ const FACT_OF = new Map(facts.map((f) => [f.pokemon.dex, f.slug]));
 const GONE_KEY = "developer-go:gone";
 /** Caught or fled: gone for you until it would have left. */
 let gone = new Map<string, number>();
+/** The wall clock as of the last refresh (the map's own time, so tests can set it). */
+let now = Date.now();
 try {
   const saved = JSON.parse(localStorage.getItem(GONE_KEY) ?? "[]") as [string, number][];
   gone = new Map(saved.filter(([, until]) => until > Date.now()));
@@ -197,6 +199,7 @@ function toWild(a: Appearance, scene: number, at: number): WildSpawn {
  */
 export function refreshWild(x: number, z: number, scene: number, { goal = null, weather = null, night = false, at = Date.now(), heading = 0, caught = {} }: Around = {}) {
   clock = scene;
+  now = at;
   const env: Env = { weather, night, at };
   const want = new Map<string, Appearance>();
   for (const p of grid.near(x, z, RANGE)) {
@@ -248,8 +251,8 @@ export function holdWild(id: string | null) {
 export function endWild(id: string, outcome: "caught" | "fled" | "ran") {
   if (outcome === "ran") return;
   const s = spawns.find((w) => w.id === id);
-  gone.set(id, s?.until ?? Date.now() + 3600_000);
-  for (const [k, until] of gone) if (until < Date.now()) gone.delete(k);
+  gone.set(id, s?.until ?? now + 3600_000);
+  for (const [k, until] of gone) if (until < now) gone.delete(k);
   saveGone();
   spawns = spawns.filter((w) => w.id !== id);
   notify();
