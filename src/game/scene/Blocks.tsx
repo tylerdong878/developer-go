@@ -67,6 +67,8 @@ const hash = (n: number) => {
   return s - Math.floor(s);
 };
 const pick = <T,>(list: readonly T[], n: number) => list[Math.floor(hash(n) * list.length) % list.length];
+/** A building's own shade of its wall color: a few degrees of hue and a little lightness either way, never the trim or accent (town-polish.md 8). */
+const shade = (color: string, i: number) => `#${new Color(color).offsetHSL((hash(i + 41) - 0.5) * 0.022, 0, (hash(i + 43) - 0.5) * 0.08).getHexString()}`;
 
 /** The building's own width and depth, before its turn. */
 const localSize = (b: Building) => (Math.round(b.turn / (Math.PI / 2)) % 2 !== 0 ? [b.d, b.w] : [b.w, b.d]);
@@ -100,7 +102,8 @@ function parts(b: Building, i: number): Box[] {
   const striped = hash(i + 21) < 0.5;
   const out: Box[] = [];
   if (recipe === "saffron") {
-    const { wall, accent, door: paint } = pick(SAFFRON, i);
+    const { wall: base, accent, door: paint } = pick(SAFFRON, i);
+    const wall = shade(base, i);
     const bay = bays(W, 0.4, 2.4);
     const dx = bay.x[bay.door];
     out.push(blank([W + 0.2, 0.9, D + 0.2], [0, 0.45, 0], "#8b80a6", [0.5, 0.08, 0.5]));
@@ -122,7 +125,7 @@ function parts(b: Building, i: number): Box[] {
     }
   } else if (recipe === "glass") {
     out.push(blank([W + 0.1, 0.6, D + 0.1], [0, 0.3, 0], "#5f6b85", [0.2, 0.08, 0.2]));
-    out.push({ at: [0, (H - 0.5) / 2, 0], size: [W, H - 0.5, D], round: [0.1, 0.15, 0.1], facade: [1.6, 3.2, 4.4, CURTAIN], color: "#eef0f5", glass: pick(["#6f8fc8", "#7fa2d8", "#8fb4e2"], i), trim: "#c9d3ea" });
+    out.push({ at: [0, (H - 0.5) / 2, 0], size: [W, H - 0.5, D], round: [0.1, 0.15, 0.1], facade: [1.6, 3.2, 4.4, CURTAIN], color: shade("#f4f1ea", i), glass: pick(["#6f8fc8", "#7fa2d8", "#8fb4e2"], i), trim: "#d6dcea" });
     for (const sx of [-1, 1])
       for (const sz of [-1, 1]) out.push(blank([0.9, H - 0.4, 0.9], [sx * (W / 2 - 0.3), (H - 0.4) / 2, sz * (D / 2 - 0.3)], "#f6f7fa", [0.35, 0.1, 0.35]));
     out.push(blank([W * 0.6, 0.3, 2.2], [0, 4.1, F + 1.0], "#f6f7fa"));
@@ -140,7 +143,7 @@ function parts(b: Building, i: number): Box[] {
     const bay = bays(W, 0.8, 2.2);
     const dx = bay.x[bay.door];
     out.push(blank([W + 0.1, 0.5, D + 0.1], [0, 0.25, 0], "#9a8670", [0.8, 0.08, 0.8]));
-    out.push({ at: [0, (H - 0.4) / 2, 0], size: [W, H - 0.4, D], round: [0.8, 0.1, 0.8], facade: [2.2, 3.2, 4.6, TALL], color: "#ecdcbc", glass: "#8fa6e3", trim: "#f6eedd" });
+    out.push({ at: [0, (H - 0.4) / 2, 0], size: [W, H - 0.4, D], round: [0.8, 0.1, 0.8], facade: [2.2, 3.2, 4.6, TALL], color: shade("#ecdcbc", i), glass: "#8fa6e3", trim: "#f6eedd" });
     out.push(blank([W + 0.25, 0.25, D + 0.25], [0, 4.6, 0], "#f6eedd", [0.9, 0.08, 0.9]));
     // a Lumiose shop floor: a sign board under the string course, awnings, a framed door
     out.push(...fascia(Math.min(W - 2, 9), 3.9, F, "#f6eedd", accent));
@@ -151,7 +154,7 @@ function parts(b: Building, i: number): Box[] {
     out.push(blank([W + 0.4, 0.4, D + 0.4], [0, H - 0.2, 0], "#f6eedd", [1.0, 0.08, 1.0]));
     out.push(...mansard(W, D, H, "#f6eedd", W > 11 ? 3 : 2));
   } else {
-    const wall = pick(["#c0624a", "#b4583f", "#c87156"], i);
+    const wall = shade(pick(["#c0624a", "#b4583f", "#c87156"], i), i);
     const bay = bays(W, 0.25, 2.2);
     const dx = bay.x[bay.door];
     out.push(blank([W + 0.15, 0.7, D + 0.15], [0, 0.35, 0], "#6e4a40", [0.25, 0.08, 0.25]));

@@ -155,7 +155,31 @@ export type Site = {
   /** Spots that need room around them (map objects), with how much. */
   clearings: { at: Vec2; r: number }[];
   trees: Vec2[];
+  /** The streets, for lining them with blocks. */
+  streets?: { width: number; points: Vec2[] }[];
 };
+
+/** What lines the streets in each district, and how often (town-polish.md 7). Homes keep their houses. */
+const FRONTAGE: Partial<Record<District, [Recipe, number][]>> = {
+  downtown: [
+    ["saffron", 0.4],
+    ["glass", 0.3],
+    ["stone", 0.15],
+    ["brick", 0.15],
+  ],
+  harbor: [
+    ["glass", 0.45],
+    ["stone", 0.3],
+    ["saffron", 0.25],
+  ],
+  campus: [
+    ["brick", 0.85],
+    ["glass", 0.15],
+  ],
+};
+const FLOORS: Record<Recipe, [number, number]> = { saffron: [2, 4], glass: [3, 5], stone: [4, 5], brick: [3, 4] };
+/** Sidewalk plus a little setback, from the road's edge to a block's front. */
+const SETBACK = 2.02 + 0.4;
 
 const overlaps = (a: Building, b: Building, gap: number) =>
   Math.abs(a.x - b.x) * 2 < a.w + b.w + gap * 2 && Math.abs(a.z - b.z) * 2 < a.d + b.d + gap * 2;
@@ -182,7 +206,7 @@ export function placeBuildings(site: Site): Building[] {
   const pick = <T,>(list: readonly T[]) => list[Math.floor(rand() * list.length)];
   const placed: Building[] = [...SIGNATURE];
 
-  const fits = (b: Building) => {
+  const fits = (b: Building, gap = 1.6) => {
     if (Math.hypot(b.x, b.z) + Math.max(b.w, b.d) / 2 > site.radius - 6) return false;
     const pts = outline(b);
     if (pts.some((p) => site.nearRoad(p, 1.4))) return false;
@@ -191,8 +215,97 @@ export function placeBuildings(site: Site): Building[] {
     if (site.trees.some((t) => distanceToBuilding(t, b) < 2.4)) return false;
     // Front a street: some edge midpoint sits close to a road.
     if (!pts.some((p) => site.nearRoad(p, 4.5))) return false;
-    return !placed.some((o) => overlaps(o, b, 1.6));
+    return !placed.some((o) => overlaps(o, b, gap));
   };
+
+  // Street walls first (town-polish.md 7): downtown, the harbor and the campus edge get blocks shoulder to
+  // shoulder along every street, fronts on the sidewalk, in runs of two or three that share a look. Each gym,
+  // stop and raid keeps a way in: a gap 7 m wide off its nearest street that its own building isn't in the way of.
+  const front = random(2016);
+  const streets = site.streets ?? [];
+  const ways = site.clearings.map(({ at }) => {
+    let best: { street: number; seg: number; side: number; along: number } | null = null;
+    let near = Infinity;
+    streets.forEach((st, k) => {
+      for (let i = 0; i + 1 < st.points.length; i++) {
+        const a = st.points[i];
+        const b = st.points[i + 1];
+        const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        const dir: Vec2 = [(b[0] - a[0]) / len, (b[1] - a[1]) / len];
+        const along = (at[0] - a[0]) * dir[0] + (at[1] - a[1]) * dir[1];
+        const across = (at[0] - a[0]) * -dir[1] + (at[1] - a[1]) * dir[0];
+        if (along < 0 || along > len || Math.abs(across) >= near) continue;
+        // the way out to the street mustn't run through a building that's already there
+        const foot: Vec2 = [a[0] + dir[0] * along, a[1] + dir[1] * along];
+        const clear = [0.2, 0.4, 0.6, 0.8].every((t) => {
+          const p: Vec2 = [at[0] + (foot[0] - at[0]) * t, at[1] + (foot[1] - at[1]) * t];
+          return !placed.some((o) => distanceToBuilding(p, o) < 1);
+        });
+        if (!clear) continue;
+        near = Math.abs(across);
+        best = { street: k, seg: i, side: Math.sign(across) || 1, along };
+      }
+    });
+    return best as { street: number; seg: number; side: number; along: number } | null;
+  });
+  const choose = (mix: [Recipe, number][]) => {
+    let r = front();
+    for (const [k, p] of mix) if ((r -= p) < 0) return k;
+    return mix[0][0];
+  };
+  streets.forEach((street, k) => {
+    for (let i = 0; i + 1 < street.points.length; i++) {
+      const a = street.points[i];
+      const b = street.points[i + 1];
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      const dir: Vec2 = [(b[0] - a[0]) / len, (b[1] - a[1]) / len];
+      for (const side of [-1, 1]) {
+        const n: Vec2 = [-dir[1] * side, dir[0] * side];
+        const turn = Math.atan2(-n[0], -n[1]);
+        const wayIn = (mid: number, w: number) => ways.some((way) => way && way.street === k && way.seg === i && way.side === side && Math.abs(way.along - mid) < w / 2 + 3.5);
+        let recipe: Recipe | null = null;
+        let run = 0;
+        let floors = 0;
+        for (let s = 0; s < len; ) {
+          const w = 10 + front() * 5;
+          const mid = s + w / 2;
+          if (mid + w / 2 > len) break;
+          const at = (off: number): Vec2 => [a[0] + dir[0] * mid + n[0] * off, a[1] + dir[1] * mid + n[1] * off];
+          const mix = FRONTAGE[districtAt(at(street.width / 2 + 9))];
+          if (!mix || wayIn(mid, w)) {
+            s += 2;
+            recipe = null;
+            continue;
+          }
+          if (!recipe || run <= 0) {
+            recipe = choose(mix);
+            run = 2 + Math.floor(front() * 2);
+            floors = 0;
+          }
+          const [lo, hi] = FLOORS[recipe];
+          const want = lo + Math.floor(front() * (hi - lo + 1));
+          // a street steps up or down one storey at a time
+          const f = floors ? Math.min(floors + 1, Math.max(floors - 1, want)) : want;
+          const lot = [10 + front() * 3, 7.5, 6]
+            .map((d) => {
+              const [x, z] = at(street.width / 2 + SETBACK + d / 2);
+              return block(x, z, w, d, turn, recipe!, f, recipe === "brick" ? "brick" : "office");
+            })
+            .find((bl) => fits(bl, 0.2));
+          if (lot) {
+            placed.push(lot);
+            s += w + 0.25;
+            run--;
+            floors = f;
+          } else {
+            s += 2;
+            recipe = null;
+          }
+        }
+      }
+    }
+  });
+  const lined = placed.length - SIGNATURE.length;
 
   /** Turn the front toward the closest street (the first side that has one right outside it). */
   const toStreet = (x: number, z: number, size: number): number => {
@@ -203,7 +316,7 @@ export function placeBuildings(site: Site): Building[] {
     return 0;
   };
 
-  for (let i = 0; i < 9000 && placed.length < 150; i++) {
+  for (let i = 0; i < 9000 && placed.length < 150 + lined; i++) {
     const p: Vec2 = [(rand() * 2 - 1) * site.radius, (rand() * 2 - 1) * site.radius];
     const district = districtAt(p);
     if (district === "homes") {

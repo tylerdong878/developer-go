@@ -247,6 +247,7 @@ export const buildings = placeBuildings({
     ...Object.values(slots).map((at) => ({ at, r: 6.5 })),
   ],
   trees,
+  streets: roads.filter((r) => (r.kind === "avenue" || r.kind === "street") && !r.loop),
 });
 
 /**
