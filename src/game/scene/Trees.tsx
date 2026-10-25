@@ -91,6 +91,7 @@ const trunkGeometry = new CylinderGeometry(0.22, 0.34, 2.6, 8).translate(0, 1.3,
 function treeMaterial(color: string, top: string | null, sway: number) {
   const m = new MeshLambertMaterial({ color, alphaHash: true });
   const uTop = { value: new Color(top ?? color) };
+  m.userData.uTop = uTop;
   m.customProgramCacheKey = () => `tree-${top ? "crown" : "trunk"}`;
   m.onBeforeCompile = (s) => {
     Object.assign(s.uniforms, { uTime: skyLook.uTime, uTop, uSway: { value: sway } });
@@ -128,7 +129,10 @@ const MATERIALS = {
 
 type Tree = { x: number; z: number; size: number; turn: number; kind: "broadleaf" | "conifer"; slot: number };
 
-export function Trees({ trunk }: { trunk: string; leaves?: readonly [string, string] }) {
+/** The broadleaf crowns in their summer and fall colors, [side, sunlit top]. Conifers stay green all year. */
+const CROWN = { summer: ["#47b04f", "#b9ec72"], fall: ["#d9822b", "#f6c75a"] } as const;
+
+export function Trees({ trunk, fall = false }: { trunk: string; fall?: boolean }) {
   const trunks = useRef<InstancedMesh>(null);
   const broad = useRef<InstancedMesh>(null);
   const cones = useRef<InstancedMesh>(null);
@@ -165,21 +169,26 @@ export function Trees({ trunk }: { trunk: string; leaves?: readonly [string, str
 
   useLayoutEffect(() => {
     MATERIALS.trunk.color.set(trunk);
+    const [side, top] = CROWN[fall ? "fall" : "summer"];
+    MATERIALS.broadleaf.color.set(side);
+    (MATERIALS.broadleaf.userData.uTop as { value: Color }).value.set(top);
     const m = new Matrix4();
     const q = new Quaternion();
     const s = new Vector3();
     const p = new Vector3();
-    const tints = [new Color("#ffffff"), new Color("#e6f2d6")];
+    // in the fall each tree turns its own way: orange, gold, or red
+    const evergreen = [new Color("#ffffff"), new Color("#e6f2d6")];
+    const tints = fall ? [new Color("#ffffff"), new Color("#fff0a0"), new Color("#ffb4a0")] : evergreen;
     forest.list.forEach((t, i) => {
       q.setFromAxisAngle(UP, t.turn);
       const k = t.size;
       trunks.current?.setMatrixAt(i, m.compose(p.set(t.x, 0, t.z), q, s.set(k, k * (t.kind === "conifer" ? 0.55 : 1), k)));
       if (t.kind === "broadleaf") {
         broad.current?.setMatrixAt(t.slot, m.compose(p.set(t.x, 3.55 * k, t.z), q, s.set(2.05 * k, 1.85 * k, 2.05 * k)));
-        broad.current?.setColorAt(t.slot, tints[i % 2]);
+        broad.current?.setColorAt(t.slot, tints[i % tints.length]);
       } else {
         cones.current?.setMatrixAt(t.slot, m.compose(p.set(t.x, 1.1 * k, t.z), q, s.set(k, k * 1.15, k)));
-        cones.current?.setColorAt(t.slot, tints[i % 2]);
+        cones.current?.setColorAt(t.slot, evergreen[i % 2]);
       }
     });
     for (const mesh of [trunks.current, broad.current, cones.current]) {
@@ -188,7 +197,7 @@ export function Trees({ trunk }: { trunk: string; leaves?: readonly [string, str
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
       mesh.computeBoundingSphere();
     }
-  }, [forest, trunk]);
+  }, [forest, trunk, fall]);
 
   const fade = useRef<Float32Array | null>(null);
 

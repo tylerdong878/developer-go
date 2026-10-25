@@ -33,6 +33,21 @@ export const EVENTS: GoEvent[] = [
 ];
 
 export const activeEvents = (at: number) => EVENTS.filter((e) => at >= e.from && at < e.to);
+
+/** A peek at Halloween before it starts: ?event=halloween (Part I) or ?event=halloween2 in the address. */
+const preview = typeof location === "undefined" ? null : new URLSearchParams(location.search).get("event");
+
+/** Which part of Halloween is on at a moment: 0 (none), 1 or 2. */
+export function halloweenPart(at: number): 0 | 1 | 2 {
+  if (preview === "halloween") return 1;
+  if (preview === "halloween2") return 2;
+  const on = activeEvents(at).find((e) => e.id.startsWith("halloween"));
+  return on ? (on.id === "halloween-2" ? 2 : 1) : 0;
+}
+
+/** Whether the map is dressed for Halloween this visit (decided once, when the page opens). */
+let dressed: boolean | null = null;
+export const halloween = () => (dressed ??= halloweenPart(Date.now()) > 0);
 export const upcomingEvents = (at: number) => EVENTS.filter((e) => at < e.from).sort((a, b) => a.from - b.from);
 
 /** "Oct 27, 10 AM" in Boston time. */

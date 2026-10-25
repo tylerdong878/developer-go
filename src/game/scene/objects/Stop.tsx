@@ -19,6 +19,7 @@ import {
 } from "three";
 import type { Stop as StopContent } from "@/content";
 import { LURE } from "../../colors";
+import { halloween } from "../../events";
 import { progressStore } from "../../progress";
 import { game } from "../../state";
 import { REACH } from "../Rings";
@@ -41,6 +42,8 @@ import { hover, tapObject } from "./tap";
 const S = 1.6;
 const BLUE = { base: "#04acfc", lit: "#2ce4fc", lip: "#38f8f8", bowl: "#1898f8", notch: "#1868c8", faces: ["#04a4fc", "#2ce4fc", "#0494fc"] };
 const PURPLE = { base: "#b454fc", lit: "#c98cfc", lip: "#d7a8fd", bowl: "#9c48e8", notch: "#6a2cb8", faces: ["#ac44fc", "#c98cfc", "#9a3cf0"] };
+// GO's Halloween stops (notes/research/go-round-3.md 1): orange, and still purple once spun
+const ORANGE = { base: "#f87010", lit: "#f89820", lip: "#ffb347", bowl: "#e06008", notch: "#a84400", faces: ["#f07010", "#f89820", "#e06008"] };
 type Look = typeof BLUE;
 
 /** An annulus sector, extruded, centered on its depth. */
@@ -165,7 +168,8 @@ export function Stop({ stop, x, z }: { stop: StopContent; x: number; z: number }
   const progress = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
   const spun = progress.spun.includes(stop.slug);
   const fresh = !spun && !progress.visited.includes(stop.slug);
-  const m = materials(spun ? PURPLE : BLUE);
+  const spooky = halloween();
+  const m = materials(spun ? PURPLE : spooky ? ORANGE : BLUE);
 
   useFrame(({ clock, camera }, dt) => {
     const t = clock.elapsedTime + x * 0.21;
@@ -222,7 +226,7 @@ export function Stop({ stop, x, z }: { stop: StopContent; x: number; z: number }
               <group ref={ringRef} rotation-x={Math.PI / 2}>
                 <mesh>
                   <torusGeometry args={[0.57, 0.012, 6, 72]} />
-                  <meshLambertMaterial color="#ffffff" emissive="#2ce4fc" emissiveIntensity={0.6} />
+                  <meshLambertMaterial color="#ffffff" emissive={spooky ? "#f89820" : "#2ce4fc"} emissiveIntensity={0.6} />
                 </mesh>
               </group>
             ) : null}

@@ -1,6 +1,7 @@
 "use client";
 
 import { type PointerEvent, useRef, useState, useSyncExternalStore } from "react";
+import { halloween } from "../events";
 import { addItems, dailySpin, fieldEvent, gainXp, type Items, progressStore, receiveField, recordSpin, toast } from "../progress";
 import { count } from "../community";
 import { sfx } from "../sound";
@@ -68,7 +69,7 @@ export function SpinDisc({ slug, lured, photo }: { slug: string; lured: boolean;
     from.current = null;
   };
 
-  const ring = done ? "#a46bf5" : lured ? "#f472b6" : "#1ab6e8";
+  const ring = done ? "#a46bf5" : lured ? "#f472b6" : halloween() ? "#f87010" : "#1ab6e8";
   return (
     <div className="relative flex flex-col items-center gap-3 py-2">
       <div

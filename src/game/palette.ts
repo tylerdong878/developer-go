@@ -1,4 +1,5 @@
 import type { AreaKind, RoadKind } from "./base";
+import { Color } from "three";
 import type { Phase } from "./sun";
 
 export type TimeOfDay = "day" | "night";
@@ -137,3 +138,22 @@ export const palettes: Record<Phase, Palette> = {
     shadow: { color: "#2c3a8a", opacity: 0.5 },
   },
 };
+
+const from = new Color();
+const to = new Color();
+const toward = (hex: string, target: string, k: number) => `#${from.set(hex).lerp(to.set(target), k).getHexString()}`;
+
+/**
+ * Late October, for GO's Halloween map (notes/research/go-round-3.md 1): the
+ * grass a little toward straw, and the trees turned orange and gold, like
+ * Boston's in the last week of October.
+ */
+export function autumn<P extends Palette>(p: P, night: boolean): P {
+  const k = night ? 0.1 : 0.22;
+  return {
+    ...p,
+    land: toward(p.land, "#d8d890", k),
+    areas: { ...p.areas, park: toward(p.areas.park, "#c8c070", k), lawn: toward(p.areas.lawn, "#d8d890", k), grass: toward(p.areas.grass, "#8a7a3a", k) },
+    leaves: ["#d9822b", "#a9a646"],
+  };
+}

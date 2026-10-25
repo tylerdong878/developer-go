@@ -5,7 +5,9 @@ import { useMemo, useRef, useState } from "react";
 import { type BufferGeometry, Color, DoubleSide, Fog, type HemisphereLight, MeshBasicMaterial, RingGeometry, Vector3 } from "three";
 import { areas, roads, type AreaKind } from "../base";
 import { circle } from "../geometry";
-import { type Palette, palettes } from "../palette";
+import { halloween } from "../events";
+import { autumn, type Palette, palettes } from "../palette";
+import { Halloween } from "./Halloween";
 import { useWeather } from "../weather";
 import { type Weathered, weatherize } from "../weatherLook";
 import { WeatherFx } from "./WeatherFx";
@@ -245,7 +247,11 @@ const STARS: Record<Phase, number> = { morning: 0, day: 0, dusk: 0.18, night: 1 
 
 export function World({ phase, shadowMap, light }: { phase: Phase; shadowMap: number; light: boolean }) {
   const weather = useWeather();
-  const palette = useMemo(() => weatherize(palettes[phase], weather, phase === "night"), [phase, weather]);
+  const spooky = halloween();
+  const palette = useMemo(() => {
+    const p = weatherize(palettes[phase], weather, phase === "night");
+    return spooky ? autumn(p, phase === "night") : p;
+  }, [phase, weather, spooky]);
   const lit = phase === "night" || phase === "dusk";
   const [fog] = useState(() => new Fog(palette.sky.fog, FOG.near, FOG.far));
   const [background] = useState(() => new Color(palette.sky.fog));
@@ -276,13 +282,14 @@ export function World({ phase, shadowMap, light }: { phase: Phase; shadowMap: nu
       <Signposts />
       <TallGrass />
       <GymStatues />
-      <Trees trunk={palette.trunk} leaves={palette.leaves} />
+      <Trees trunk={palette.trunk} fall={spooky} />
       <Flora grass={palette.leaves[1]} />
       <Landmarks />
       <WeatherFx weather={weather} light={light} />
       <Sights />
       <Lab />
       <Harbor />
+      {spooky ? <Halloween /> : null}
     </>
   );
 }

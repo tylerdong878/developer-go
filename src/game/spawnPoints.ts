@@ -1,6 +1,7 @@
 import { spawns as facts, wild as roster } from "@/content";
 import { areas, landmarks, LAB, slots, walkable } from "./base";
 import { pointInPolygon, random, type Vec2 } from "./geometry";
+import { halloweenPart } from "./events";
 import { boosted, NIGHT_OWLS } from "./species";
 import type { Weather } from "./weather";
 
@@ -165,6 +166,12 @@ export function tableFor(habitat: Habitat, env: Env): [number, number][] {
   if (habitat !== "water") EVERYWHERE.forEach((d) => add(d, 1));
   else [16, 41].forEach((d) => add(d, 1));
   OWN[habitat].forEach((d) => add(d, 2));
+  // GO's Halloween: Zubat out everywhere in Part I, Gastly on every kind of ground, and more of it in Part II
+  const spooky = halloweenPart(env.at);
+  if (spooky) {
+    add(41, spooky === 1 ? 4 : 1);
+    add(92, spooky === 1 ? 2 : 4);
+  }
   // weather boosts and the night owls, like GO's
   for (const [d, w] of out) out.set(d, w * (env.weather && boosted(d, env.weather) ? 2 : 1) * (env.night && NIGHT_OWLS.has(d) ? 2 : 1));
   return [...out];
