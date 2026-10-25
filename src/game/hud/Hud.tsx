@@ -23,6 +23,7 @@ import { weatherStore } from "../weather";
 import { type CatchResult, Encounter, type Foe } from "./Encounter";
 import { FactToast, XpPops } from "./Xp";
 import { Card } from "./Card";
+import { LevelUp } from "./LevelUp";
 import { MainMenu, MenuBall, type Screen, TrainerBadge } from "./Menu";
 import { Nearby } from "./Nearby";
 import { Prompt } from "./Prompt";
@@ -386,7 +387,7 @@ export function Hud() {
         {screen === "pokemon" ? <PokemonPanel onClose={closeScreen} /> : null}
         {screen === "community" ? <CommunityPanel onClose={closeScreen} /> : null}
         {buddy ? <BuddyPanel onClose={() => setBuddy(false)} /> : null}
-        {foe ? <Encounter key={foe.goal} foe={foe} onDone={endCatch} /> : null}
+        {foe ? <Encounter key={foe.goal} foe={foe} onDone={endCatch} /> : <LevelUp />}
       </div>
     </div>
   );

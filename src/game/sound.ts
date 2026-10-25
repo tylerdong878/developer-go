@@ -34,6 +34,43 @@ export function setMuted(next: boolean) {
   listeners.forEach((l) => l());
 }
 
+const VIBRATE_KEY = "developer-go:vibrate";
+const vibrateListeners = new Set<() => void>();
+let vibrate = true;
+try {
+  vibrate = typeof localStorage === "undefined" || localStorage.getItem(VIBRATE_KEY) !== "0";
+} catch {
+  // storage blocked: it buzzes
+}
+export const vibrateStore = {
+  subscribe(listener: () => void) {
+    vibrateListeners.add(listener);
+    return () => vibrateListeners.delete(listener);
+  },
+  get: () => vibrate,
+  server: () => true,
+};
+export function setVibrate(next: boolean) {
+  vibrate = next;
+  try {
+    localStorage.setItem(VIBRATE_KEY, next ? "1" : "0");
+  } catch {
+    // still set for this visit
+  }
+  vibrateListeners.forEach((l) => l());
+}
+
+/** A buzz in the hand, like GO's haptics, on phones that can (Android Chrome; iOS Safari ignores it). */
+export function buzz(pattern: number | number[]) {
+  // only after a tap, or the browser blocks it with an error
+  if (!vibrate || !navigator.userActivation?.hasBeenActive) return;
+  try {
+    navigator.vibrate?.(pattern);
+  } catch {
+    // no vibration here
+  }
+}
+
 export function unlockSound() {
   try {
     context ??= new AudioContext();
@@ -88,22 +125,41 @@ export const sfx = {
     tone("sine", 780, 1040, 0.12, 0.06, 0.06);
   },
   throw: () => whoosh(0.45, 400, 2400, 0.14),
-  wiggle: () => tone("square", 180, 120, 0.06, 0.05),
-  catch: () => [523, 659, 784, 1047].forEach((f, i) => tone("triangle", f, f, 0.18, 0.1, i * 0.09)),
-  breakFree: () => tone("sawtooth", 300, 90, 0.25, 0.07),
+  wiggle: () => {
+    tone("square", 180, 120, 0.06, 0.05);
+    buzz(20);
+  },
+  catch: () => {
+    [523, 659, 784, 1047].forEach((f, i) => tone("triangle", f, f, 0.18, 0.1, i * 0.09));
+    buzz([60, 40, 60]);
+  },
+  breakFree: () => {
+    tone("sawtooth", 300, 90, 0.25, 0.07);
+    buzz(120);
+  },
   spin: () => {
     whoosh(0.6, 800, 3000, 0.08);
     [880, 1175, 1568].forEach((f, i) => tone("sine", f, f, 0.25, 0.07, 0.25 + i * 0.07));
   },
   xp: () => tone("sine", 1318, 1760, 0.15, 0.05),
   /** A shiny appears: a bright twinkling run. */
-  shiny: () => [1568, 2093, 2637, 3136].forEach((f, i) => tone("sine", f, f * 1.02, 0.22, 0.05, i * 0.07)),
+  shiny: () => {
+    [1568, 2093, 2637, 3136].forEach((f, i) => tone("sine", f, f * 1.02, 0.22, 0.05, i * 0.07));
+    buzz([30, 40, 30]);
+  },
+  /** A level-up: a quick rising run into a bright held chord, and one long buzz. */
+  levelUp: () => {
+    [523, 659, 784, 1047, 1319].forEach((f, i) => tone("triangle", f, f, 0.16, 0.09, i * 0.07));
+    [1047, 1319, 1568].forEach((f) => tone("sine", f, f * 1.005, 0.9, 0.05, 0.4));
+    buzz(400);
+  },
   /** The ball starts spinning for a curveball. */
   spinBall: () => [988, 1319, 1568].forEach((f, i) => tone("sine", f, f * 1.05, 0.12, 0.04, i * 0.05)),
   /** A wild Pokémon popping out on the map: soft, so a few in a row don't nag. */
   appear: () => {
     tone("sine", 520, 880, 0.1, 0.025);
     tone("triangle", 880, 1320, 0.08, 0.015, 0.05);
+    buzz(25);
   },
   hatch: () => {
     [0, 0.5, 0.85, 1.1, 1.3, 1.45].forEach((d) => tone("square", 210, 150, 0.05, 0.04, d));

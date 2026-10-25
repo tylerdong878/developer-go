@@ -1,6 +1,7 @@
 "use client";
 
 import { type FieldEvent, type FieldTask, progressWith, receive } from "./field";
+import { levelFor, rewardsFor } from "./levels";
 import { sfx } from "./sound";
 
 /**
@@ -155,14 +156,43 @@ export function spendItem(id: ItemId) {
   return true;
 }
 
-export function addXp(amount: number) {
-  const p = current();
-  save({ ...p, xp: p.xp + amount });
+export { levelFor, xpForLevel } from "./levels";
+
+/** A level-up waiting to be shown: from, to, and what the new levels put in the bag. */
+export type LevelUp = { from: number; to: number; items: Partial<Items> };
+let levelUp: LevelUp | null = null;
+const levelListeners = new Set<() => void>();
+export const levelUpStore = {
+  subscribe(listener: () => void) {
+    levelListeners.add(listener);
+    return () => levelListeners.delete(listener);
+  },
+  get: () => levelUp,
+  server: () => null,
+};
+/** The level-up screen was closed. */
+export function seenLevelUp() {
+  levelUp = null;
+  levelListeners.forEach((l) => l());
 }
 
-/** XP to reach a level: 1,000 for level 2, then each level needs 1,000 more than the last. */
-export const xpForLevel = (level: number) => (1000 * (level - 1) * level) / 2;
-export const levelFor = (xp: number) => Math.floor((1 + Math.sqrt(1 + (8 * xp) / 1000)) / 2);
+export function addXp(amount: number) {
+  const p = current();
+  const from = levelFor(p.xp);
+  const to = levelFor(p.xp + amount);
+  if (to <= from) return save({ ...p, xp: p.xp + amount });
+  // like GO, each new level's rewards go straight in the bag, and the screen shows them
+  const items = { ...p.items };
+  const got: Partial<Items> = { ...levelUp?.items };
+  for (let l = from + 1; l <= to; l++)
+    for (const [id, n] of Object.entries(rewardsFor(l)) as [ItemId, number][]) {
+      items[id] += n;
+      got[id] = (got[id] ?? 0) + n;
+    }
+  save({ ...p, xp: p.xp + amount, items });
+  levelUp = { from: levelUp?.from ?? from, to, items: got };
+  levelListeners.forEach((l) => l());
+}
 
 /** A pop up the screen: "+100 XP first visit", or just a line (amount 0), like "Teddy found a Poké Ball!". */
 export type XpPop = { id: number; amount: number; why: string };

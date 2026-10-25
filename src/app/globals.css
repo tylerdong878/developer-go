@@ -230,6 +230,17 @@ body {
   text-shadow: 0 0 6px #fff4b0; animation: catch-star 700ms ease-out both;
 }
 .throw-pop { animation: item-pop 420ms cubic-bezier(0.3, 1.6, 0.5, 1) both; }
+/* GO's level-up badge: a cream disk that pops in with a soft gold glow that breathes */
+.levelup-badge {
+  background: radial-gradient(circle at 50% 38%, #fffdf6, #fff6df 58%, #f8e2ad);
+  box-shadow: 0 0 0 6px rgb(255 255 255 / 0.9), 0 0 48px 14px rgb(255 205 90 / 0.7);
+  animation: levelup-pop 440ms cubic-bezier(0.3, 1.6, 0.5, 1) 100ms both, levelup-glow 2.4s ease-in-out 600ms infinite;
+}
+@keyframes levelup-pop { from { scale: 0.2; opacity: 0; } }
+@keyframes levelup-glow { 50% { box-shadow: 0 0 0 6px rgb(255 255 255 / 0.9), 0 0 70px 24px rgb(255 214 110 / 0.9); } }
+@media (prefers-reduced-motion: reduce) {
+  .levelup-badge { animation: none; }
+}
 
 @keyframes foe-out { from { opacity: 0; filter: brightness(3); } }
 @keyframes foe-in { 30% { filter: brightness(3) sepia(1) hue-rotate(-40deg) saturate(4); } to { scale: 0; opacity: 0; filter: brightness(3); } }
