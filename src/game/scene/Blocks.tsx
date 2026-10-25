@@ -6,6 +6,7 @@ import {
   type BufferGeometry,
   CanvasTexture,
   Color,
+  CylinderGeometry,
   Euler,
   type Group,
   InstancedBufferAttribute,
@@ -21,7 +22,28 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
 import { buildings } from "../base";
 import type { Building, Recipe } from "../lots";
 import { fade, town } from "./fade";
-import { awnings, bays, bit, blade, blank, type Box, doorway, drawDisc, fascia, glow, HEROES, planters, STYLE } from "./heroes";
+import {
+  awnings,
+  bays,
+  bit,
+  blade,
+  blank,
+  type Box,
+  bulkhead,
+  doorway,
+  drawDisc,
+  fascia,
+  flatRoof,
+  glassRail,
+  glow,
+  HEROES,
+  mansard,
+  planters,
+  roofGarden,
+  roofUnit,
+  STYLE,
+  waterTank,
+} from "./heroes";
 
 /*
  * Our own Pokémon-town building kit (notes/research/gfx-buildings.md 3.6,
@@ -34,8 +56,8 @@ import { awnings, bays, bit, blade, blank, type Box, doorway, drawDisc, fascia, 
  * Every part of every block is one rounded box in one instanced mesh, rebuilt
  * at its real size in the vertex shader (so a 12 m wall keeps a 0.4 m corner),
  * with the facade painted on in the fragment shader. The small parts (valances,
- * planters, door frames) are a second, lighter mesh with the same material.
- * Two draw calls.
+ * planters, door frames) are a second, lighter mesh with the same material,
+ * and tower roofs a third. Three draw calls.
  */
 
 const { punched: PUNCHED, curtain: CURTAIN, tall: TALL, brick: BRICK } = STYLE;
@@ -73,7 +95,7 @@ function parts(b: Building, i: number): Box[] {
     glass,
     trim,
   });
-  const roofUnit = (x: number, z: number): Box => blank([2, 1.2, 1.4], [x, H + 0.6, z], "#dfe3ea", [0.3, 0.3, 0.3]);
+  const tall = (b.floors ?? 0) >= 3;
   // half the awnings in town are striped, the rest plain like LGPE Saffron's
   const striped = hash(i + 21) < 0.5;
   const out: Box[] = [];
@@ -83,14 +105,21 @@ function parts(b: Building, i: number): Box[] {
     const dx = bay.x[bay.door];
     out.push(blank([W + 0.2, 0.9, D + 0.2], [0, 0.45, 0], "#8b80a6", [0.5, 0.08, 0.5]));
     out.push({ at: [0, (H - 0.6) / 2, 0], size: [W, H - 0.6, D], round: [0.4, 0.12, 0.4], facade: [2.4, 3, 4.2, PUNCHED], color: wall, glass: "#8fc4ee", trim: "#f4ecd2" });
-    out.push(blank([W + 0.5, 0.6, D + 0.5], [0, H - 0.3, 0], "#f4ecd2", [0.6, 0.15, 0.6]));
+    out.push(blank([W + 0.5, 0.6, D + 0.5], [0, H - 0.3, 0], "#f4ecd2", [0.6, 0.06, 0.6]));
     // a shop: a sign board, awnings over the shop bays, a framed door under a canopy, planters, a blade sign
     out.push(...fascia(Math.min(W - 1.2, 9), 4.2, F, "#f4ecd2", accent));
     out.push(...awnings(bay.x.filter((_, k) => k !== bay.door), bay.bw, 3.5, F, accent, striped));
     out.push(...doorway(dx, F, "#8fc4ee", paint, "#f4ecd2", accent));
     out.push(...planters(dx, F, 2.4));
     out.push(...blade(W / 2 - 0.6, 5.6, F, accent));
-    out.push(roofUnit(W * 0.2, -D * 0.15));
+    // up top: a garden on one in four, otherwise a deck with the stairs, a unit and, on one in three, a water tank
+    const roof = hash(i + 31);
+    if (roof < 0.25) out.push(...flatRoof(W, D, H, null, "#f4ecd2"), ...roofGarden(W, D, H), ...roofUnit(W * 0.22, H, -D * 0.1));
+    else {
+      out.push(...flatRoof(W, D, H, "#b9ae98", "#f4ecd2"), ...roofUnit(W * 0.2, H, D * 0.12));
+      if (tall) out.push(...bulkhead(-W * 0.25, H, -D * 0.2, wall));
+      if (roof > 0.67) out.push(...waterTank(W * 0.22, H, -D * 0.22));
+    }
   } else if (recipe === "glass") {
     out.push(blank([W + 0.1, 0.6, D + 0.1], [0, 0.3, 0], "#5f6b85", [0.2, 0.08, 0.2]));
     out.push({ at: [0, (H - 0.5) / 2, 0], size: [W, H - 0.5, D], round: [0.1, 0.15, 0.1], facade: [1.6, 3.2, 4.4, CURTAIN], color: "#eef0f5", glass: pick(["#6f8fc8", "#7fa2d8", "#8fb4e2"], i), trim: "#c9d3ea" });
@@ -100,10 +129,12 @@ function parts(b: Building, i: number): Box[] {
     // a lit name strip along the canopy, and planters either side of it
     out.push({ ...glow([W * 0.6, 0.12, 0.05], [0, 4.1, F + 2.13], "#eef6ff", [0.03, 0.03, 0.02]), small: true });
     out.push(...planters(0, F, W * 0.3 + 0.9));
-    out.push(blank([W + 0.3, 0.5, D + 0.3], [0, H - 0.25, 0], "#e6e9f0", [0.3, 0.12, 0.3]));
+    out.push(blank([W + 0.3, 0.5, D + 0.3], [0, H - 0.25, 0], "#e6e9f0", [0.3, 0.06, 0.3]));
     out.push(door(0, "#8fb4e2", "#f6f7fa"));
-    out.push(roofUnit(-W * 0.18, D * 0.1));
-    if (hash(i + 9) > 0.5) out.push(roofUnit(W * 0.22, -D * 0.2));
+    // a glass rail and a louvered screen hiding the plant, like a Paldea office
+    out.push(bit([W - 0.3, 0.08, D - 0.3], [0, H + 0.04, 0], "#b9bfcc", [0.03, 0.02, 0.03]), ...glassRail(W, D, H));
+    out.push({ ...blank([W * 0.5, 2.0, D * 0.4], [0, H + 1.0, -D * 0.15], "#e6e9f0", [0.2, 0.06, 0.2]), facade: [1, 0.12, 0.25, STYLE.louver] });
+    out.push(...roofUnit(-W * 0.25, H, D * 0.3));
   } else if (recipe === "stone") {
     const accent = pick(["#2c3d5c", "#b04a48"], i);
     const bay = bays(W, 0.8, 2.2);
@@ -118,15 +149,14 @@ function parts(b: Building, i: number): Box[] {
     out.push(...planters(dx, F, 2.4));
     out.push(...blade(W / 2 - 1.0, 6.0, F, accent));
     out.push(blank([W + 0.4, 0.4, D + 0.4], [0, H - 0.2, 0], "#f6eedd", [1.0, 0.08, 1.0]));
-    // the mansard: a slate roof with rolled edges
-    out.push(blank([W - 0.6, 2.4, D - 0.6], [0, H + 1.0, 0], "#4d5a78", [1.2, 0.9, 1.2]));
+    out.push(...mansard(W, D, H, "#f6eedd", W > 11 ? 3 : 2));
   } else {
     const wall = pick(["#c0624a", "#b4583f", "#c87156"], i);
     const bay = bays(W, 0.25, 2.2);
     const dx = bay.x[bay.door];
     out.push(blank([W + 0.15, 0.7, D + 0.15], [0, 0.35, 0], "#6e4a40", [0.25, 0.08, 0.25]));
     out.push({ at: [0, (H - 0.5) / 2, 0], size: [W, H - 0.5, D], round: [0.25, 0.1, 0.25], facade: [2.2, 3, 3.6, BRICK], color: wall, glass: "#7fb0e0", trim: "#f4ecdf" });
-    out.push(blank([W + 0.4, 0.5, D + 0.4], [0, H - 0.25, 0], "#efe6d6", [0.4, 0.12, 0.4]));
+    out.push(blank([W + 0.4, 0.5, D + 0.4], [0, H - 0.25, 0], "#efe6d6", [0.4, 0.06, 0.4]));
     // a stoop up to a green door in a white frame, under a little canopy, planters either side
     out.push(blank([2.6, 0.5, 1.3], [dx, 0.25, F + 0.6], "#b9a99a"));
     out.push(blank([1.6, 2.6, 0.3], [dx, 1.8, F + 0.08], "#2f5d4a", [0.1, 0.1, 0.06]));
@@ -134,11 +164,9 @@ function parts(b: Building, i: number): Box[] {
     out.push(bit([2.2, 0.3, 0.34], [dx, 3.25, F + 0.12], "#f4ecdf"));
     out.push(bit([2.6, 0.16, 1.1], [dx, 3.52, F + 0.6], "#2f5d4a", [0.05, 0.03, 0.05]));
     out.push(...planters(dx, F, 2.3));
-    // the Boston water tank, on every few
-    if (hash(i + 5) < 0.35) {
-      out.push(blank([2.2, 2.6, 2.2], [W * 0.18, H + 1.3, -D * 0.1], "#a07850", [1.1, 0.2, 1.1]));
-      out.push(blank([2.4, 0.7, 2.4], [W * 0.18, H + 2.9, -D * 0.1], "#6b5545", [1.2, 0.34, 1.2]));
-    } else out.push(roofUnit(W * 0.2, -D * 0.15));
+    // the Boston water tank on its legs, on every one
+    out.push(...flatRoof(W, D, H, "#8f8a86", "#efe6d6"), ...waterTank(W * 0.18, H, -D * 0.1));
+    if (hash(i + 5) < 0.5) out.push(...roofUnit(-W * 0.25, H, D * 0.15));
   }
   return out;
 }
@@ -243,10 +271,16 @@ diffuseColor.a *= vFade;
   float pil = wallM * step(style, 0.5) * step(0.0, c.x) * step(c.x, nb) * step(g0, h) * step(h, vBSize.y - 0.1)
             * (1.0 - smoothstep(0.035, 0.035 + aa.x, abs(fract(c.x + 0.5) - 0.5)));
   // awning stripes, painted across the box so they show on the top too
-  if (style > 5.5) {
+  if (style > 5.5 && style < 6.5) {
     float sw = fwidth(vBPos.x / 0.6);
     float st = smoothstep(-sw, sw, abs(fract(vBPos.x / 0.6) - 0.5) - 0.25);
     diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.97, 0.95, 0.92), st * (1.0 - smoothstep(0.2, 0.45, sw)));
+  }
+  // louvers and slate courses: bands up the face, the spacing in the facade's ground-floor slot, the strength in its floor slot
+  if (style > 6.5) {
+    float lw = fwidth(h / g0);
+    float band = smoothstep(0.5 - lw, 0.5 + lw, fract(h / g0));
+    diffuseColor.rgb *= 1.0 - fl * band * wallM * (1.0 - smoothstep(0.25, 0.5, lw));
   }
   diffuseColor.rgb = mix(diffuseColor.rgb, vTrim, pil);
   diffuseColor.rgb = mix(diffuseColor.rgb, vTrim, frame + gframe);
@@ -285,23 +319,28 @@ type Piece = { b: number; box: Box };
 const BIG = new RoundedBoxGeometry(1, 1, 1, 3, 0.25);
 // parts under about 1.5 m: one bevel to a corner, a fifth of the triangles
 const SMALL = new RoundedBoxGeometry(1, 1, 1, 1, 0.25);
+// a four-sided pyramid with flat faces, its corners on the unit box's so the shader sizes it like a box
+const SPIRE = new CylinderGeometry(0, Math.SQRT1_2, 1, 4, 1).rotateY(Math.PI / 4).toNonIndexed();
+SPIRE.computeVertexNormals();
 const UP = new Vector3(0, 1, 0);
 
-/** Every block in town (buildings built from the kit): two instanced meshes, the big parts and the small ones, sharing one material. */
+/** Every block in town (buildings built from the kit): instanced meshes for the big parts, the small ones and the spires, sharing one material. */
 export function Blocks() {
   const layers = useMemo(() => {
     const big: Piece[] = [];
     const small: Piece[] = [];
+    const spire: Piece[] = [];
     buildings.forEach((b, i) => {
       if (b.model !== "block") return;
-      for (const box of parts(b, i)) (box.small ? small : big).push({ b: i, box });
+      for (const box of parts(b, i)) (box.spire ? spire : box.small ? small : big).push({ b: i, box });
     });
-    return { big, small };
+    return { big, small, spire };
   }, []);
   return layers.big.length ? (
     <>
       <KitLayer pieces={layers.big} geometry={BIG} />
       <KitLayer pieces={layers.small} geometry={SMALL} />
+      <KitLayer pieces={layers.spire} geometry={SPIRE} />
       <HeroDiscs />
     </>
   ) : null;

@@ -19,10 +19,12 @@ export type Box = {
   small?: boolean;
   /** A turn in its own frame (radians, XYZ), for awnings and roof plates. */
   rot?: [number, number, number];
+  /** A four-sided pyramid instead of a box (a tower roof). */
+  spire?: boolean;
 };
 
 /** Facade styles the block shader knows. */
-export const STYLE = { punched: 0, curtain: 1, blank: 2, tall: 3, brick: 4, glow: 5, stripe: 6 } as const;
+export const STYLE = { punched: 0, curtain: 1, blank: 2, tall: 3, brick: 4, glow: 5, stripe: 6, louver: 7 } as const;
 
 /** A disc emblem on a face: where (building frame), how big, its colors and glyph. */
 export type Disc = { at: [number, number, number]; size: number; ring: string; arc: string; glyph: Glyph; ink: string };
@@ -106,7 +108,85 @@ const door = (x: number, z: number, glass: string, trim: string, w = 3, h = 2.9)
   glass,
   trim,
 });
-const roofUnit = (x: number, y: number, z: number): Box => blank([2.4, 1.1, 1.8], [x, y + 0.55, z], "#dfe3ea", [0.3, 0.3, 0.3]);
+/*
+ * The roofscape (notes/research/town-polish.md 5): the camera looks down on
+ * every roof, so they get a deck a shade darker than the walls, a parapet round
+ * the edge, and the things that live up there. No pillows: thin slabs keep a
+ * small round.
+ */
+
+/** Louvers or slate courses: bands up a face, [spacing, strength]. */
+const louver = (spacing: number, strength: number): Box["facade"] => [1, strength, spacing, STYLE.louver];
+
+/** A rooftop unit with a fan on top and a grille on its face, and two vent pipes beside it. */
+export function roofUnit(x: number, y: number, z: number): Box[] {
+  return [
+    blank([2, 1.1, 1.4], [x, y + 0.55, z], "#dfe3ea", [0.2, 0.12, 0.2]),
+    bit([0.9, 0.1, 0.9], [x, y + 1.15, z], "#8e97a6", [0.45, 0.05, 0.45]),
+    { ...bit([1.6, 0.5, 0.04], [x, y + 0.55, z + 0.72], "#9aa3ad", [0.02, 0.02, 0.02]), facade: louver(0.12, 0.25) },
+    bit([0.3, 0.9, 0.3], [x + 1.4, y + 0.45, z + 0.35], "#c3c9d2", [0.15, 0.05, 0.15]),
+    bit([0.3, 0.6, 0.3], [x + 1.4, y + 0.3, z - 0.35], "#c3c9d2", [0.15, 0.05, 0.15]),
+  ];
+}
+
+/** A roof deck and a parapet round it in the trim. */
+export function flatRoof(W: number, D: number, H: number, deck: string | null, trim: string): Box[] {
+  const out: Box[] = deck ? [bit([W - 0.3, 0.08, D - 0.3], [0, H + 0.04, 0], deck, [0.03, 0.02, 0.03])] : [];
+  for (const s of [-1, 1])
+    out.push(bit([W + 0.5, 0.45, 0.3], [0, H + 0.225, s * (D / 2 + 0.1)], trim, [0.1, 0.1, 0.1]), bit([0.3, 0.45, D + 0.5], [s * (W / 2 + 0.1), H + 0.225, 0], trim, [0.1, 0.1, 0.1]));
+  return out;
+}
+
+/** A pale glass rail round a roof instead of a parapet, on the Paldea glass boxes (opaque, so nothing sorts). */
+export function glassRail(W: number, D: number, H: number): Box[] {
+  return [-1, 1].flatMap((s) => [
+    bit([W + 0.3, 0.9, 0.08], [0, H + 0.45, s * (D / 2 + 0.05)], "#e8f6ff", [0.03, 0.03, 0.03]),
+    bit([0.08, 0.9, D + 0.3], [s * (W / 2 + 0.05), H + 0.45, 0], "#e8f6ff", [0.03, 0.03, 0.03]),
+  ]);
+}
+
+/** A stair bulkhead: the little box the roof door lives in. */
+export function bulkhead(x: number, H: number, z: number, wall: string): Box[] {
+  return [blank([2.6, 2.5, 2.8], [x, H + 1.25, z], wall, [0.15, 0.08, 0.15]), blank([3, 0.25, 3.2], [x, H + 2.6, z], "#dfe3ea", [0.1, 0.05, 0.1]), bit([1.1, 2.1, 0.12], [x, H + 1.05, z + 1.44], "#5a6070", [0.04, 0.04, 0.03])];
+}
+
+/** The Boston water tank: a wooden barrel with two iron hoops and a cap, up on four legs. */
+export function waterTank(x: number, H: number, z: number): Box[] {
+  const b = H + 1.0;
+  const out: Box[] = [];
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) out.push(bit([0.16, 1.0, 0.16], [x + sx * 0.75, H + 0.5, z + sz * 0.75], "#4a3e36", [0.04, 0.04, 0.04]));
+  out.push(blank([2.2, 2.6, 2.2], [x, b + 1.3, z], "#a07850", [1.09, 0.1, 1.09]));
+  out.push(blank([2.28, 0.08, 2.28], [x, b + 0.65, z], "#5a4a3e", [1.13, 0.03, 1.13]), blank([2.28, 0.08, 2.28], [x, b + 1.95, z], "#5a4a3e", [1.13, 0.03, 1.13]));
+  out.push(blank([2.5, 0.6, 2.5], [x, b + 2.85, z], "#6b5545", [1.24, 0.3, 1.24]));
+  return out;
+}
+
+/** A roof garden: a lawn and three clipped bushes. */
+export function roofGarden(W: number, D: number, H: number): Box[] {
+  return [
+    bit([W - 1.6, 0.3, D - 1.6], [0, H + 0.15, 0], "#6fae52", [0.1, 0.06, 0.1]),
+    blank([1.3, 1.0, 1.3], [-W * 0.3, H + 0.8, D * 0.25], "#4f9a45", [0.6, 0.5, 0.6]),
+    blank([1.3, 1.0, 1.3], [-W * 0.08, H + 0.8, D * 0.3], "#5fb35a", [0.6, 0.5, 0.6]),
+    blank([1.3, 1.0, 1.3], [-W * 0.32, H + 0.8, -D * 0.22], "#5fb35a", [0.6, 0.5, 0.6]),
+  ];
+}
+
+/** A Lumiose mansard: slate plates leaning in on all four sides, a flat top, and dormers along the front. */
+export function mansard(W: number, D: number, H: number, wall: string, dormers: number): Box[] {
+  const slate = louver(0.32, 0.08);
+  const out: Box[] = [];
+  for (const s of [-1, 1]) {
+    out.push({ at: [0, H + 1.32, s * (D / 2 - 0.73)], size: [W - 0.5, 2.8, 0.3], round: [0.15, 0.15, 0.1], rot: [-s * 0.35, 0, 0], facade: slate, color: "#4d5a78" });
+    out.push({ at: [s * (W / 2 - 0.73), H + 1.32, 0], size: [0.3, 2.8, D - 0.5], round: [0.1, 0.15, 0.15], rot: [0, 0, s * 0.35], facade: slate, color: "#4d5a78" });
+  }
+  out.push(blank([W - 2.5, 0.2, D - 2.5], [0, H + 2.7, 0], "#5a6683", [0.1, 0.06, 0.1]));
+  for (let j = 0; j < dormers; j++) {
+    const x = (j - (dormers - 1) / 2) * (W / (dormers + 0.6));
+    out.push({ at: [x, H + 1.0, D / 2 - 0.7], size: [1.3, 1.7, 1.2], round: [0.08, 0.08, 0.08], facade: [1.3, 1.05, 0.05, STYLE.tall], color: wall, glass: "#8fa6e3", trim: wall });
+    out.push(blank([1.5, 0.22, 1.35], [x, H + 1.95, D / 2 - 0.7], "#4d5a78", [0.06, 0.05, 0.06]));
+  }
+  return out;
+}
 
 function aws(W: number, D: number): Hero {
   const boxes: Box[] = [
@@ -124,9 +204,10 @@ function aws(W: number, D: number): Hero {
     boxes.push({ at: [s * 0.8, 11.5 + 6.2 * k, s * 0.6], size: [W, 6.2, D], round: [1.4, 0.3, 1.4], facade: [1.5, 2.9, 0, STYLE.curtain], color: "#34425e", glass: "#7fb2e6", trim: "#34425e" });
     boxes.push(glow([W + 0.3, 0.35, D + 0.3], [s * 0.8, 8.4 + 6.2 * k, s * 0.6], "#e0874a", [1.4, 0.08, 1.4]));
   }
-  boxes.push(blank([W + 0.6, 1, D + 0.6], [0, 33.7, 0], "#f4f6f8", [1.6, 0.3, 1.6]));
+  boxes.push(blank([W + 0.6, 1, D + 0.6], [0, 33.7, 0], "#f4f6f8", [1.6, 0.08, 1.6]));
+  boxes.push(...glassRail(W - 0.4, D - 0.4, 34.2));
   boxes.push(glow([W + 0.7, 0.2, D + 0.7], [0, 33.1, 0], "#ffb347", [1.6, 0.08, 1.6]));
-  boxes.push(roofUnit(-2.6, 34.2, -1.5), roofUnit(2.6, 34.2, -1.5));
+  boxes.push(...roofUnit(-2.6, 34.2, -1.5), ...roofUnit(2.6, 34.2, -1.5));
   // the AWS orange in the middle is the one brand nod (include then prune)
   return { boxes, discs: [{ at: [0, 6.7, D / 2 + 0.27], size: 4.4, ring: "#e8ecf2", arc: "#0474f4", glyph: "cloud", ink: "#ff9900" }] };
 }
@@ -141,15 +222,17 @@ function khoury(W: number, D: number, H: number): Hero {
   // the glass spine, a little proud (West Village H's glass wall)
   boxes.push({ at: [0, (H - 0.2) / 2, 0.4], size: [W * 0.32, H - 0.2, D], round: [0.1, 0.1, 0.1], facade: [1.25, 3.2, 4.4, STYLE.curtain], color: "#f4f6f8", glass: "#8cc4ee", trim: "#f4f6f8" });
   boxes.push(blank([W + 0.2, 0.25, D + 0.2], [0, 4.5, 0], "#efe6d6"), blank([W + 0.2, 0.25, D + 0.2], [0, 11.6, 0], "#efe6d6"));
-  boxes.push(blank([W + 0.6, 0.6, D + 0.6], [0, H - 0.3, 0], "#efe6d6", [0.5, 0.2, 0.5]));
+  boxes.push(blank([W + 0.6, 0.6, D + 0.6], [0, H - 0.3, 0], "#efe6d6", [0.5, 0.06, 0.5]));
+  boxes.push(...flatRoof(W + 0.1, D + 0.1, H, "#8f8a86", "#efe6d6"));
   boxes.push(blank([3.8, 4.2, 0.4], [0, 2.1, D / 2 + 0.6], "#efe6d6", [0.6, 0.6, 0.1]));
   boxes.push(door(0, D / 2 + 0.85, "#9fd0f0", "#1f2a3a", 2.8, 3));
   boxes.push(...planters(0, D / 2 + 1.25, 4.4));
   for (const s of [-1, 1]) boxes.push(blank([0.9, 3.2, 0.08], [s * 3.3, 9, D / 2 + 0.5], "#c8102e", [0.1, 0.1, 0.04]));
   // the clock tower over the spine, with a slate roof and a gold finial
   boxes.push({ at: [0, H + 2.6, 0.5], size: [5.6, 5.2, 5.6], round: [0.3, 0.1, 0.3], facade: [1.6, 2.4, 0.2, STYLE.brick], color: "#c0624a", glass: "#7fb0e0", trim: "#f4ecdf" });
-  boxes.push(blank([6.2, 2.6, 6.2], [0, H + 6.4, 0.5], "#4d5a78", [2.2, 1.3, 2.2]));
-  boxes.push(blank([0.4, 1.4, 0.4], [0, H + 8.2, 0.5], "#e2b04a", [0.2, 0.2, 0.2]));
+  boxes.push(blank([6.4, 0.25, 6.4], [0, H + 5.25, 0.5], "#efe6d6", [0.1, 0.06, 0.1]));
+  boxes.push({ at: [0, H + 7.075, 0.5], size: [6.4, 3.4, 6.4], round: [0.001, 0.001, 0.001], facade: louver(0.3, 0.08), color: "#4d5a78", spire: true });
+  boxes.push(bit([0.18, 1.4, 0.18], [0, H + 9.3, 0.5], "#e2b04a", [0.09, 0.05, 0.09]), bit([0.5, 0.5, 0.5], [0, H + 8.75, 0.5], "#e2b04a", [0.25, 0.25, 0.25]));
   return {
     boxes,
     discs: [
@@ -166,14 +249,16 @@ function glassGym(W: number, D: number, H: number, glass: string, arc: string, g
     { at: [0, (H - 0.5) / 2, 0], size: [W, H - 0.5, D], round: [0.1, 0.15, 0.1], facade: [1.6, 3.2, 4.6, STYLE.curtain], color: "#eef0f5", glass, trim: "#c9d3ea" },
     blank([W * 0.6, 0.35, 2.2], [0, 4.8, D / 2 + 1.1], "#f6f7fa", [0.3, 0.1, 0.3]),
     door(0, D / 2 + 0.12, "#bfe3f7", "#f6f7fa"),
-    blank([W + 0.3, 0.5, D + 0.3], [0, H - 0.25, 0], "#e6e9f0", [0.3, 0.12, 0.3]),
+    blank([W + 0.3, 0.5, D + 0.3], [0, H - 0.25, 0], "#e6e9f0", [0.3, 0.06, 0.3]),
     blank([disc * 1.15, disc * 1.15, 0.25], [0, 8, D / 2 + 0.12], "#f6f7fa", [0.6, 0.6, 0.1]),
-    roofUnit(-W * 0.28, H, D * 0.15),
-    roofUnit(W * 0.28, H, D * 0.15),
+    ...roofUnit(-W * 0.28, H, D * 0.15),
+    ...roofUnit(W * 0.22, H, D * 0.3),
+    bit([W - 0.3, 0.08, D - 0.3], [0, H + 0.04, 0], "#b9bfcc", [0.03, 0.02, 0.03]),
+    ...glassRail(W, D, H),
   ];
   for (const sx of [-1, 1])
     for (const sz of [-1, 1]) boxes.push(blank([0.8, H - 0.4, 0.8], [sx * (W / 2 - 0.25), (H - 0.4) / 2, sz * (D / 2 - 0.25)], "#f6f7fa", [0.25, 0.1, 0.25]));
-  boxes.push(blank([W * 0.55, 2.4, D * 0.45], [0, H + 1.2, -D * 0.15], "#e6e9f0", [0.4, 0.2, 0.4]));
+  boxes.push({ ...blank([W * 0.55, 2.4, D * 0.45], [0, H + 1.2, -D * 0.15], "#e6e9f0", [0.3, 0.08, 0.3]), facade: louver(0.25, 0.12) });
   boxes.push({ ...glow([W * 0.6, 0.12, 0.05], [0, 4.8, D / 2 + 2.23], "#eef6ff", [0.03, 0.03, 0.02]), small: true });
   boxes.push(...planters(0, D / 2, W * 0.3 + 0.9));
   return { boxes, discs: [{ at: [0, 8, D / 2 + 0.27], size: disc, ring: "#e8ecf2", arc, glyph, ink: arc }] };
@@ -183,10 +268,12 @@ function tetracorp(W: number, D: number, H: number): Hero {
   const boxes: Box[] = [
     blank([W + 0.2, 0.9, D + 0.2], [0, 0.45, 0], "#8b80a6", [0.5, 0.08, 0.5]),
     { at: [0, (H - 0.6) / 2, 0], size: [W, H - 0.6, D], round: [0.4, 0.12, 0.4], facade: [2.4, 3, 4.2, STYLE.punched], color: "#f0c49a", glass: "#8fc4ee", trim: "#f4ecd2" },
-    blank([W + 0.5, 0.6, D + 0.5], [0, H - 0.3, 0], "#f4ecd2", [0.6, 0.15, 0.6]),
+    blank([W + 0.5, 0.6, D + 0.5], [0, H - 0.3, 0], "#f4ecd2", [0.6, 0.06, 0.6]),
     door(-W * 0.28, D / 2 + 0.12, "#8fc4ee", "#f4f6f4", 2.2, 2.8),
     blank([3.7, 3.7, 0.25], [W * 0.12, 6.4, D / 2 + 0.12], "#f4f6f8", [0.6, 0.6, 0.1]),
-    roofUnit(W * 0.2, H, -D * 0.15),
+    ...roofUnit(W * 0.2, H, -D * 0.15),
+    ...flatRoof(W, D, H, null, "#f4ecd2"),
+    ...roofGarden(W, D, H),
   ];
   const bay = bays(W, 0.4, 2.4);
   boxes.push(...fascia(Math.min(W - 1.2, 9), 4.2, D / 2, "#f4ecd2", "#2fb5a8"));
@@ -202,7 +289,7 @@ function quartzy(W: number, D: number, H: number): Hero {
     blank([W + 0.25, 0.25, D + 0.25], [0, 4.6, 0], "#f6eedd", [0.9, 0.08, 0.9]),
     blank([W - 3, 0.9, 0.3], [0, 3.9, D / 2 + 0.1], "#2f6b4f"),
     blank([W + 0.4, 0.4, D + 0.4], [0, H - 0.2, 0], "#f6eedd", [1.0, 0.08, 1.0]),
-    blank([W - 0.6, 2.6, D - 0.6], [0, H + 1.1, 0], "#4d5a78", [1.1, 0.9, 1.1]),
+    ...mansard(W, D, H, "#f6eedd", W > 11 ? 3 : 2),
     door(W * 0.24, D / 2 + 0.12, "#8fa6e3", "#f6eedd", 2.4, 2.9),
     blank([3.7, 3.7, 0.25], [-W * 0.12, 6.6, D / 2 + 0.12], "#f6f7fa", [0.6, 0.6, 0.1]),
   ];
@@ -218,7 +305,7 @@ function homegoods(W: number, D: number, H: number): Hero {
     { at: [0, 2.2, 0], size: [W, 4.4, D], round: [2.5, 0.1, 2.5], facade: [2.6, 4.4, 4.4, STYLE.punched], color: "#c8683c", glass: "#9fd0f0", trim: "#5a3a2a" },
     glow([W + 0.3, 0.9, D + 0.3], [0, 4.85, 0], "#5fb8a8", [2.6, 0.12, 2.6]),
     { at: [0, 5.3 + (H - 6.1) / 2, 0], size: [W, H - 6.1, D], round: [2.5, 0.1, 2.5], facade: [1.6, 3.4, 0, STYLE.curtain], color: "#f4f6f8", glass: "#7fb3ea", trim: "#f4f6f8" },
-    blank([W + 0.5, 0.8, D + 0.5], [0, H - 0.4, 0], "#f2e7c4", [2.7, 0.2, 2.7]),
+    blank([W + 0.5, 0.8, D + 0.5], [0, H - 0.4, 0], "#f2e7c4", [2.7, 0.06, 2.7]),
     blank([W + 0.5, 0.2, D + 0.5], [0, H + 0.1, 0], "#d8743c", [2.7, 0.08, 2.7]),
     door(0, D / 2 + 0.12, "#bfe3f7", "#5a3a2a", 3.4, 3),
     blank([1.4, 6, 0.15], [-W * 0.32, 8.6, D / 2 + 0.1], "#c8463c", [0.2, 0.2, 0.06]),
