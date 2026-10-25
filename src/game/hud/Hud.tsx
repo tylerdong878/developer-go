@@ -25,6 +25,7 @@ import { FactToast, XpPops } from "./Xp";
 import { Card } from "./Card";
 import { LevelUp } from "./LevelUp";
 import { TeamPick } from "./TeamPick";
+import { RouteBar, RouteButton } from "./Routes";
 import { TEAM_LEVEL } from "../teams";
 import { MainMenu, MenuBall, type Screen, TrainerBadge } from "./Menu";
 import { Nearby } from "./Nearby";
@@ -335,6 +336,7 @@ export function Hud() {
       <div className="pointer-events-none fixed inset-x-0 top-4 z-[60] flex flex-col items-center gap-2 px-4">
         {factSpawn?.kind === "spawn" ? <FactToast key={factSpawn.slug} spawn={factSpawn} onDone={closeFact} /> : null}
         <XpPops />
+        {foe || card || screen ? null : <RouteBar />}
       </div>
 
       <div className={`pointer-events-auto absolute top-4 right-4 flex flex-col items-end gap-2 transition-opacity ${menu ? "invisible opacity-0" : ""}`}>
@@ -370,6 +372,7 @@ export function Hud() {
         />
       </div>
       <div className={`pointer-events-auto absolute right-4 bottom-4 flex flex-col items-end gap-3 transition-opacity ${menu ? "invisible opacity-0" : ""}`}>
+        <RouteButton />
         <ResearchButton
           onOpen={() => {
             sfx.open();

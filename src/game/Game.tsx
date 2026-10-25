@@ -9,6 +9,7 @@ import { renderBudget } from "./device";
 import { Balls } from "./scene/Balls";
 import { Controller } from "./scene/Controller";
 import { Objects } from "./scene/objects/Objects";
+import { RouteLine } from "./scene/RouteLine";
 import { Rings } from "./scene/Rings";
 import { TapTarget } from "./scene/TapTarget";
 import { Teddy3D } from "./scene/Teddy3D";
@@ -65,6 +66,7 @@ export default function Game() {
           <TapTarget />
           <CastShadows>
             <Objects grass={palettes[phase].leaves[1]} />
+            <RouteLine />
           </CastShadows>
           <Balls />
           <Rings mover={game.player.trainer} still={still} />

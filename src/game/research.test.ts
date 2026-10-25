@@ -3,7 +3,7 @@ import { gyms, raids, spawns, stops } from "@/content";
 import type { Progress } from "./progress";
 import { researchState, STEPS } from "./research";
 
-const fresh: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: { hearts: 0, km: 0, played: null, fed: 0, fedOn: null }, field: [], streaks: { catch: { day: null, n: 0 }, spin: { day: null, n: 0 } }, stamps: [], team: null, xp: 0, items: { ball: 20, great: 0, razz: 2 } };
+const fresh: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: { hearts: 0, km: 0, played: null, fed: 0, fedOn: null }, field: [], streaks: { catch: { day: null, n: 0 }, spin: { day: null, n: 0 } }, stamps: [], team: null, routes: {}, routedOn: null, xp: 0, items: { ball: 20, great: 0, razz: 2 } };
 
 describe("Tyler's Special Research", () => {
   it("starts on step 1 with nothing done", () => {

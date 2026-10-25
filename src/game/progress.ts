@@ -1,6 +1,6 @@
 "use client";
 
-import { type FieldEvent, type FieldTask, progressWith, receive } from "./field";
+import { bostonDay, type FieldEvent, type FieldTask, progressWith, receive } from "./field";
 import { levelFor, rewardsFor } from "./levels";
 import { BREAKTHROUGH_XP, catchBonus, mysteryItem, NO_STREAK, nextStreak, spinBonus, STAMPS, type Streak, stampWith } from "./daily";
 import { sfx } from "./sound";
@@ -40,6 +40,9 @@ export type Progress = {
   stamps: string[];
   /** The team picked at level 5, like GO's, or null before that. */
   team: TeamId | null;
+  /** Routes finished, by route, and the Boston day of the last one (GO's first route of the day pays double). */
+  routes: Record<string, number>;
+  routedOn: string | null;
   xp: number;
   items: Items;
 };
@@ -48,7 +51,7 @@ export type Progress = {
 export const STARTER_ITEMS: Items = { ball: 20, great: 0, razz: 2 };
 
 const KEY = "developer-go:progress";
-const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: NO_BOND, field: [], streaks: { catch: NO_STREAK, spin: NO_STREAK }, stamps: [], team: null, xp: 0, items: STARTER_ITEMS };
+const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: NO_BOND, field: [], streaks: { catch: NO_STREAK, spin: NO_STREAK }, stamps: [], team: null, routes: {}, routedOn: null, xp: 0, items: STARTER_ITEMS };
 
 function load(): Progress {
   try {
@@ -158,6 +161,19 @@ export function claimField(stop: string, day: string) {
   const stamps = stampWith(p.stamps);
   save({ ...p, field: p.field.map((t) => (t === task ? { ...t, claimed: true } : t)), stamps: stamps ?? p.stamps });
   if (stamps) toast(stamps.length >= STAMPS ? "Research stamp! Your Breakthrough is ready" : `Research stamp! ${STAMPS - stamps.length} more for a Breakthrough`);
+}
+
+/** A route's COMPLETE ROUTE: GO's 4,000 XP for the first of the day and 2,000 after, and an item. */
+export function completeRoute(id: string) {
+  const p = current();
+  const today = bostonDay();
+  const xp = p.routedOn === today ? 2000 : 4000;
+  // GO's route rewards pool, cut to this bag
+  const items: Partial<Items> = Math.random() < 0.5 ? { razz: 3 } : { great: 3 };
+  save({ ...p, routes: { ...p.routes, [id]: (p.routes[id] ?? 0) + 1 }, routedOn: today });
+  addItems(items);
+  gainXp(xp, xp === 4000 ? "first route of the day" : "route complete");
+  return { xp, items };
 }
 
 export function chooseTeam(team: TeamId) {

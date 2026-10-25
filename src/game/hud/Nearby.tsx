@@ -8,6 +8,8 @@ import { game } from "../state";
 import { goTo } from "../travel";
 import { goalId, isOut, wildStore } from "../wild";
 import { ObjectIcon } from "./icons";
+import { RouteList } from "./Routes";
+import { ROUTES } from "../routes";
 
 const TABS = [
   { id: "gym", label: "Gyms", hint: "Jobs", items: gyms },
@@ -15,6 +17,7 @@ const TABS = [
   { id: "raid", label: "Raids", hint: "Hackathons", items: raids },
   { id: "spawn", label: "Wild", hint: "Pokémon near you", items: [] },
   { id: "egg", label: "Eggs", hint: "In progress", items: eggs },
+  { id: "route", label: "Routes", hint: "Tyler's walks", items: [] },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -130,7 +133,7 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
                   }`}
                 >
                   {t.label}{" "}
-                  <span className="opacity-70">{t.items.length + (t.id === "spawn" ? wildOut.length : 0)}</span>
+                  <span className="opacity-70">{t.items.length + (t.id === "spawn" ? wildOut.length : t.id === "route" ? ROUTES.length : 0)}</span>
                 </button>
               ))}
             </div>
@@ -138,6 +141,14 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
           <p className="go-title px-5 pb-2 text-center text-[0.62rem] text-ink-soft">{current.hint}</p>
 
           <ul role="tabpanel" aria-label={current.label} className="flex-1 overflow-y-auto px-3 pb-28">
+            {tab === "route" ? (
+              <RouteList
+                onFollow={() => {
+                  setOpen(false);
+                  button.current?.focus();
+                }}
+              />
+            ) : null}
             {tab === "spawn" && wildList.length ? (
               <>
                 <li className="px-2 pt-1 pb-1 text-xs font-bold tracking-wide text-ink-soft uppercase">Wild right now</li>

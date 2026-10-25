@@ -6,8 +6,8 @@ import { sfx } from "../sound";
 import { ItemIcon } from "./icons";
 
 const NAMES: Record<ItemId, string> = { ball: "Poké Ball", great: "Great Ball", razz: "Razz Berry" };
-/** What a level opens up, like GO's: teams at 5. */
-const UNLOCKS: Record<number, string> = { 5: "Teams: tap any gym to pick one" };
+/** What a level opens up, like GO's: teams at 5, Routes at 7. */
+const UNLOCKS: Record<number, string> = { 5: "Teams: tap any gym to pick one", 7: "Routes: follow one from Nearby" };
 
 /** GO's level-up: the map dims, the new level pops in a glowing badge, then what it gave you and an OK. */
 export function LevelUp() {
