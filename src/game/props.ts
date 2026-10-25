@@ -95,3 +95,40 @@ export const fences: [Vec2, Vec2][] = [
   [[15.5, 18.6], [15.5, 30.8]],
   [[15.5, 30.8], [5, 30.8]],
 ];
+
+/**
+ * More street furniture (notes/research/gfx-landmarks.md 6, town-polish.md 9):
+ * gray bins by every third lamp and bench, bollards across the plaza's
+ * mouths, iron manhole lids down the avenues, and pairs of red-and-blue
+ * vending machines like the ones on Celadon's rooftop and in Castelia, by the
+ * Mart and at the foot of the lab. `turn` is the way each one faces.
+ */
+export const bins: Prop[] = (() => {
+  const out: Prop[] = [];
+  lamps.forEach((l, i) => {
+    if (i % 3) return;
+    const p: Vec2 = [l.at[0] + Math.cos(l.turn) * 1.2, l.at[1] - Math.sin(l.turn) * 1.2];
+    if (roomy(p, 3)) out.push({ at: p, turn: l.turn });
+  });
+  benches.forEach((b, i) => {
+    if (i % 3) return;
+    const p: Vec2 = [b.at[0] + Math.cos(b.turn) * 1.3, b.at[1] - Math.sin(b.turn) * 1.3];
+    if (roomy(p, 3)) out.push({ at: p, turn: b.turn });
+  });
+  out.push({ at: [-17.4, -20.9], turn: -Math.PI / 2 }, { at: [96, 2.4], turn: Math.PI }, { at: [96, -2.4], turn: 0 });
+  return out;
+})();
+
+export const bollards: Prop[] = [47.6, 72.4].flatMap((x) => [-2.1, -0.7, 0.7, 2.1].map((z): Prop => ({ at: [x, z], turn: 0 })));
+
+export const vending: Prop[] = [
+  { at: [-17.45, -22.6], turn: -Math.PI / 2 },
+  { at: [-17.45, -23.9], turn: -Math.PI / 2 },
+  { at: [60.6, 109.4], turn: Math.PI },
+  { at: [67.4, 109.4], turn: Math.PI },
+];
+
+export const lids: Prop[] = roads
+  .filter((r) => r.kind === "avenue")
+  .flatMap((r) => along(r.points, r.loop, 40).map(({ at }): Prop => ({ at, turn: 0 })))
+  .filter((l) => buildings.every((b) => distanceToBuilding(l.at, b) > 1));
