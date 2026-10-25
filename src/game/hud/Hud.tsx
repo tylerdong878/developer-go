@@ -26,6 +26,8 @@ import { Card } from "./Card";
 import { LevelUp } from "./LevelUp";
 import { TeamPick } from "./TeamPick";
 import { RouteBar, RouteButton } from "./Routes";
+import { GiftOpen, GiftsPanel, PostcardBook } from "./Gifts";
+import { isStop } from "../gifts";
 import { TEAM_LEVEL } from "../teams";
 import { MainMenu, MenuBall, type Screen, TrainerBadge } from "./Menu";
 import { Nearby } from "./Nearby";
@@ -81,6 +83,14 @@ export function Hud() {
   // a gym waiting behind the team choice
   const [teamFor, setTeamFor] = useState<string | null>(null);
   const askedTeam = useRef(false);
+  // a friend's gift link (?gift=<stop>), opened once the map is up
+  const [inbox, setInbox] = useState<string | null>(null);
+  useEffect(() => {
+    const slug = new URLSearchParams(window.location.search).get("gift");
+    if (!slug || !isStop(slug) || progressStore.get().received.includes(slug)) return;
+    const t = window.setTimeout(() => setInbox(slug), 1200);
+    return () => window.clearTimeout(t);
+  }, []);
   const [menu, setMenu] = useState(false);
   const [nearby, setNearby] = useState(false);
   const [foe, setFoe] = useState<(Foe & { goal: string }) | null>(null);
@@ -397,7 +407,18 @@ export function Hud() {
             }}
           />
         ) : null}
-        {screen === "bag" ? <BagPanel onClose={closeScreen} /> : null}
+        {screen === "bag" ? <BagPanel onClose={closeScreen} onOpen={setScreen} /> : null}
+        {screen === "gifts" ? <GiftsPanel onClose={() => setScreen("bag")} /> : null}
+        {screen === "postcards" ? (
+          <PostcardBook
+            onClose={() => setScreen("bag")}
+            onGo={(slug) => {
+              setScreen(null);
+              goTo(slug, true);
+            }}
+          />
+        ) : null}
+        {inbox && !foe && !teamFor ? <GiftOpen slug={inbox} onDone={() => setInbox(null)} /> : null}
         {screen === "settings" ? <SettingsPanel onClose={closeScreen} /> : null}
         {screen === "pokemon" ? <PokemonPanel onClose={closeScreen} /> : null}
         {screen === "community" ? <CommunityPanel onClose={closeScreen} /> : null}

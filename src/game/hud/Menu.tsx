@@ -4,7 +4,7 @@ import { type ReactNode, useSyncExternalStore } from "react";
 import { communityOn } from "../community";
 import { levelFor, progressStore, xpForLevel } from "../progress";
 
-export type Screen = "community" | "pokemon" | "profile" | "about" | "pokedex" | "bag" | "settings" | "research" | "highlights";
+export type Screen = "community" | "pokemon" | "profile" | "about" | "pokedex" | "bag" | "settings" | "research" | "highlights" | "gifts" | "postcards";
 
 /** The trainer badge in the bottom left, like GO's: your level, ringed by how far you are to the next one. */
 export function TrainerBadge({ onOpen }: { onOpen: () => void }) {

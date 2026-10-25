@@ -2,6 +2,7 @@
 
 import { bostonDay, type FieldEvent, type FieldTask, progressWith, receive } from "./field";
 import { levelFor, rewardsFor } from "./levels";
+import { BOOK_MAX, GIFT_HOLD, GIFT_OPEN_DAY, type Postcard, SEND_XP } from "./gifts";
 import { BREAKTHROUGH_XP, catchBonus, mysteryItem, NO_STREAK, nextStreak, spinBonus, STAMPS, type Streak, stampWith } from "./daily";
 import { sfx } from "./sound";
 import type { TeamId } from "./teams";
@@ -43,6 +44,11 @@ export type Progress = {
   /** Routes finished, by route, and the Boston day of the last one (GO's first route of the day pays double). */
   routes: Record<string, number>;
   routedOn: string | null;
+  /** GO's gifts (gifts.ts): the ones you hold (by stop), your Postcard Book, the gift links you've opened, and today's opens. */
+  gifts: string[];
+  postcards: Postcard[];
+  received: string[];
+  openedOn: { day: string; n: number };
   xp: number;
   items: Items;
 };
@@ -51,7 +57,7 @@ export type Progress = {
 export const STARTER_ITEMS: Items = { ball: 50, great: 0, razz: 2 };
 
 const KEY = "developer-go:progress";
-const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: NO_BOND, field: [], streaks: { catch: NO_STREAK, spin: NO_STREAK }, stamps: [], team: null, routes: {}, routedOn: null, xp: 0, items: STARTER_ITEMS };
+const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: NO_BOND, field: [], streaks: { catch: NO_STREAK, spin: NO_STREAK }, stamps: [], team: null, routes: {}, routedOn: null, gifts: [], postcards: [], received: [], openedOn: { day: "", n: 0 }, xp: 0, items: STARTER_ITEMS };
 
 function load(): Progress {
   try {
@@ -161,6 +167,39 @@ export function claimField(stop: string, day: string) {
   const stamps = stampWith(p.stamps);
   save({ ...p, field: p.field.map((t) => (t === task ? { ...t, claimed: true } : t)), stamps: stamps ?? p.stamps });
   if (stamps) toast(stamps.length >= STAMPS ? "Research stamp! Your Breakthrough is ready" : `Research stamp! ${STAMPS - stamps.length} more for a Breakthrough`);
+}
+
+/** A spin dropped a gift from that stop, if there's room (GO holds 20). */
+export function dropGift(slug: string) {
+  const p = current();
+  if (p.gifts.length >= GIFT_HOLD) return false;
+  save({ ...p, gifts: [...p.gifts, slug] });
+  return true;
+}
+
+/** Pin a postcard to the book (one of each stop from each sender). */
+export function pinPostcard(slug: string, from: string) {
+  const p = current();
+  if (p.postcards.length >= BOOK_MAX || p.postcards.some((c) => c.slug === slug && c.from === from)) return;
+  save({ ...p, postcards: [...p.postcards, { slug, from, at: Date.now() }] });
+  toast("Pinned to your Postcard Book");
+}
+
+/** A gift went to a friend: it leaves your list, for GO's 200 XP. */
+export function sendGift(k: number) {
+  const p = current();
+  save({ ...p, gifts: p.gifts.filter((_, i) => i !== k) });
+  gainXp(SEND_XP, "sent a gift");
+}
+
+/** A friend's gift is opened: once per gift link, and 30 a day, like GO. Returns whether it counts. */
+export function openGift(slug: string) {
+  const p = current();
+  const day = bostonDay();
+  const n = p.openedOn.day === day ? p.openedOn.n : 0;
+  if (n >= GIFT_OPEN_DAY || p.received.includes(slug)) return false;
+  save({ ...p, received: [...p.received, slug], openedOn: { day, n: n + 1 } });
+  return true;
 }
 
 /** A route's COMPLETE ROUTE: GO's 4,000 XP for the first of the day and 2,000 after, and an item. */

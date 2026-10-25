@@ -2,7 +2,9 @@
 
 import { type PointerEvent, useRef, useState, useSyncExternalStore } from "react";
 import { halloween } from "../events";
-import { addItems, dailySpin, fieldEvent, gainXp, type Items, progressStore, receiveField, recordSpin, toast } from "../progress";
+import { GIFT_ODDS, isStop } from "../gifts";
+import { GiftBox } from "./Gifts";
+import { addItems, dailySpin, dropGift, fieldEvent, gainXp, type Items, progressStore, receiveField, recordSpin, toast } from "../progress";
 import { count } from "../community";
 import { sfx } from "../sound";
 import { ItemIcon, StopIcon } from "./icons";
@@ -38,6 +40,7 @@ export function SpinDisc({ slug, lured, photo }: { slug: string; lured: boolean;
   const [turns, setTurns] = useState(0);
   const [items, setItems] = useState<Partial<Items> | null>(null);
   const [cooling, setCooling] = useState(false);
+  const [gift, setGift] = useState(false);
   const from = useRef<number | null>(null);
 
   const spin = () => {
@@ -56,6 +59,11 @@ export function SpinDisc({ slug, lured, photo }: { slug: string; lured: boolean;
     if (!done) {
       recordSpin(slug);
       gainXp(50, "spun a stop");
+    }
+    // like GO, a spin sometimes drops a gift with the stop's postcard
+    if (isStop(slug) && Math.random() < GIFT_ODDS && dropGift(slug)) {
+      setGift(true);
+      toast("A gift! It's in your Items");
     }
     dailySpin();
     fieldEvent({ kind: "spin", slug });
@@ -102,6 +110,12 @@ export function SpinDisc({ slug, lured, photo }: { slug: string; lured: boolean;
               {ITEM_INFO[id].name} ×{count}
             </li>
           ))}
+          {gift ? (
+            <li className="item-pop flex items-center gap-1.5 rounded-full bg-[#fbe3f3] px-3 py-1.5 text-xs font-bold text-ink">
+              <GiftBox size={18} />
+              Gift ×1
+            </li>
+          ) : null}
         </ul>
       ) : cooling ? (
         <p className="text-sm font-semibold text-ink-soft">Try again in a few minutes. This stop is refilling.</p>

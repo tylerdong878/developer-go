@@ -11,6 +11,8 @@ import { TEAM_LEVEL, TEAMS } from "../teams";
 import { RAID_BOSS } from "../raidBosses";
 import { visitorMedals } from "../visitorMedals";
 import { ItemIcon, ObjectIcon } from "./icons";
+import { GiftBox } from "./Gifts";
+import { BOOK_MAX, GIFT_HOLD } from "../gifts";
 import { ITEM_INFO } from "./SpinDisc";
 import { Sheet } from "./Sheet";
 
@@ -360,8 +362,8 @@ function Skills() {
 const BAG_MAX = 350;
 
 /** Your items, like GO's: each one with its picture, how many you have, and what it does. */
-export function BagPanel({ onClose }: { onClose: () => void }) {
-  const { items } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+export function BagPanel({ onClose, onOpen }: { onClose: () => void; onOpen?: (screen: "gifts" | "postcards") => void }) {
+  const { items, gifts, postcards } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
   const ids = Object.keys(ITEM_INFO) as (keyof typeof ITEM_INFO)[];
   const total = ids.reduce((sum, id) => sum + items[id], 0);
   return (
@@ -383,6 +385,28 @@ export function BagPanel({ onClose }: { onClose: () => void }) {
         ))}
       </ul>
       <p className="mt-4 text-sm text-ink-soft">Spin PokéStops for more. Each one refills a few minutes after you spin it.</p>
+      {onOpen ? (
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button type="button" onClick={() => onOpen("gifts")} className="flex items-center gap-3 rounded-2xl bg-ink/5 px-3 py-3 text-left transition hover:bg-ink/10">
+            <GiftBox size={36} />
+            <span>
+              <span className="block font-display font-semibold">Gifts</span>
+              <span className="block text-xs text-ink-soft">
+                {gifts.length}/{GIFT_HOLD}
+              </span>
+            </span>
+          </button>
+          <button type="button" onClick={() => onOpen("postcards")} className="flex items-center gap-3 rounded-2xl bg-ink/5 px-3 py-3 text-left transition hover:bg-ink/10">
+            <PostcardIcon />
+            <span>
+              <span className="block font-display font-semibold">Postcard Book</span>
+              <span className="block text-xs text-ink-soft">
+                {postcards.length}/{BOOK_MAX}
+              </span>
+            </span>
+          </button>
+        </div>
+      ) : null}
       <Label>Key items</Label>
       {/* like GO's key items: you always have it, and it never runs out */}
       <a href="/resume" className="flex items-center gap-4 rounded-2xl bg-ink/5 px-4 py-3 transition hover:bg-ink/10">
@@ -452,6 +476,19 @@ export function HighlightsPanel({ onClose, onGo }: { onClose: () => void; onGo: 
 }
 
 /** A rolled-up page with a Poké Ball seal, for the resume key item. */
+/** GO's Postcard Book: a little stack of cards. */
+function PostcardIcon() {
+  return (
+    <svg viewBox="0 0 40 40" width={36} height={36} aria-hidden>
+      <rect x="9" y="7" width="24" height="18" rx="2.5" fill="#cfe9ec" transform="rotate(-8 21 16)" />
+      <rect x="6" y="13" width="26" height="19" rx="2.5" fill="#ffffff" stroke="#24828b" strokeWidth="1.6" />
+      <rect x="8.5" y="15.5" width="21" height="10" rx="1.5" fill="#2fd3c6" />
+      <path d="M8.5 25.5 15 19l4 4 3-3 7.5 5.5Z" fill="#24828b" />
+      <rect x="8.5" y="27.5" width="12" height="2" rx="1" fill="#30555d" />
+    </svg>
+  );
+}
+
 function ResumeIcon() {
   return (
     <svg viewBox="0 0 40 40" width="38" height="38" aria-hidden>
