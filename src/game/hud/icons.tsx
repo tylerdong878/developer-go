@@ -137,6 +137,20 @@ export function ObjectIcon({ object, size = 36 }: { object: MapObject; size?: nu
 }
 
 /** GO's items, drawn small: a Poké Ball, a Great Ball, and a Razz Berry. */
+/** GO's Showcase trophy: a cup with two handles on a stepped base. */
+export function Trophy({ color = "#f2c14e", size = 28 }: { color?: string; size?: number }) {
+  return (
+    <svg viewBox="0 0 32 32" width={size} height={size} aria-hidden>
+      <path d="M9 5h14v6a7 7 0 0 1-14 0Z" fill={color} />
+      <path d="M9 7H5.5a4 4 0 0 0 4 6M23 7h3.5a4 4 0 0 1-4 6" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M14 17.5h4l.8 5h-5.6Z" fill={color} />
+      <rect x="10" y="22.5" width="12" height="3.2" rx="1" fill={color} />
+      <rect x="8.5" y="25.7" width="15" height="2.6" rx="1" fill="#30555d" opacity="0.85" />
+      <path d="M12 7.5v3.5a4 4 0 0 0 2.2 3.6" fill="none" stroke="#ffffff" strokeOpacity="0.6" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function ItemIcon({ id, size = 32 }: { id: "ball" | "great" | "razz"; size?: number }) {
   if (id === "razz")
     return (

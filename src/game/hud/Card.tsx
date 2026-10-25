@@ -5,7 +5,8 @@ import { badgeTier, type Egg, type Gym, type MapObject, media, monthsAt, type Ra
 import { Shot } from "@/app/Shot";
 import { GOLD_INK, LURE, MYSTIC, RAID_EGG } from "../colors";
 import { Sheet } from "./Sheet";
-import { BADGE, EggIcon, GymBadge, GymIcon, RaidIcon, StopIcon } from "./icons";
+import { BADGE, EggIcon, GymBadge, GymIcon, RaidIcon, StopIcon, Trophy } from "./icons";
+import { SHOWCASES, TROPHY } from "../showcases";
 import { ShareLink } from "./Share";
 import { SpinDisc } from "./SpinDisc";
 import { progressStore } from "../progress";
@@ -150,12 +151,7 @@ function raidCard(r: Raid, onBonus: (slug: string) => void): View {
     subtitle: `${r.dates}, ${r.venue}`,
     body: (
       <>
-        {r.result ? (
-          <p className="inline-flex items-center gap-2 rounded-full bg-gold/25 px-3.5 py-1.5 text-sm font-bold text-ink">
-            <span aria-hidden className="size-2.5 rounded-full bg-gold ring-2 ring-gold/40" />
-            {r.result}
-          </p>
-        ) : null}
+        <ShowcaseBoard raid={r} />
         {media[r.slug] ? <Shot m={media[r.slug]} className="rounded-2xl bg-ink/5" /> : null}
         <div>
           <h3 className="font-display text-lg font-semibold">{r.project.name}</h3>
@@ -177,6 +173,45 @@ function raidCard(r: Raid, onBonus: (slug: string) => void): View {
       </>
     ),
   };
+}
+
+/** GO's Showcase board for a placing: the category, a trophy with his team's rank, and how many entered. */
+function ShowcaseBoard({ raid }: { raid: Raid }) {
+  const s = SHOWCASES[raid.slug];
+  if (!s)
+    return raid.result ? (
+      <p className="inline-flex items-center gap-2 rounded-full bg-gold/25 px-3.5 py-1.5 text-sm font-bold text-ink">
+        <span aria-hidden className="size-2.5 rounded-full bg-gold ring-2 ring-gold/40" />
+        {raid.result}
+      </p>
+    ) : null;
+  return (
+    <div className="overflow-hidden rounded-2xl bg-surface shadow-[0_2px_10px_rgba(48,85,93,0.12)]">
+      <div className="flex items-center gap-2 bg-linear-to-r from-[#08afb7] to-[#2fd3c6] px-3.5 py-2 text-white">
+        <Trophy color="#ffffff" size={18} />
+        <span className="go-title text-[0.7rem] text-white">Showcase</span>
+        {s.of ? <span className="ml-auto text-xs font-semibold opacity-90">{s.of} teams</span> : null}
+      </div>
+      <p className="px-3.5 pt-2.5 text-sm font-semibold text-ink-soft">{s.category}</p>
+      <div className="mx-2.5 mt-2 mb-2.5 flex items-center gap-3 rounded-xl bg-[#fff6df] px-3 py-2.5">
+        <span className="relative grid size-11 shrink-0 place-items-center">
+          <Trophy color={TROPHY[s.rank ?? 1] ?? "#a9b8be"} size={40} />
+          {s.rank ? <span className="absolute top-[7px] text-[11px] font-black text-[#5a4300]">{s.rank}</span> : null}
+        </span>
+        <span className="min-w-0 flex-1">
+          {/* GO's own label for a placing */}
+          {s.rank ? <span className="block text-[11px] font-bold tracking-wide text-[#8a6d00] uppercase">Rank {s.rank}</span> : null}
+          <span className="block font-display text-lg leading-tight font-black">
+            {s.place}
+            {s.of ? ` of ${s.of}` : ""}
+          </span>
+          <span className="block truncate text-xs text-ink-soft">
+            {["Tyler", ...raid.project.team].join(", ")} · {raid.project.name}
+          </span>
+        </span>
+      </div>
+    </div>
+  );
 }
 
 /** GO's bonus round after a raid: one try at the boss with Premier Balls, or how it went. */

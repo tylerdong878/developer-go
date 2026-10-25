@@ -7,7 +7,8 @@ import { describe } from "../objects";
 import { game } from "../state";
 import { goTo } from "../travel";
 import { goalId, isOut, wildStore } from "../wild";
-import { ObjectIcon } from "./icons";
+import { ObjectIcon, Trophy } from "./icons";
+import { SHOWCASES, TROPHY } from "../showcases";
 import { RouteList } from "./Routes";
 import { ROUTES } from "../routes";
 
@@ -198,7 +199,11 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
                       </span>
                     )}
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-semibold">{name}</span>
+                      <span className="flex items-center gap-1 truncate font-semibold">
+                        {name}
+                        {/* a placing here: GO's Showcase trophy */}
+                        {SHOWCASES[o.slug] ? <Trophy size={16} color={TROPHY[SHOWCASES[o.slug].rank ?? 1] ?? "#a9b8be"} /> : null}
+                      </span>
                       <span className="block truncate text-sm text-ink-soft">{subtitle}</span>
                     </span>
                     <span className="shrink-0 text-xs font-semibold text-ink-soft tabular-nums">
