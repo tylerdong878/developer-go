@@ -73,7 +73,7 @@ export function Nearby({ open, setOpen }: { open: boolean; setOpen: (open: boole
   const wildNow = useSyncExternalStore(wildStore.subscribe, wildStore.get, () => noWild);
   // only the ones out on the map: not still rustling, not on their way off, and not lured (GO leaves those out too)
   // like GO's Nearby: what's out near you, not lured ones or your Daily Encounter
-  const wildOut = wildNow.filter((w) => isOut(w) && !w.lured && !w.daily);
+  const wildOut = wildNow.filter((w) => isOut(w) && !w.lured && !w.daily && !w.starter);
   const wildList = [...wildOut].sort(
     (a, b) => Math.hypot(a.x - spot[0], a.z - spot[1]) - Math.hypot(b.x - spot[0], b.z - spot[1]),
   );

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { appearanceAt, buildPoints, CYCLE } from "./spawnPoints";
-import { endWild, holdWild, LEAVE, refreshWild, resetWild, spawnPoints, wildStore } from "./wild";
+import { endWild, holdWild, LEAVE, PIKACHU_AFTER, refreshWild, resetWild, spawnPoints, wildStore } from "./wild";
 
 const T = Date.UTC(2026, 9, 24, 15, 0, 0);
 const env = { weather: null, night: false, at: T };
@@ -62,6 +62,19 @@ describe("the wild Pokémon round the trainer", () => {
     expect(wildStore.get().find((s) => s.id === b.id)?.leaving).toBe(null);
     refreshWild(...PARK, 5 + LEAVE + 0.1, { at: later + 1000 });
     expect(wildStore.get().find((s) => s.id === a.id)).toBeUndefined();
+  });
+
+  it("starts a new trainer with GO's three starters, Pikachu after walking away, and the rest gone after a catch", () => {
+    const starters = () => wildStore.get().filter((s) => s.starter && s.leaving === null);
+    refreshWild(0, 6, 0, { at: T, fresh: true });
+    expect(starters().map((s) => s.species.dex).sort()).toEqual([1, 4, 7]);
+    expect(wildStore.get().some((s) => s.daily)).toBe(false);
+    for (let k = 1; k <= PIKACHU_AFTER; k++) refreshWild(k * 20, 6, k, { at: T + k * 1000, fresh: true });
+    expect(starters().map((s) => s.species.dex).sort((a, b) => a - b)).toEqual([1, 4, 7, 25]);
+    endWild(starters()[0].id, "caught");
+    expect(starters()).toHaveLength(0);
+    refreshWild(80, 6, 9, { at: T + 9000, fresh: true });
+    expect(starters()).toHaveLength(0);
   });
 
   it("gives each visitor a Daily Encounter, Snorlax first", () => {

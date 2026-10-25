@@ -88,6 +88,7 @@ export function WildSpawns({ grass }: { grass: string }) {
       night,
       heading,
       caught: progressStore.get().caught,
+      fresh: progressStore.get().history.length === 0,
     });
   });
 

@@ -33,6 +33,8 @@ export type WildSpawn = {
   lured?: boolean;
   /** Your Daily Encounter: a bright pulsing ring, out of Nearby, out all day. */
   daily?: boolean;
+  /** One of GO's first-catch starters, round a new trainer: never flees, out of Nearby. */
+  starter?: boolean;
   /** One of the fact Pokémon: catching it shows the fact. */
   fact?: string;
 };
@@ -136,6 +138,41 @@ function dailyAppearance(x: number, z: number, heading: number, at: number, caug
   return { key: `daily:${day}`, point, dex: daily.dex, looks: daily.dex, x: daily.x, z: daily.z, from: 0, until: end };
 }
 
+/* ---------------- the first catch ---------------- */
+
+/**
+ * GO's first catch (notes/research/go-round-4.md 1): a new trainer finds
+ * Bulbasaur, Charmander and Squirtle standing round them. Walk away and they
+ * turn up round you again; do that a few times and Pikachu comes along too.
+ * Catch any one and the rest go.
+ */
+const STARTER_KEY = "developer-go:starter";
+const STARTERS = [1, 4, 7];
+/** Walks away before Pikachu joins them. */
+export const PIKACHU_AFTER = 4;
+/** How far you have to get from them before they come after you. */
+const AWAY = 15;
+let starterDone = false;
+try {
+  starterDone = localStorage.getItem(STARTER_KEY) !== null;
+} catch {}
+let round: { x: number; z: number; heading: number; walks: number } | null = null;
+
+function starterAppearances(x: number, z: number, heading: number, at: number): Appearance[] {
+  if (!round) round = { x, z, heading, walks: 0 };
+  else if (Math.hypot(x - round.x, z - round.z) > AWAY) round = { x, z, heading, walks: round.walks + 1 };
+  const r = round;
+  const dexes = r.walks >= PIKACHU_AFTER ? [...STARTERS, 25] : STARTERS;
+  return dexes.map((dex, k) => {
+    // spread round him, the first one ahead, each turned a little until it stands on open ground
+    const a0 = r.heading + (k / dexes.length) * Math.PI * 2;
+    let spot: Vec2 = [r.x + Math.sin(a0) * 4.2, r.z + Math.cos(a0) * 4.2];
+    for (let j = 1; j < 8 && !walkable(spot); j++) spot = [r.x + Math.sin(a0 + j * 0.35) * 4.2, r.z + Math.cos(a0 + j * 0.35) * 4.2];
+    const point: SpawnPoint = { id: -3, x: spot[0], z: spot[1], habitat: "field", offset: 0, long: true };
+    return { key: `starter:${dex}:${r.walks}`, point, dex, looks: dex, x: spot[0], z: spot[1], from: at, until: at + 3_600_000 };
+  });
+}
+
 /* ---------------- the store ---------------- */
 
 let spawns: WildSpawn[] = [];
@@ -170,6 +207,8 @@ type Around = {
   heading?: number;
   /** What he's caught, for picking the Daily Encounter. */
   caught?: Record<number, number>;
+  /** A trainer with no catches yet, who gets GO's three starters round them. */
+  fresh?: boolean;
 };
 
 function toWild(a: Appearance, scene: number, at: number): WildSpawn {
@@ -187,6 +226,7 @@ function toWild(a: Appearance, scene: number, at: number): WildSpawn {
     until: a.until,
     ...(a.key.startsWith("lure:") ? { lured: true } : {}),
     ...(a.key.startsWith("daily:") ? { daily: true } : {}),
+    ...(a.key.startsWith("starter:") ? { starter: true } : {}),
     ...(FACT_OF.has(real) ? { fact: FACT_OF.get(real) } : {}),
   };
 }
@@ -197,7 +237,7 @@ function toWild(a: Appearance, scene: number, at: number): WildSpawn {
  * puff (unless he's catching it or walking to it); ones he walks away from are
  * forgotten. Call it about once a second.
  */
-export function refreshWild(x: number, z: number, scene: number, { goal = null, weather = null, night = false, at = Date.now(), heading = 0, caught = {} }: Around = {}) {
+export function refreshWild(x: number, z: number, scene: number, { goal = null, weather = null, night = false, at = Date.now(), heading = 0, caught = {}, fresh = false }: Around = {}) {
   clock = scene;
   now = at;
   const env: Env = { weather, night, at };
@@ -207,8 +247,12 @@ export function refreshWild(x: number, z: number, scene: number, { goal = null, 
     if (a && !gone.has(a.key)) want.set(a.key, a);
   }
   for (const a of lureAppearances(x, z, at, env)) if (!gone.has(a.key) && Math.hypot(a.x - x, a.z - z) <= RANGE) want.set(a.key, a);
-  const d = dailyAppearance(x, z, heading, at, caught);
-  if (d && !gone.has(d.key) && Math.hypot(d.x - x, d.z - z) <= RANGE * 2) want.set(d.key, d);
+  // a new trainer's three starters come first; the Daily Encounter waits until one's caught
+  if (fresh && !starterDone) for (const a of starterAppearances(x, z, heading, at)) want.set(a.key, a);
+  else {
+    const d = dailyAppearance(x, z, heading, at, caught);
+    if (d && !gone.has(d.key) && Math.hypot(d.x - x, d.z - z) <= RANGE * 2) want.set(d.key, d);
+  }
 
   let changed = false;
   const next: WildSpawn[] = [];
@@ -250,6 +294,15 @@ export function holdWild(id: string | null) {
  */
 export function endWild(id: string, outcome: "caught" | "fled" | "ran") {
   if (outcome === "ran") return;
+  // the first catch: the other starters go with it
+  if (id.startsWith("starter:")) {
+    starterDone = true;
+    try {
+      localStorage.setItem(STARTER_KEY, id.split(":")[1]);
+    } catch {}
+    spawns = spawns.filter((w) => !w.starter);
+    return notify();
+  }
   const s = spawns.find((w) => w.id === id);
   gone.set(id, s?.until ?? now + 3600_000);
   for (const [k, until] of gone) if (until < now) gone.delete(k);
@@ -265,4 +318,6 @@ export function resetWild() {
   clock = 0;
   gone.clear();
   daily = null;
+  starterDone = false;
+  round = null;
 }

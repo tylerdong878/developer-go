@@ -47,8 +47,8 @@ export type Progress = {
   items: Items;
 };
 
-/** What a new trainer starts with, like GO's starter bag. */
-export const STARTER_ITEMS: Items = { ball: 20, great: 0, razz: 2 };
+/** What a new trainer starts with: GO gives 50 Poké Balls (notes/research/go-round-4.md 1). */
+export const STARTER_ITEMS: Items = { ball: 50, great: 0, razz: 2 };
 
 const KEY = "developer-go:progress";
 const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: NO_BOND, field: [], streaks: { catch: NO_STREAK, spin: NO_STREAK }, stamps: [], team: null, routes: {}, routedOn: null, xp: 0, items: STARTER_ITEMS };

@@ -166,7 +166,7 @@ export function Hud() {
           dex: w.species.dex,
           name: w.species.name,
           // the Daily Encounter never flees, like GO's
-          rare: !!w.daily,
+          rare: !!w.daily || !!w.starter,
           fact: w.fact,
           cp,
           goal,
