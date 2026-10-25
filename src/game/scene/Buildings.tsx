@@ -17,6 +17,7 @@ import {
   Quaternion,
   Vector3,
 } from "three";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { buildings } from "../base";
 import type { Building } from "../lots";
 import { Blocks } from "./Blocks";
@@ -72,7 +73,7 @@ vec3 glassShade(vec3 P, vec3 N, vec3 tint, vec3 inside) {
   return mix(inside, refl, F);
 }`,
       )
-      .replace("#include <color_fragment>", "#include <color_fragment>\ndiffuseColor.a *= vFade;")
+      .replace("#include <color_fragment>", "#include <color_fragment>\ndiffuseColor.a *= vFade;\ndiffuseColor.rgb *= mix(0.74, 1.0, smoothstep(0.0, 1.4, vTown.y));")
       .replace(
         "#include <emissivemap_fragment>",
         `#include <emissivemap_fragment>
@@ -209,11 +210,13 @@ function housePieces(): Record<string, Piece[]> {
 }
 
 const box = new BoxGeometry(1, 1, 1);
+// a little round on the walls and the base, so houses read as toys, not crates (town-polish.md 10)
+const soft = new RoundedBoxGeometry(1, 1, 1, 2, 0.04);
 /** The skirt roof's shape: a square frustum (a truncated pyramid), unit size, standing on y = 0. */
 const frustum = new CylinderGeometry(0.8 / Math.SQRT2, 1 / Math.SQRT2, 1, 4, 1).rotateY(Math.PI / 4).translate(0, 0.5, 0);
 const HOUSE_PARTS: Record<string, BufferGeometry> = {
-  base: box,
-  walls: box,
+  base: soft,
+  walls: soft,
   timber: box,
   skirt: frustum,
   skirtEdge: frustum,

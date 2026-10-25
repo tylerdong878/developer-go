@@ -8,6 +8,7 @@ import { circle } from "../geometry";
 import { halloween } from "../events";
 import { autumn, type Palette, palettes } from "../palette";
 import { Halloween } from "./Halloween";
+import { Contact } from "./Contact";
 import { useWeather } from "../weather";
 import { type Weathered, weatherize } from "../weatherLook";
 import { WeatherFx } from "./WeatherFx";
@@ -271,6 +272,8 @@ export function World({ phase, shadowMap, light }: { phase: Phase; shadowMap: nu
       ))}
       {/* the water goes in the stack just under the paths and roads, which run over its edges */}
       <Water renderOrder={-50 + LAYERS.findIndex((l) => l.key === "path") - 0.5} />
+      {/* soft shade round every building's foot, over the ground and under everything standing on it */}
+      <Contact renderOrder={-20} />
       {/* the ground layers write no depth, so this invisible floor does: nothing below ground shows through */}
       <mesh geometry={floor} renderOrder={-10}>
         <meshBasicMaterial colorWrite={false} side={DoubleSide} />

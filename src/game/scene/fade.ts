@@ -34,7 +34,7 @@ export function TownTracker({ night }: { night: boolean }) {
         blocking = y < b.h + 0.5 && Math.abs(cx + sx * t - b.x) < b.w / 2 + 0.8 && Math.abs(cz + sz * t - b.z) < b.d / 2 + 0.8;
       }
       // a ghost you can still read, not a near-invisible speckle
-      fade[i] += ((inside ? 0 : blocking ? 0.3 : 1) - fade[i]) * k;
+      fade[i] += ((inside ? 0 : blocking ? 0.25 : 1) - fade[i]) * k;
       // Snap the last bit, or the dither keeps eating a few pixels of a building that's back in full.
       if (fade[i] > 0.99) fade[i] = 1;
     });

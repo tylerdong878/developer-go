@@ -32,12 +32,12 @@ export function patchLook() {
   ShaderChunk.fog_pars_fragment = ShaderChunk.fog_pars_fragment.replace("varying float vFogDepth;", "varying vec3 vFogPosition;");
   ShaderChunk.fog_fragment = ShaderChunk.fog_fragment.replace("#ifdef USE_FOG", "#ifdef USE_FOG\n\tfloat vFogDepth = length( vFogPosition );");
   // A building in the way used to dissolve into random static (three's alpha hash). Now it's a fine,
-  // even 4x4 screen in 2 px cells, and what's left is one pale frosted tint, so it reads as a ghost of the
+  // even 4x4 screen a pixel at a time, and what's left is one pale frosted tint, so it reads as a ghost of the
   // building you can see through (notes/research/town-polish.md 1).
   ShaderChunk.alphahash_fragment = /* glsl */ `
 #ifdef USE_ALPHAHASH
   if ( diffuseColor.a < 0.999 ) {
-    vec2 cell = floor( gl_FragCoord.xy / 2.0 );
+    vec2 cell = floor( gl_FragCoord.xy );
     vec2 m = mod( cell, 4.0 );
     // a 4x4 Bayer matrix, built from two 2x2 ones
     vec2 m2 = mod( m, 2.0 );
