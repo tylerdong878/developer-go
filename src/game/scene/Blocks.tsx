@@ -3,8 +3,10 @@
 import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import {
+  type BufferGeometry,
   CanvasTexture,
   Color,
+  Euler,
   type Group,
   InstancedBufferAttribute,
   type InstancedMesh,
@@ -19,7 +21,7 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
 import { buildings } from "../base";
 import type { Building, Recipe } from "../lots";
 import { fade, town } from "./fade";
-import { type Box, drawDisc, HEROES, STYLE } from "./heroes";
+import { awnings, bays, bit, blade, blank, type Box, doorway, drawDisc, fascia, glow, HEROES, planters, STYLE } from "./heroes";
 
 /*
  * Our own Pokémon-town building kit (notes/research/gfx-buildings.md 3.6,
@@ -31,10 +33,12 @@ import { type Box, drawDisc, HEROES, STYLE } from "./heroes";
  *
  * Every part of every block is one rounded box in one instanced mesh, rebuilt
  * at its real size in the vertex shader (so a 12 m wall keeps a 0.4 m corner),
- * with the facade painted on in the fragment shader. One draw call.
+ * with the facade painted on in the fragment shader. The small parts (valances,
+ * planters, door frames) are a second, lighter mesh with the same material.
+ * Two draw calls.
  */
 
-const { punched: PUNCHED, curtain: CURTAIN, blank: BLANK, tall: TALL, brick: BRICK } = STYLE;
+const { punched: PUNCHED, curtain: CURTAIN, tall: TALL, brick: BRICK } = STYLE;
 
 const hash = (n: number) => {
   const s = Math.sin(n * 127.1 + 311.7) * 43758.5453;
@@ -45,21 +49,23 @@ const pick = <T,>(list: readonly T[], n: number) => list[Math.floor(hash(n) * li
 /** The building's own width and depth, before its turn. */
 const localSize = (b: Building) => (Math.round(b.turn / (Math.PI / 2)) % 2 !== 0 ? [b.d, b.w] : [b.w, b.d]);
 
+/** The wall colors a Saffron block can have, each with the accent and door that go with it (town-polish.md 8). */
+const SAFFRON = [
+  { wall: "#e8cf86", accent: "#d8688a", door: "#a84a66" },
+  { wall: "#f0c49a", accent: "#3f8fd0", door: "#2f6aa0" },
+  { wall: "#cfe6c8", accent: "#e07a5a", door: "#a85840" },
+  { wall: "#d9cfe8", accent: "#4fae8a", door: "#3a8068" },
+];
+
 /** The parts of one block, in its own frame (front toward +z, ground at y 0). */
 function parts(b: Building, i: number): Box[] {
   const [W, D] = localSize(b);
   const H = b.h;
   if (b.slug && HEROES[b.slug]) return HEROES[b.slug](W, D, H).boxes;
   const recipe: Recipe = b.recipe ?? "saffron";
-  const blank = (size: Box["size"], at: Box["at"], color: string, round: Box["round"] = [0.12, 0.08, 0.12]): Box => ({
-    at,
-    size,
-    round,
-    facade: [1, 1, 0, BLANK],
-    color,
-  });
+  const F = D / 2;
   const door = (x: number, glass: string, trim: string): Box => ({
-    at: [x, 1.4, D / 2 + 0.12],
+    at: [x, 1.4, F + 0.12],
     size: [2.2, 2.8, 0.4],
     round: [0.12, 0.12, 0.08],
     facade: [1.8, 1.7, 0.15, CURTAIN],
@@ -68,43 +74,66 @@ function parts(b: Building, i: number): Box[] {
     trim,
   });
   const roofUnit = (x: number, z: number): Box => blank([2, 1.2, 1.4], [x, H + 0.6, z], "#dfe3ea", [0.3, 0.3, 0.3]);
+  // half the awnings in town are striped, the rest plain like LGPE Saffron's
+  const striped = hash(i + 21) < 0.5;
   const out: Box[] = [];
   if (recipe === "saffron") {
-    const wall = pick(["#e8cf86", "#f0c49a", "#cfe6c8", "#d9cfe8"], i);
+    const { wall, accent, door: paint } = pick(SAFFRON, i);
+    const bay = bays(W, 0.4, 2.4);
+    const dx = bay.x[bay.door];
     out.push(blank([W + 0.2, 0.9, D + 0.2], [0, 0.45, 0], "#8b80a6", [0.5, 0.08, 0.5]));
     out.push({ at: [0, (H - 0.6) / 2, 0], size: [W, H - 0.6, D], round: [0.4, 0.12, 0.4], facade: [2.4, 3, 4.2, PUNCHED], color: wall, glass: "#8fc4ee", trim: "#f4ecd2" });
     out.push(blank([W + 0.5, 0.6, D + 0.5], [0, H - 0.3, 0], "#f4ecd2", [0.6, 0.15, 0.6]));
-    out.push(blank([Math.min(W - 2.5, 7), 0.22, 1.1], [W * 0.12, 3.35, D / 2 + 0.55], pick(["#d8688a", "#5fa8d8", "#e8a33a"], i + 3), [0.1, 0.1, 0.1]));
-    out.push(door(-W * 0.28, "#8fc4ee", "#f4f6f4"));
+    // a shop: a sign board, awnings over the shop bays, a framed door under a canopy, planters, a blade sign
+    out.push(...fascia(Math.min(W - 1.2, 9), 4.2, F, "#f4ecd2", accent));
+    out.push(...awnings(bay.x.filter((_, k) => k !== bay.door), bay.bw, 3.5, F, accent, striped));
+    out.push(...doorway(dx, F, "#8fc4ee", paint, "#f4ecd2", accent));
+    out.push(...planters(dx, F, 2.4));
+    out.push(...blade(W / 2 - 0.6, 5.6, F, accent));
     out.push(roofUnit(W * 0.2, -D * 0.15));
   } else if (recipe === "glass") {
     out.push(blank([W + 0.1, 0.6, D + 0.1], [0, 0.3, 0], "#5f6b85", [0.2, 0.08, 0.2]));
     out.push({ at: [0, (H - 0.5) / 2, 0], size: [W, H - 0.5, D], round: [0.1, 0.15, 0.1], facade: [1.6, 3.2, 4.4, CURTAIN], color: "#eef0f5", glass: pick(["#6f8fc8", "#7fa2d8", "#8fb4e2"], i), trim: "#c9d3ea" });
     for (const sx of [-1, 1])
       for (const sz of [-1, 1]) out.push(blank([0.9, H - 0.4, 0.9], [sx * (W / 2 - 0.3), (H - 0.4) / 2, sz * (D / 2 - 0.3)], "#f6f7fa", [0.35, 0.1, 0.35]));
-    out.push(blank([W * 0.6, 0.3, 2.2], [0, 4.1, D / 2 + 1.0], "#f6f7fa"));
+    out.push(blank([W * 0.6, 0.3, 2.2], [0, 4.1, F + 1.0], "#f6f7fa"));
+    // a lit name strip along the canopy, and planters either side of it
+    out.push({ ...glow([W * 0.6, 0.12, 0.05], [0, 4.1, F + 2.13], "#eef6ff", [0.03, 0.03, 0.02]), small: true });
+    out.push(...planters(0, F, W * 0.3 + 0.9));
     out.push(blank([W + 0.3, 0.5, D + 0.3], [0, H - 0.25, 0], "#e6e9f0", [0.3, 0.12, 0.3]));
     out.push(door(0, "#8fb4e2", "#f6f7fa"));
     out.push(roofUnit(-W * 0.18, D * 0.1));
     if (hash(i + 9) > 0.5) out.push(roofUnit(W * 0.22, -D * 0.2));
   } else if (recipe === "stone") {
     const accent = pick(["#2c3d5c", "#b04a48"], i);
+    const bay = bays(W, 0.8, 2.2);
+    const dx = bay.x[bay.door];
     out.push(blank([W + 0.1, 0.5, D + 0.1], [0, 0.25, 0], "#9a8670", [0.8, 0.08, 0.8]));
     out.push({ at: [0, (H - 0.4) / 2, 0], size: [W, H - 0.4, D], round: [0.8, 0.1, 0.8], facade: [2.2, 3.2, 4.6, TALL], color: "#ecdcbc", glass: "#8fa6e3", trim: "#f6eedd" });
     out.push(blank([W + 0.25, 0.25, D + 0.25], [0, 4.6, 0], "#f6eedd", [0.9, 0.08, 0.9]));
-    out.push(blank([W - 3, 0.9, 0.3], [0, 3.9, D / 2 + 0.1], accent));
+    // a Lumiose shop floor: a sign board under the string course, awnings, a framed door
+    out.push(...fascia(Math.min(W - 2, 9), 3.9, F, "#f6eedd", accent));
+    out.push(...awnings(bay.x.filter((_, k) => k !== bay.door), bay.bw, 3.2, F, accent, striped));
+    out.push(...doorway(dx, F, "#8fa6e3", accent, "#f6eedd"));
+    out.push(...planters(dx, F, 2.4));
+    out.push(...blade(W / 2 - 1.0, 6.0, F, accent));
     out.push(blank([W + 0.4, 0.4, D + 0.4], [0, H - 0.2, 0], "#f6eedd", [1.0, 0.08, 1.0]));
     // the mansard: a slate roof with rolled edges
     out.push(blank([W - 0.6, 2.4, D - 0.6], [0, H + 1.0, 0], "#4d5a78", [1.2, 0.9, 1.2]));
-    out.push(door(W * 0.22, "#8fa6e3", "#f6eedd"));
   } else {
     const wall = pick(["#c0624a", "#b4583f", "#c87156"], i);
+    const bay = bays(W, 0.25, 2.2);
+    const dx = bay.x[bay.door];
     out.push(blank([W + 0.15, 0.7, D + 0.15], [0, 0.35, 0], "#6e4a40", [0.25, 0.08, 0.25]));
     out.push({ at: [0, (H - 0.5) / 2, 0], size: [W, H - 0.5, D], round: [0.25, 0.1, 0.25], facade: [2.2, 3, 3.6, BRICK], color: wall, glass: "#7fb0e0", trim: "#f4ecdf" });
     out.push(blank([W + 0.4, 0.5, D + 0.4], [0, H - 0.25, 0], "#efe6d6", [0.4, 0.12, 0.4]));
-    // a stoop up to a green door
-    out.push(blank([2.6, 0.5, 1.3], [-W * 0.25, 0.25, D / 2 + 0.6], "#b9a99a"));
-    out.push(blank([1.6, 2.6, 0.3], [-W * 0.25, 1.8, D / 2 + 0.08], "#2f5d4a", [0.1, 0.1, 0.06]));
+    // a stoop up to a green door in a white frame, under a little canopy, planters either side
+    out.push(blank([2.6, 0.5, 1.3], [dx, 0.25, F + 0.6], "#b9a99a"));
+    out.push(blank([1.6, 2.6, 0.3], [dx, 1.8, F + 0.08], "#2f5d4a", [0.1, 0.1, 0.06]));
+    out.push(bit([0.25, 2.8, 0.3], [dx - 0.93, 1.9, F + 0.1], "#f4ecdf"), bit([0.25, 2.8, 0.3], [dx + 0.93, 1.9, F + 0.1], "#f4ecdf"));
+    out.push(bit([2.2, 0.3, 0.34], [dx, 3.25, F + 0.12], "#f4ecdf"));
+    out.push(bit([2.6, 0.16, 1.1], [dx, 3.52, F + 0.6], "#2f5d4a", [0.05, 0.03, 0.05]));
+    out.push(...planters(dx, F, 2.3));
     // the Boston water tank, on every few
     if (hash(i + 5) < 0.35) {
       out.push(blank([2.2, 2.6, 2.2], [W * 0.18, H + 1.3, -D * 0.1], "#a07850", [1.1, 0.2, 1.1]));
@@ -213,6 +242,12 @@ diffuseColor.a *= vFade;
   // pilasters between the bays above the shop floor, the Saffron street look
   float pil = wallM * step(style, 0.5) * step(0.0, c.x) * step(c.x, nb) * step(g0, h) * step(h, vBSize.y - 0.1)
             * (1.0 - smoothstep(0.035, 0.035 + aa.x, abs(fract(c.x + 0.5) - 0.5)));
+  // awning stripes, painted across the box so they show on the top too
+  if (style > 5.5) {
+    float sw = fwidth(vBPos.x / 0.6);
+    float st = smoothstep(-sw, sw, abs(fract(vBPos.x / 0.6) - 0.5) - 0.25);
+    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.97, 0.95, 0.92), st * (1.0 - smoothstep(0.2, 0.45, sw)));
+  }
   diffuseColor.rgb = mix(diffuseColor.rgb, vTrim, pil);
   diffuseColor.rgb = mix(diffuseColor.rgb, vTrim, frame + gframe);
   diffuseColor.rgb = mix(diffuseColor.rgb, vTrim * 1.08, sill * (1.0 - far));
@@ -240,25 +275,41 @@ diffuseColor.a *= vFade;
   diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.13, 0.17, 0.3), uNight * bWin * (1.0 - bLit));
   totalEmissiveRadiance += uNight * (bWin * bLit * mix(vec3(1.0, 0.8, 0.5), vec3(0.81, 0.88, 1.0), cool) + bShop * vec3(1.0, 0.86, 0.62) * 0.9);
   // soffit strips, crown rings and fascias glow after dark
-  totalEmissiveRadiance += uNight * step(4.5, vFacade.w) * diffuseColor.rgb * 1.3;
+  totalEmissiveRadiance += uNight * step(4.5, vFacade.w) * step(vFacade.w, 5.5) * diffuseColor.rgb * 1.3;
 }`,
     );
 };
 
-const geometry = new RoundedBoxGeometry(1, 1, 1, 3, 0.25);
+type Piece = { b: number; box: Box };
+
+const BIG = new RoundedBoxGeometry(1, 1, 1, 3, 0.25);
+// parts under about 1.5 m: one bevel to a corner, a fifth of the triangles
+const SMALL = new RoundedBoxGeometry(1, 1, 1, 1, 0.25);
 const UP = new Vector3(0, 1, 0);
 
-/** Every block in town (buildings built from the kit), as one instanced mesh. */
+/** Every block in town (buildings built from the kit): two instanced meshes, the big parts and the small ones, sharing one material. */
 export function Blocks() {
-  const mesh = useRef<InstancedMesh>(null);
-  const pieces = useMemo(() => {
-    const list: { b: number; box: Box }[] = [];
+  const layers = useMemo(() => {
+    const big: Piece[] = [];
+    const small: Piece[] = [];
     buildings.forEach((b, i) => {
       if (b.model !== "block") return;
-      for (const box of parts(b, i)) list.push({ b: i, box });
+      for (const box of parts(b, i)) (box.small ? small : big).push({ b: i, box });
     });
-    return list;
+    return { big, small };
   }, []);
+  return layers.big.length ? (
+    <>
+      <KitLayer pieces={layers.big} geometry={BIG} />
+      <KitLayer pieces={layers.small} geometry={SMALL} />
+      <HeroDiscs />
+    </>
+  ) : null;
+}
+
+/** One instanced mesh of kit boxes: placed once, faded building by building. */
+function KitLayer({ pieces, geometry }: { pieces: Piece[]; geometry: BufferGeometry }) {
+  const mesh = useRef<InstancedMesh>(null);
   const geo = useMemo(() => {
     const g = geometry.clone();
     const n = pieces.length;
@@ -282,6 +333,16 @@ export function Blocks() {
     g.setAttribute("aSeed", new InstancedBufferAttribute(seed, 1));
     g.setAttribute("aFade", new InstancedBufferAttribute(new Float32Array(n).fill(1), 1));
     return g;
+  }, [pieces, geometry]);
+  // each building's run of pieces (they're listed building by building), so the fade only touches what changed
+  const runs = useMemo(() => {
+    const out: [number, number, number][] = [];
+    pieces.forEach(({ b }, k) => {
+      const last = out[out.length - 1];
+      if (last && last[0] === b) last[2] = k + 1;
+      else out.push([b, k, k + 1]);
+    });
+    return out;
   }, [pieces]);
 
   useLayoutEffect(() => {
@@ -290,11 +351,15 @@ export function Blocks() {
     const place = new Matrix4();
     const local = new Matrix4();
     const q = new Quaternion();
+    const turn = new Quaternion();
+    const e = new Euler();
     const c = new Color();
     pieces.forEach(({ b, box }, k) => {
       const bd = buildings[b];
       place.compose(new Vector3(bd.x, 0, bd.z), q.setFromAxisAngle(UP, bd.turn), new Vector3(1, 1, 1));
-      local.compose(new Vector3(...box.at), new Quaternion(), new Vector3(...box.size));
+      turn.identity();
+      if (box.rot) turn.setFromEuler(e.set(...box.rot));
+      local.compose(new Vector3(...box.at), turn, new Vector3(...box.size));
       m.setMatrixAt(k, place.multiply(local));
       m.setColorAt(k, c.set(box.color));
     });
@@ -307,23 +372,19 @@ export function Blocks() {
   useFrame(() => {
     const attr = mesh.current?.geometry.getAttribute("aFade") as InstancedBufferAttribute | undefined;
     if (!attr) return;
+    const arr = attr.array as Float32Array;
     let changed = false;
-    pieces.forEach(({ b }, k) => {
+    for (const [b, from, to] of runs) {
       const want = fade[b];
-      if (Math.abs((attr.array[k] as number) - want) > 0.004 || (want === 1 && attr.array[k] !== 1)) {
-        attr.array[k] = want;
+      if (Math.abs(arr[from] - want) > 0.004 || (want === 1 && arr[from] !== 1)) {
+        arr.fill(want, from, to);
         changed = true;
       }
-    });
+    }
     if (changed) attr.needsUpdate = true;
   });
 
-  return pieces.length ? (
-    <>
-      <instancedMesh ref={mesh} args={[geo, material, pieces.length]} castShadow receiveShadow />
-      <HeroDiscs />
-    </>
-  ) : null;
+  return pieces.length ? <instancedMesh ref={mesh} args={[geo, material, pieces.length]} castShadow receiveShadow /> : null;
 }
 
 /** The emblem discs on the job buildings, drawn once into textures, glowing after dark. */

@@ -15,10 +15,14 @@ export type Box = {
   color: string;
   glass?: string;
   trim?: string;
+  /** A part under about 1.5 m: drawn from a lighter mesh, one bevel to a corner. */
+  small?: boolean;
+  /** A turn in its own frame (radians, XYZ), for awnings and roof plates. */
+  rot?: [number, number, number];
 };
 
 /** Facade styles the block shader knows. */
-export const STYLE = { punched: 0, curtain: 1, blank: 2, tall: 3, brick: 4, glow: 5 } as const;
+export const STYLE = { punched: 0, curtain: 1, blank: 2, tall: 3, brick: 4, glow: 5, stripe: 6 } as const;
 
 /** A disc emblem on a face: where (building frame), how big, its colors and glyph. */
 export type Disc = { at: [number, number, number]; size: number; ring: string; arc: string; glyph: Glyph; ink: string };
@@ -26,17 +30,73 @@ export type Glyph = "cloud" | "book" | "pulse" | "letterT" | "spark" | "bars" | 
 
 export type Hero = { boxes: Box[]; discs: Disc[] };
 
-const blank = (size: Box["size"], at: Box["at"], color: string, round: Box["round"] = [0.12, 0.08, 0.12]): Box => ({
+export const blank = (size: Box["size"], at: Box["at"], color: string, round: Box["round"] = [0.12, 0.08, 0.12]): Box => ({
   at,
   size,
   round,
   facade: [1, 1, 0, STYLE.blank],
   color,
 });
-const glow = (size: Box["size"], at: Box["at"], color: string, round: Box["round"] = [0.12, 0.08, 0.12]): Box => ({
+export const glow = (size: Box["size"], at: Box["at"], color: string, round: Box["round"] = [0.12, 0.08, 0.12]): Box => ({
   ...blank(size, at, color, round),
   facade: [1, 1, 0, STYLE.glow],
 });
+export const bit = (size: Box["size"], at: Box["at"], color: string, round: Box["round"] = [0.05, 0.04, 0.05]): Box => ({ ...blank(size, at, color, round), small: true });
+
+/*
+ * The street level (notes/research/town-polish.md 4): what makes a ground floor
+ * read as a shop and not a wall. All in the building frame; z is the front wall.
+ */
+
+/** The bays across a front by the facade shader's own rule, so doors and awnings line up with the windows. */
+export function bays(W: number, R: number, bay: number) {
+  const span = Math.max(W - 2 * R - 0.6, 0.5);
+  const n = Math.max(1, Math.round(span / bay));
+  const bw = span / n;
+  return { bw, x: Array.from({ length: n }, (_, i) => -span / 2 + (i + 0.5) * bw), door: n >= 3 ? 1 : 0 };
+}
+
+/** An awning over each bay: a hood sloping out from the wall and a valance on its edge, striped or plain. */
+export function awnings(xs: number[], bw: number, y: number, z: number, color: string, striped: boolean): Box[] {
+  const facade: Box["facade"] = [1, 1, 0, striped ? STYLE.stripe : STYLE.blank];
+  return xs.flatMap((x): Box[] => [
+    { at: [x, y, z + 0.55], size: [bw - 0.35, 0.1, 1.15], round: [0.04, 0.03, 0.04], rot: [0.38, 0, 0], facade, color },
+    { at: [x, y - 0.36, z + 1.08], size: [bw - 0.35, 0.3, 0.06], round: [0.03, 0.03, 0.02], facade, color, small: true },
+  ]);
+}
+
+/** A door set into a frame of the trim, with a step out front and maybe a little canopy over it. */
+export function doorway(x: number, z: number, glass: string, color: string, frame: string, canopy?: string): Box[] {
+  const w = 2.2;
+  const h = 2.8;
+  const out: Box[] = [
+    { at: [x, h / 2, z + 0.08], size: [w, h, 0.16], round: [0.06, 0.06, 0.04], facade: [1.8, 1.7, 0.15, STYLE.curtain], color, glass, trim: color },
+    bit([0.3, h + 0.2, 0.3], [x - w / 2 - 0.15, (h + 0.2) / 2, z + 0.07], frame),
+    bit([0.3, h + 0.2, 0.3], [x + w / 2 + 0.15, (h + 0.2) / 2, z + 0.07], frame),
+    bit([w + 0.9, 0.4, 0.34], [x, h + 0.2, z + 0.09], frame),
+    bit([w + 0.8, 0.14, 0.8], [x, 0.07, z + 0.45], "#d9d4cc"),
+  ];
+  if (canopy) out.push(bit([w + 1.0, 0.16, 1.1], [x, h + 0.55, z + 0.6], canopy, [0.05, 0.03, 0.05]));
+  return out;
+}
+
+/** Stone planters with clipped hedges, either side of a door. */
+export function planters(x: number, z: number, gap: number): Box[] {
+  return [-1, 1].flatMap((s) => [
+    bit([1.4, 0.55, 0.7], [x + s * gap, 0.275, z + 0.75], "#c9c2b6", [0.15, 0.1, 0.15]),
+    bit([1.25, 0.45, 0.55], [x + s * gap, 0.75, z + 0.75], "#4f9a45", [0.22, 0.22, 0.22]),
+  ]);
+}
+
+/** A sign board over the shop floor: a trim board with a panel in the accent that glows after dark. */
+export function fascia(w: number, y: number, z: number, trim: string, accent: string): Box[] {
+  return [blank([w, 0.6, 0.16], [0, y, z + 0.1], trim, [0.05, 0.05, 0.04]), { ...glow([w - 0.5, 0.36, 0.05], [0, y, z + 0.2], accent, [0.03, 0.03, 0.02]), small: true }];
+}
+
+/** A round blade sign sticking out from the corner on a bracket, lit after dark. */
+export function blade(x: number, y: number, z: number, accent: string): Box[] {
+  return [glow([0.14, 1.1, 1.1], [x, y, z + 0.75], accent, [0.07, 0.55, 0.55]), bit([0.08, 0.08, 0.75], [x, y + 0.6, z + 0.4], "#2a2f3a", [0.03, 0.03, 0.03])];
+}
 const door = (x: number, z: number, glass: string, trim: string, w = 3, h = 2.9): Box => ({
   at: [x, h / 2, z],
   size: [w, h, 0.4],
@@ -84,6 +144,7 @@ function khoury(W: number, D: number, H: number): Hero {
   boxes.push(blank([W + 0.6, 0.6, D + 0.6], [0, H - 0.3, 0], "#efe6d6", [0.5, 0.2, 0.5]));
   boxes.push(blank([3.8, 4.2, 0.4], [0, 2.1, D / 2 + 0.6], "#efe6d6", [0.6, 0.6, 0.1]));
   boxes.push(door(0, D / 2 + 0.85, "#9fd0f0", "#1f2a3a", 2.8, 3));
+  boxes.push(...planters(0, D / 2 + 1.25, 4.4));
   for (const s of [-1, 1]) boxes.push(blank([0.9, 3.2, 0.08], [s * 3.3, 9, D / 2 + 0.5], "#c8102e", [0.1, 0.1, 0.04]));
   // the clock tower over the spine, with a slate roof and a gold finial
   boxes.push({ at: [0, H + 2.6, 0.5], size: [5.6, 5.2, 5.6], round: [0.3, 0.1, 0.3], facade: [1.6, 2.4, 0.2, STYLE.brick], color: "#c0624a", glass: "#7fb0e0", trim: "#f4ecdf" });
@@ -113,6 +174,8 @@ function glassGym(W: number, D: number, H: number, glass: string, arc: string, g
   for (const sx of [-1, 1])
     for (const sz of [-1, 1]) boxes.push(blank([0.8, H - 0.4, 0.8], [sx * (W / 2 - 0.25), (H - 0.4) / 2, sz * (D / 2 - 0.25)], "#f6f7fa", [0.25, 0.1, 0.25]));
   boxes.push(blank([W * 0.55, 2.4, D * 0.45], [0, H + 1.2, -D * 0.15], "#e6e9f0", [0.4, 0.2, 0.4]));
+  boxes.push({ ...glow([W * 0.6, 0.12, 0.05], [0, 4.8, D / 2 + 2.23], "#eef6ff", [0.03, 0.03, 0.02]), small: true });
+  boxes.push(...planters(0, D / 2, W * 0.3 + 0.9));
   return { boxes, discs: [{ at: [0, 8, D / 2 + 0.27], size: disc, ring: "#e8ecf2", arc, glyph, ink: arc }] };
 }
 
@@ -121,11 +184,14 @@ function tetracorp(W: number, D: number, H: number): Hero {
     blank([W + 0.2, 0.9, D + 0.2], [0, 0.45, 0], "#8b80a6", [0.5, 0.08, 0.5]),
     { at: [0, (H - 0.6) / 2, 0], size: [W, H - 0.6, D], round: [0.4, 0.12, 0.4], facade: [2.4, 3, 4.2, STYLE.punched], color: "#f0c49a", glass: "#8fc4ee", trim: "#f4ecd2" },
     blank([W + 0.5, 0.6, D + 0.5], [0, H - 0.3, 0], "#f4ecd2", [0.6, 0.15, 0.6]),
-    blank([W - 2.5, 0.22, 1.1], [0, 3.35, D / 2 + 0.55], "#2fb5a8", [0.1, 0.1, 0.1]),
     door(-W * 0.28, D / 2 + 0.12, "#8fc4ee", "#f4f6f4", 2.2, 2.8),
     blank([3.7, 3.7, 0.25], [W * 0.12, 6.4, D / 2 + 0.12], "#f4f6f8", [0.6, 0.6, 0.1]),
     roofUnit(W * 0.2, H, -D * 0.15),
   ];
+  const bay = bays(W, 0.4, 2.4);
+  boxes.push(...fascia(Math.min(W - 1.2, 9), 4.2, D / 2, "#f4ecd2", "#2fb5a8"));
+  boxes.push(...awnings(bay.x.filter((x) => Math.abs(x + W * 0.28) > bay.bw * 0.7), bay.bw, 3.5, D / 2, "#2fb5a8", true));
+  boxes.push(...planters(-W * 0.28, D / 2, 2.4));
   return { boxes, discs: [{ at: [W * 0.12, 6.4, D / 2 + 0.27], size: 3.2, ring: "#e8ecf2", arc: "#2fb5a8", glyph: "letterT", ink: "#2fb5a8" }] };
 }
 
@@ -140,6 +206,9 @@ function quartzy(W: number, D: number, H: number): Hero {
     door(W * 0.24, D / 2 + 0.12, "#8fa6e3", "#f6eedd", 2.4, 2.9),
     blank([3.7, 3.7, 0.25], [-W * 0.12, 6.6, D / 2 + 0.12], "#f6f7fa", [0.6, 0.6, 0.1]),
   ];
+  const bay = bays(W, 0.8, 2.2);
+  boxes.push(...awnings(bay.x.filter((x) => Math.abs(x - W * 0.24) > bay.bw * 0.7), bay.bw, 3.2, D / 2, "#2f6b4f", false));
+  boxes.push(...planters(W * 0.24, D / 2, 2.5));
   return { boxes, discs: [{ at: [-W * 0.12, 6.6, D / 2 + 0.27], size: 3.2, ring: "#e8ecf2", arc: "#2f6b4f", glyph: "bars", ink: "#2f6b4f" }] };
 }
 
