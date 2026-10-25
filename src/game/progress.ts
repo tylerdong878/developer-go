@@ -4,6 +4,7 @@ import { type FieldEvent, type FieldTask, progressWith, receive } from "./field"
 import { levelFor, rewardsFor } from "./levels";
 import { BREAKTHROUGH_XP, catchBonus, mysteryItem, NO_STREAK, nextStreak, spinBonus, STAMPS, type Streak, stampWith } from "./daily";
 import { sfx } from "./sound";
+import type { TeamId } from "./teams";
 
 /**
  * What this visitor has done, kept in their browser: Pokémon caught (by dex
@@ -37,6 +38,8 @@ export type Progress = {
   /** GO's daily catch and spin streaks, and the Breakthrough stamps since the last one (daily.ts). */
   streaks: { catch: Streak; spin: Streak };
   stamps: string[];
+  /** The team picked at level 5, like GO's, or null before that. */
+  team: TeamId | null;
   xp: number;
   items: Items;
 };
@@ -45,7 +48,7 @@ export type Progress = {
 export const STARTER_ITEMS: Items = { ball: 20, great: 0, razz: 2 };
 
 const KEY = "developer-go:progress";
-const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: NO_BOND, field: [], streaks: { catch: NO_STREAK, spin: NO_STREAK }, stamps: [], xp: 0, items: STARTER_ITEMS };
+const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: NO_BOND, field: [], streaks: { catch: NO_STREAK, spin: NO_STREAK }, stamps: [], team: null, xp: 0, items: STARTER_ITEMS };
 
 function load(): Progress {
   try {
@@ -155,6 +158,11 @@ export function claimField(stop: string, day: string) {
   const stamps = stampWith(p.stamps);
   save({ ...p, field: p.field.map((t) => (t === task ? { ...t, claimed: true } : t)), stamps: stamps ?? p.stamps });
   if (stamps) toast(stamps.length >= STAMPS ? "Research stamp! Your Breakthrough is ready" : `Research stamp! ${STAMPS - stamps.length} more for a Breakthrough`);
+}
+
+export function chooseTeam(team: TeamId) {
+  const p = current();
+  if (!p.team) save({ ...p, team });
 }
 
 /** Seven stamps open a Breakthrough: its XP and a mystery item go in now, its encounter comes next. */

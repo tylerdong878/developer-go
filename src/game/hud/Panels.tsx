@@ -7,6 +7,7 @@ import { bondLevel, canFeed, feed, LEVELS } from "../bond";
 import { buddyStore } from "../buddy";
 import { MYSTIC } from "../colors";
 import { levelFor, progressStore, xpForLevel } from "../progress";
+import { TEAM_LEVEL, TEAMS } from "../teams";
 import { RAID_BOSS } from "../raidBosses";
 import { visitorMedals } from "../visitorMedals";
 import { ItemIcon, ObjectIcon } from "./icons";
@@ -478,8 +479,11 @@ export function ProfilePanel({ onClose, onTab }: { onClose: () => void; onTab?: 
     ["Visited", n(progress.visited.length)],
   ] as const;
   return (
-    <Sheet title={`Level ${level}`} kicker="You" accent={MYSTIC} onClose={onClose}>
+    <Sheet title={`Level ${level}`} kicker={progress.team ? TEAMS[progress.team].name : "You"} accent={progress.team ? TEAMS[progress.team].color : MYSTIC} onClose={onClose}>
       {onTab ? <ProfileTabs current="you" onPick={onTab} /> : null}
+      {progress.team ? null : (
+        <p className="mb-4 rounded-2xl bg-ink/5 px-4 py-3 text-sm text-ink-soft">{level >= TEAM_LEVEL ? "Tap any gym to pick a team." : `At level ${TEAM_LEVEL} you can pick a team, like GO.`}</p>
+      )}
       <div className="h-2 overflow-hidden rounded-full bg-ink/8">
         <div className="h-full rounded-full bg-teal" style={{ width: `${Math.min(100, ((progress.xp - from) / (to - from)) * 100)}%` }} />
       </div>

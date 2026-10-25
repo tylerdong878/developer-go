@@ -6,6 +6,8 @@ import { sfx } from "../sound";
 import { ItemIcon } from "./icons";
 
 const NAMES: Record<ItemId, string> = { ball: "Poké Ball", great: "Great Ball", razz: "Razz Berry" };
+/** What a level opens up, like GO's: teams at 5. */
+const UNLOCKS: Record<number, string> = { 5: "Teams: tap any gym to pick one" };
 
 /** GO's level-up: the map dims, the new level pops in a glowing badge, then what it gave you and an OK. */
 export function LevelUp() {
@@ -24,6 +26,7 @@ function LevelUpScreen({ from, to, items }: Up) {
     return () => timers.forEach((t) => window.clearTimeout(t));
   }, [from, to]);
   const list = (Object.entries(items) as [ItemId, number][]).filter(([, n]) => n > 0);
+  const unlocked = Object.entries(UNLOCKS).filter(([l]) => +l > from && +l <= to);
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="levelup-title" className="fixed inset-0 z-[80] grid place-items-center px-6">
       <div className="scrim-in absolute inset-0 bg-[#0a2a4a]/55 backdrop-blur-[3px]" aria-hidden />
@@ -52,6 +55,16 @@ function LevelUpScreen({ from, to, items }: Up) {
                 </li>
               ))}
             </ul>
+          </div>
+        ) : null}
+        {unlocked.length ? (
+          <div className="mt-3 w-full rounded-3xl bg-white/95 px-4 py-3 text-ink shadow-lg">
+            <p className="text-xs font-bold tracking-[0.14em] text-ink-soft uppercase">Unlocked</p>
+            {unlocked.map(([l, what]) => (
+              <p key={l} className="mt-1 text-sm font-semibold">
+                {what}
+              </p>
+            ))}
           </div>
         ) : null}
         <button

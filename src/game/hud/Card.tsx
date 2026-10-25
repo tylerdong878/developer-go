@@ -10,6 +10,7 @@ import { ShareLink } from "./Share";
 import { SpinDisc } from "./SpinDisc";
 import { progressStore } from "../progress";
 import { premierBalls, type RaidBoss, RAID_BOSS } from "../raidBosses";
+import type { TeamId } from "../teams";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const month = (m: string) => {
@@ -34,7 +35,8 @@ export function Card({
   onAbout: () => void;
   onBonus: (slug: string) => void;
 }) {
-  const view = cardFor(object, onAbout, onBonus);
+  const { team } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const view = cardFor(object, onAbout, onBonus, team);
   return (
     <Sheet side title={view.title} onClose={onClose} art={view.art} kicker={view.kicker} accent={view.accent} subtitle={view.subtitle}>
       <div className="space-y-5">
@@ -47,10 +49,10 @@ export function Card({
 
 type View = { accent: string; art: ReactNode; kicker: string; title: string; subtitle?: string; body: ReactNode };
 
-function cardFor(o: MapObject, onAbout: () => void, onBonus: (slug: string) => void): View {
+function cardFor(o: MapObject, onAbout: () => void, onBonus: (slug: string) => void, team: TeamId | null): View {
   switch (o.kind) {
     case "gym":
-      return gymCard(o);
+      return gymCard(o, team);
     case "stop":
       return stopCard(o);
     case "raid":
@@ -62,11 +64,12 @@ function cardFor(o: MapObject, onAbout: () => void, onBonus: (slug: string) => v
   }
 }
 
-function gymCard(g: Gym): View {
+function gymCard(g: Gym, team: TeamId | null): View {
   return {
     accent: MYSTIC,
     art: <GymIcon size={40} />,
-    kicker: "Team Mystic gym",
+    // friendly or rival once you've picked a team, like GO
+    kicker: team ? `Team Mystic gym, ${team === "mystic" ? "friendly" : "rival"}` : "Team Mystic gym",
     title: g.org,
     subtitle: g.location,
     body: (

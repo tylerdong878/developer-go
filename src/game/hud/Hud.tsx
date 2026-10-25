@@ -6,7 +6,7 @@ import { bySlug } from "../objects";
 import { slots } from "../base";
 import { game, ZOOM } from "../state";
 import { goTo } from "../travel";
-import { claimField, fieldEvent, gainXp, progressStore, recordBonus, recordCatch, recordHatch, recordVisit } from "../progress";
+import { claimField, fieldEvent, gainXp, levelFor, progressStore, recordBonus, recordCatch, recordHatch, recordVisit } from "../progress";
 import { BONUS_RATE, bossCp, HATCH_MS, premierBalls, RAID_BOSS } from "../raidBosses";
 import { played } from "../bond";
 import { buddyStore } from "../buddy";
@@ -24,6 +24,8 @@ import { type CatchResult, Encounter, type Foe } from "./Encounter";
 import { FactToast, XpPops } from "./Xp";
 import { Card } from "./Card";
 import { LevelUp } from "./LevelUp";
+import { TeamPick } from "./TeamPick";
+import { TEAM_LEVEL } from "../teams";
 import { MainMenu, MenuBall, type Screen, TrainerBadge } from "./Menu";
 import { Nearby } from "./Nearby";
 import { Prompt } from "./Prompt";
@@ -75,6 +77,9 @@ export function Hud() {
   const started = useSyncExternalStore(startedStore.subscribe, startedStore.get, startedStore.server);
   const [card, setCard] = useState<string | null>(null);
   const [screen, setScreen] = useState<Screen | null>(null);
+  // a gym waiting behind the team choice
+  const [teamFor, setTeamFor] = useState<string | null>(null);
+  const askedTeam = useRef(false);
   const [menu, setMenu] = useState(false);
   const [nearby, setNearby] = useState(false);
   const [foe, setFoe] = useState<(Foe & { goal: string }) | null>(null);
@@ -177,6 +182,13 @@ export function Hud() {
         face(goal);
         window.setTimeout(() => game.onArrive?.(goal), HATCH_MS);
         return;
+      }
+      // like GO, from level 5 the first gym you tap asks you to pick a team (once a visit if you'd rather not yet)
+      const p = progressStore.get();
+      if (o?.kind === "gym" && !p.team && !askedTeam.current && levelFor(p.xp) >= TEAM_LEVEL) {
+        askedTeam.current = true;
+        sfx.open();
+        return setTeamFor(goal);
       }
       setCard(goal);
       sfx.open();
@@ -388,6 +400,14 @@ export function Hud() {
         {screen === "community" ? <CommunityPanel onClose={closeScreen} /> : null}
         {buddy ? <BuddyPanel onClose={() => setBuddy(false)} /> : null}
         {foe ? <Encounter key={foe.goal} foe={foe} onDone={endCatch} /> : <LevelUp />}
+        {teamFor ? (
+          <TeamPick
+            onDone={() => {
+              setTeamFor(null);
+              game.onArrive?.(teamFor);
+            }}
+          />
+        ) : null}
       </div>
     </div>
   );
