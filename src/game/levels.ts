@@ -43,14 +43,14 @@ export function levelFor(xp: number) {
 
 /**
  * What GO hands out at each level, cut to what this bag holds (Poké Balls,
- * Great Balls, Razz Berries). Levels 2-10 and 15 are GO's own; the rest follow
+ * Great Balls, Razz Berries, Incense). Levels 2-10 and 15 are GO's own; the rest follow
  * the same pattern.
  */
 const REWARDS: Record<number, Partial<Items>> = {
   2: { ball: 10 },
   3: { ball: 10 },
   4: { ball: 10 },
-  5: { ball: 15 },
+  5: { ball: 15, incense: 1 },
   6: { ball: 10 },
   7: { ball: 15 },
   8: { ball: 10 },

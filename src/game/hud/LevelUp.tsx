@@ -5,7 +5,7 @@ import { type ItemId, type LevelUp as Up, levelUpStore, seenLevelUp } from "../p
 import { sfx } from "../sound";
 import { ItemIcon } from "./icons";
 
-const NAMES: Record<ItemId, string> = { ball: "Poké Ball", great: "Great Ball", razz: "Razz Berry" };
+const NAMES: Record<ItemId, string> = { ball: "Poké Ball", great: "Great Ball", razz: "Razz Berry", incense: "Incense" };
 /** What a level opens up, like GO's: teams at 5, Routes at 7. */
 const UNLOCKS: Record<number, string> = { 5: "Teams: tap any gym to pick one", 7: "Routes: follow one from Nearby" };
 

@@ -26,6 +26,7 @@ import { FactToast, XpPops } from "./Xp";
 import { Card } from "./Card";
 import { LevelUp } from "./LevelUp";
 import { TeamPick } from "./TeamPick";
+import { IncenseTimer } from "./IncenseTimer";
 import { RouteBar, RouteButton } from "./Routes";
 import { GiftOpen, GiftsPanel, PostcardBook } from "./Gifts";
 import { isStop } from "../gifts";
@@ -368,6 +369,7 @@ export function Hud() {
       <div className={`pointer-events-auto absolute top-4 right-4 flex flex-col items-end gap-2 transition-opacity ${menu ? "invisible opacity-0" : ""}`}>
         <Minimap />
         <WeatherBadge />
+        <IncenseTimer />
         <MuteButton />
       </div>
       <div className="pointer-events-none absolute inset-x-0 bottom-24 flex justify-center px-4">

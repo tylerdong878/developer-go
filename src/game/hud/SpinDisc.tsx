@@ -13,6 +13,7 @@ export const ITEM_INFO = {
   ball: { name: "Poké Ball", color: "#e3350d", about: "A device for catching wild Pokémon. Throw it like a ball." },
   great: { name: "Great Ball", color: "#2b6fd6", about: "A good, high-performance ball. Catches better than a Poké Ball." },
   razz: { name: "Razz Berry", color: "#e0457b", about: "Feed it to a wild Pokémon to make the next catch easier." },
+  incense: { name: "Incense", color: "#b04ad0", about: "Draws wild Pokémon to you for 60 minutes: one a minute while you walk, one every 5 minutes standing still." },
 } as const;
 
 /** Like GO, a stop refills a few minutes after you spin it. */

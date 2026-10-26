@@ -8,7 +8,7 @@ import { sfx } from "../sound";
 import { ItemIcon, StopIcon } from "./icons";
 import { Sheet } from "./Sheet";
 
-const NAMES: Record<ItemId, string> = { ball: "Poké Ball", great: "Great Ball", razz: "Razz Berry" };
+const NAMES: Record<ItemId, string> = { ball: "Poké Ball", great: "Great Ball", razz: "Razz Berry", incense: "Incense" };
 
 /** GO's gift box: a purple-magenta box with a pink ribbon and a bow. */
 export function GiftBox({ size = 40 }: { size?: number }) {

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { gyms, spawns } from "@/content";
 import { earned, visitorMedals } from "./visitorMedals";
 
-const empty = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: { hearts: 0, km: 0, played: null, fed: 0, fedOn: null }, field: [], streaks: { catch: { day: null, n: 0 }, spin: { day: null, n: 0 } }, stamps: [], team: null, routes: {}, routedOn: null, gifts: [], postcards: [], received: [], openedOn: { day: "", n: 0 }, xp: 0, items: { ball: 0, great: 0, razz: 0 }, stardust: 0, candy: {} };
+const empty = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: { hearts: 0, km: 0, played: null, fed: 0, fedOn: null }, field: [], streaks: { catch: { day: null, n: 0 }, spin: { day: null, n: 0 } }, stamps: [], team: null, routes: {}, routedOn: null, gifts: [], postcards: [], received: [], openedOn: { day: "", n: 0 }, xp: 0, items: { ball: 0, great: 0, razz: 0, incense: 0 }, stardust: 0, candy: {}, incenseUntil: null };
 
 describe("visitor medals", () => {
   it("starts with nothing earned", () => {

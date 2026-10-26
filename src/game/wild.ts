@@ -173,6 +173,43 @@ function surpriseAppearances(x: number, z: number, at: number): Appearance[] {
   return out;
 }
 
+/* ---------------- Incense ---------------- */
+
+/**
+ * GO's Incense (notes/research/go-round-5.md 4): for 60 minutes, Pokémon come
+ * to you, only you: one a minute (or every 200 m) while you walk, one every 5
+ * minutes standing still, from what lives where you are. They wear the same
+ * pink cloud as the Incense and stay out of Nearby.
+ */
+export const INCENSE = { walking: 60_000, still: 300_000, meters: 22.5, life: 300_000 };
+let burnt: { at: number; x: number; z: number; n: number } = { at: 0, x: 0, z: 0, n: 0 };
+const drawn: Appearance[] = [];
+
+function incenseAppearances(x: number, z: number, at: number, env: Env, until: number | null): Appearance[] {
+  if (until && at < until) {
+    const moved = Math.hypot(x - burnt.x, z - burnt.z);
+    const due = at - burnt.at >= INCENSE.still || (at - burnt.at >= INCENSE.walking && moved > 3) || moved >= INCENSE.meters;
+    if (due) {
+      // a few steps away, somewhere he can walk to
+      let spot: Vec2 = [x, z];
+      for (let k = 0; k < 10; k++) {
+        const a = Math.random() * Math.PI * 2;
+        const r = 6 + Math.random() * 3;
+        spot = [x + Math.sin(a) * r, z + Math.cos(a) * r];
+        if (walkable(spot)) break;
+      }
+      const point: SpawnPoint = { id: -4, x: spot[0], z: spot[1], habitat: habitatOf(spot), offset: 0, long: true };
+      const table = tableFor(point.habitat, env);
+      let roll = Math.random() * table.reduce((s, [, w]) => s + w, 0);
+      const dex = (table.find(([, w]) => (roll -= w) < 0) ?? table[0])[0];
+      burnt = { at, x, z, n: burnt.n + 1 };
+      drawn.push({ key: `incense:${at}:${burnt.n}`, point, dex, looks: dex, x: spot[0], z: spot[1], from: at, until: at + INCENSE.life });
+    }
+  }
+  while (drawn.length && drawn[0].until < at) drawn.shift();
+  return drawn;
+}
+
 /* ---------------- the first catch ---------------- */
 
 /**
@@ -244,6 +281,8 @@ type Around = {
   caught?: Record<number, number>;
   /** A trainer with no catches yet, who gets GO's three starters round them. */
   fresh?: boolean;
+  /** When the lit Incense burns out, if one's lit. */
+  incense?: number | null;
 };
 
 function toWild(a: Appearance, scene: number, at: number): WildSpawn {
@@ -259,7 +298,7 @@ function toWild(a: Appearance, scene: number, at: number): WildSpawn {
     born: fresh ? scene - (at - a.from) / 1000 : scene - 10,
     leaving: null,
     until: a.until,
-    ...(a.key.startsWith("lure:") ? { lured: true } : {}),
+    ...(a.key.startsWith("lure:") || a.key.startsWith("incense:") ? { lured: true } : {}),
     ...(a.key.startsWith("daily:") ? { daily: true } : {}),
     ...(a.key.startsWith("starter:") ? { starter: true } : {}),
     ...(a.key.startsWith("surprise:") ? { surprise: a.key.endsWith(":treat") ? ("treat" as const) : ("pokemon" as const) } : {}),
@@ -273,7 +312,7 @@ function toWild(a: Appearance, scene: number, at: number): WildSpawn {
  * puff (unless he's catching it or walking to it); ones he walks away from are
  * forgotten. Call it about once a second.
  */
-export function refreshWild(x: number, z: number, scene: number, { goal = null, weather = null, night = false, at = Date.now(), heading = 0, caught = {}, fresh = false }: Around = {}) {
+export function refreshWild(x: number, z: number, scene: number, { goal = null, weather = null, night = false, at = Date.now(), heading = 0, caught = {}, fresh = false, incense = null }: Around = {}) {
   clock = scene;
   now = at;
   const env: Env = { weather, night, at };
@@ -284,6 +323,7 @@ export function refreshWild(x: number, z: number, scene: number, { goal = null, 
   }
   for (const a of lureAppearances(x, z, at, env)) if (!gone.has(a.key) && Math.hypot(a.x - x, a.z - z) <= RANGE) want.set(a.key, a);
   for (const a of surpriseAppearances(x, z, at)) if (!gone.has(a.key)) want.set(a.key, a);
+  for (const a of incenseAppearances(x, z, at, env, incense)) if (!gone.has(a.key)) want.set(a.key, a);
   // a new trainer's three starters come first; the Daily Encounter waits until one's caught
   if (fresh && !starterDone) for (const a of starterAppearances(x, z, heading, at)) want.set(a.key, a);
   else {
@@ -357,4 +397,6 @@ export function resetWild() {
   daily = null;
   starterDone = false;
   round = null;
+  burnt = { at: 0, x: 0, z: 0, n: 0 };
+  drawn.length = 0;
 }

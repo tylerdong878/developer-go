@@ -90,6 +90,17 @@ describe("the wild Pokémon round the trainer", () => {
     expect(wildStore.get().some((s) => s.id === boxes[0].id)).toBe(false);
   });
 
+  it("draws Pokémon to you while Incense burns: one now, more as you walk, none once it's out", () => {
+    const lit = (s: { id: string }) => s.id.startsWith("incense:");
+    const until = T + 3_600_000;
+    refreshWild(...PARK, 0, { at: T, incense: until, caught: { 16: 1 } });
+    expect(wildStore.get().filter(lit)).toHaveLength(1);
+    refreshWild(PARK[0] + 30, PARK[1], 1, { at: T + 5000, incense: until, caught: { 16: 1 } });
+    expect(wildStore.get().filter(lit)).toHaveLength(2);
+    refreshWild(PARK[0] + 30, PARK[1], 2, { at: T + 400_000, incense: null, caught: { 16: 1 } });
+    expect(wildStore.get().filter((s) => lit(s) && s.leaving === null)).toHaveLength(0);
+  });
+
   it("gives each visitor a Daily Encounter, Snorlax first", () => {
     refreshWild(0, 6, 0, { at: T, heading: Math.PI });
     const d = wildStore.get().find((s) => s.daily);

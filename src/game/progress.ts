@@ -14,7 +14,7 @@ import type { TeamId } from "./teams";
  * and the items in their bag. It's
  * only a convenience; if storage is blocked, everything still works for the visit.
  */
-export type ItemId = "ball" | "great" | "razz";
+export type ItemId = "ball" | "great" | "razz" | "incense";
 export type Items = Record<ItemId, number>;
 
 /** One catch, for the Pokémon screen: who, how strong, when, and how good the throw was. */
@@ -55,13 +55,15 @@ export type Progress = {
   /** GO's Stardust, and Candy by species (power.ts). */
   stardust: number;
   candy: Record<number, number>;
+  /** When the lit Incense burns out (epoch ms), or null. */
+  incenseUntil: number | null;
 };
 
 /** What a new trainer starts with: GO gives 50 Poké Balls (notes/research/go-round-4.md 1). */
-export const STARTER_ITEMS: Items = { ball: 50, great: 0, razz: 2 };
+export const STARTER_ITEMS: Items = { ball: 50, great: 0, razz: 2, incense: 2 };
 
 const KEY = "developer-go:progress";
-const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: NO_BOND, field: [], streaks: { catch: NO_STREAK, spin: NO_STREAK }, stamps: [], team: null, routes: {}, routedOn: null, gifts: [], postcards: [], received: [], openedOn: { day: "", n: 0 }, xp: 0, items: STARTER_ITEMS, stardust: 0, candy: {} };
+const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: NO_BOND, field: [], streaks: { catch: NO_STREAK, spin: NO_STREAK }, stamps: [], team: null, routes: {}, routedOn: null, gifts: [], postcards: [], received: [], openedOn: { day: "", n: 0 }, xp: 0, items: STARTER_ITEMS, stardust: 0, candy: {}, incenseUntil: null };
 
 function load(): Progress {
   try {
@@ -240,6 +242,14 @@ export function powerUp(id: number) {
     candy: { ...p.candy, [c.dex]: (p.candy[c.dex] ?? 0) - cost.candy },
     history: p.history.map((x) => (x.id === id ? { ...x, level: next.level, iv: next.iv, cp: cpOf(c.dex, next) } : x)),
   });
+  return true;
+}
+
+/** GO's Incense: 60 minutes of Pokémon drawn to you (wild.ts). Returns whether one was lit. */
+export function lightIncense(at = Date.now()) {
+  const p = current();
+  if (p.items.incense <= 0 || (p.incenseUntil ?? 0) > at) return false;
+  save({ ...p, items: { ...p.items, incense: p.items.incense - 1 }, incenseUntil: at + 60 * 60 * 1000 });
   return true;
 }
 

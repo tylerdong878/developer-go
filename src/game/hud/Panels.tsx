@@ -1,12 +1,13 @@
 "use client";
 
-import { type ReactNode, useSyncExternalStore } from "react";
+import { type ReactNode, useState, useSyncExternalStore } from "react";
 import { bag, gyms, type MapObject, medals, type MedalTier, raids, spawns, stops, trainer, wild } from "@/content";
 import { describe } from "../objects";
 import { bondLevel, canFeed, feed, LEVELS } from "../bond";
 import { buddyStore } from "../buddy";
 import { MYSTIC } from "../colors";
-import { levelFor, progressStore, xpForLevel } from "../progress";
+import { levelFor, lightIncense, progressStore, xpForLevel } from "../progress";
+import { sfx } from "../sound";
 import { TEAM_LEVEL, TEAMS } from "../teams";
 import { RAID_BOSS } from "../raidBosses";
 import { visitorMedals } from "../visitorMedals";
@@ -363,7 +364,9 @@ const BAG_MAX = 350;
 
 /** Your items, like GO's: each one with its picture, how many you have, and what it does. */
 export function BagPanel({ onClose, onOpen }: { onClose: () => void; onOpen?: (screen: "gifts" | "postcards") => void }) {
-  const { items, gifts, postcards, stardust } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const { items, gifts, postcards, stardust, incenseUntil } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const [now] = useState(Date.now);
+  const burning = (incenseUntil ?? 0) > now;
   const ids = Object.keys(ITEM_INFO) as (keyof typeof ITEM_INFO)[];
   const total = ids.reduce((sum, id) => sum + items[id], 0);
   return (
@@ -384,6 +387,21 @@ export function BagPanel({ onClose, onOpen }: { onClose: () => void; onOpen?: (s
                 <span className="font-display text-lg font-semibold tabular-nums">×{items[id]}</span>
               </span>
               <span className="block text-sm leading-snug text-ink-soft">{ITEM_INFO[id].about}</span>
+              {id === "incense" ? (
+                <button
+                  type="button"
+                  disabled={burning || !items.incense}
+                  onClick={() => {
+                    if (lightIncense()) {
+                      sfx.open();
+                      onClose();
+                    }
+                  }}
+                  className="go-pill mt-2 rounded-full px-5 py-1.5 text-xs"
+                >
+                  {burning ? "Burning" : "Use"}
+                </button>
+              ) : null}
             </span>
           </li>
         ))}

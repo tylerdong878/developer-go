@@ -177,7 +177,18 @@ export function Trophy({ color = "#f2c14e", size = 28 }: { color?: string; size?
   );
 }
 
-export function ItemIcon({ id, size = 32 }: { id: "ball" | "great" | "razz"; size?: number }) {
+export function ItemIcon({ id, size = 32 }: { id: "ball" | "great" | "razz" | "incense"; size?: number }) {
+  if (id === "incense")
+    return (
+      <svg viewBox="0 0 40 40" width={size} height={size} aria-hidden>
+        <path d="M14 13c-3-3 1-6-1-9M21 12c-2-3 2-5 0-8M27 13c-3-3 1-6-1-9" fill="none" stroke="#f3a6e8" strokeWidth="2" strokeLinecap="round" />
+        <ellipse cx="20" cy="27" rx="12" ry="9" fill="#b04ad0" />
+        <ellipse cx="20" cy="18.5" rx="9" ry="3.2" fill="#d27ae8" />
+        <ellipse cx="20" cy="18" rx="5" ry="1.6" fill="#7a2a96" />
+        <path d="M11 29c3 3 15 3 18 0" fill="none" stroke="#e7a8f3" strokeWidth="1.6" strokeLinecap="round" />
+        <rect x="14" y="35" width="12" height="2.5" rx="1.2" fill="#7a2a96" />
+      </svg>
+    );
   if (id === "razz")
     return (
       <svg viewBox="0 0 40 40" width={size} height={size} aria-hidden>

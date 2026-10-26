@@ -139,6 +139,7 @@ export function WildSpawns({ grass }: { grass: string }) {
       heading,
       caught: progressStore.get().caught,
       fresh: progressStore.get().history.length === 0,
+      incense: progressStore.get().incenseUntil,
     });
   });
 
