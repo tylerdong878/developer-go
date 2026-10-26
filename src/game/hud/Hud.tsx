@@ -27,6 +27,7 @@ import { Card } from "./Card";
 import { LevelUp } from "./LevelUp";
 import { TeamPick } from "./TeamPick";
 import { IncenseTimer } from "./IncenseTimer";
+import { Music } from "./Music";
 import { RouteBar, RouteButton } from "./Routes";
 import { GiftOpen, GiftsPanel, PostcardBook } from "./Gifts";
 import { isStop } from "../gifts";
@@ -110,7 +111,10 @@ export function Hud() {
       have = new Set([...have, ...now]);
       for (const id of now) {
         const medal = visitorMedals(p).find((m) => m.id === id);
-        window.setTimeout(() => gainXp(200, `medal: ${medal?.title ?? id}`), 500);
+        window.setTimeout(() => {
+          sfx.medal();
+          gainXp(200, `medal: ${medal?.title ?? id}`);
+        }, 500);
       }
     });
     return () => {
@@ -360,6 +364,7 @@ export function Hud() {
           <MainMenu onPick={pick} />
         </div>
       ) : null}
+      <Music />
       <div className="pointer-events-none fixed inset-x-0 top-4 z-[60] flex flex-col items-center gap-2 px-4">
         {factSpawn?.kind === "spawn" ? <FactToast key={factSpawn.slug} spawn={factSpawn} onDone={closeFact} /> : null}
         <XpPops />

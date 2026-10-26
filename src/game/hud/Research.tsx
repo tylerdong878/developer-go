@@ -84,7 +84,7 @@ function FieldCard({ t, onEncounter }: { t: FieldTask; onEncounter: (dex: number
   const done = t.have >= t.need;
   const from = stops.find((s) => s.slug === t.stop)?.name ?? t.stop;
   const claim = () => {
-    sfx.open();
+    sfx.claim();
     const r = t.reward;
     // an encounter stays claimable until it's caught: run from it and it waits, like GO's
     if ("encounter" in r) return onEncounter(r.encounter, `${t.stop}|${t.day}`);
@@ -346,7 +346,7 @@ export function ResearchPanel({ onClose, onEncounter }: { onClose: () => void; o
   const [now] = useState(Date.now);
   const claim = () => {
     if (!step || !r.claimable) return;
-    sfx.open();
+    sfx.claim();
     gainXp(step.reward.xp, `special research: ${step.title.toLowerCase()}`);
     addItems(step.reward.items);
     claimStep();

@@ -199,7 +199,7 @@ function RoutePanel({ onClose }: { onClose: () => void }) {
         <button
           type="button"
           onClick={() => {
-            sfx.catch();
+            sfx.route();
             setResult({ route: r, ...completeRoute(r.id) });
             quitRoute();
           }}

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
+import { musicStore, setMusic } from "../music";
 import { muteStore, setMuted, setVibrate, vibrateStore } from "../sound";
 import { followClock, followingClock, setTimeOfDay, usePhase, useTimeOfDay } from "../useTimeOfDay";
 import { Sheet } from "./Sheet";
@@ -28,6 +29,7 @@ function Toggle({ label, on, onChange }: { label: string; on: boolean; onChange:
 export function SettingsPanel({ onClose }: { onClose: () => void }) {
   const muted = useSyncExternalStore(muteStore.subscribe, muteStore.get, muteStore.server);
   const vibrate = useSyncExternalStore(vibrateStore.subscribe, vibrateStore.get, vibrateStore.server);
+  const music = useSyncExternalStore(musicStore.subscribe, musicStore.get, musicStore.server);
   const time = useTimeOfDay();
   // re-read on every phase change, so the clock switch shows the right state
   usePhase();
@@ -36,6 +38,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
     <Sheet title="Settings" onClose={onClose}>
       <div className="space-y-2">
         <Toggle label="Sound" on={!muted} onChange={(on) => setMuted(!on)} />
+        <Toggle label="Music" on={music} onChange={setMusic} />
         <Toggle label="Vibration" on={vibrate} onChange={setVibrate} />
         <Toggle label="Match my clock (sunrise, dusk, night)" on={clock} onChange={(on) => (on ? followClock() : setTimeOfDay(time))} />
         <Toggle label="Night" on={time === "night"} onChange={(on) => setTimeOfDay(on ? "night" : "day")} />

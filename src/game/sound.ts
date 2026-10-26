@@ -71,6 +71,9 @@ export function buzz(pattern: number | number[]) {
   }
 }
 
+/** The shared audio context, once a tap has unlocked it (music.ts plays through it too). */
+export const audioContext = () => context;
+
 export function unlockSound() {
   try {
     context ??= new AudioContext();
@@ -146,6 +149,19 @@ export const sfx = {
   shiny: () => {
     [1568, 2093, 2637, 3136].forEach((f, i) => tone("sine", f, f * 1.02, 0.22, 0.05, i * 0.07));
     buzz([30, 40, 30]);
+  },
+  /** A research reward claimed: three bright steps up. */
+  claim: () => [784, 988, 1319].forEach((f, i) => tone("triangle", f, f, 0.16, 0.08, i * 0.08)),
+  /** A medal earned: a little fanfare. */
+  medal: () => {
+    [523, 659, 784].forEach((f, i) => tone("triangle", f, f, 0.12, 0.08, i * 0.09));
+    [1047, 1319].forEach((f) => tone("sine", f, f, 0.6, 0.05, 0.3));
+  },
+  /** A route completed: a run up and a held top note. */
+  route: () => {
+    [587, 740, 880, 1175].forEach((f, i) => tone("triangle", f, f, 0.15, 0.09, i * 0.08));
+    tone("sine", 1480, 1480, 0.8, 0.05, 0.34);
+    buzz([40, 30, 40]);
   },
   /** A level-up: a quick rising run into a bright held chord, and one long buzz. */
   levelUp: () => {
