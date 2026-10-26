@@ -11,6 +11,7 @@ import {
   Color,
   DoubleSide,
   Group,
+  type Material,
   MeshBasicMaterial,
   MeshToonMaterial,
   Quaternion,
@@ -61,8 +62,8 @@ type Meshed = {
     indices: Uint32Array;
     opacity: number;
   } | null;
-  /** An unlit glow round it (Rotom's electric aura and bolts), drawn inside out like a halo. */
-  halo: Omit<NonNullable<Meshed["glass"]>, "opacity"> | null;
+  /** An unlit glow round it (Rotom's electric aura and bolts), drawn inside out like a halo, with its own paint. */
+  halo: (Omit<NonNullable<Meshed["glass"]>, "opacity"> & { paint?: Meshed["paint"] }) | null;
 };
 type Built = {
   body: BufferGeometry;
@@ -74,6 +75,7 @@ type Built = {
   glass: BufferGeometry | null;
   glassMaterial: MeshToonMaterial | null;
   halo: BufferGeometry | null;
+  haloMaterial: Material;
   bones: BoneDef[];
 };
 
@@ -273,6 +275,34 @@ function skinned(m: NonNullable<Meshed["halo"]>) {
 
 const haloMaterial = new MeshBasicMaterial({ vertexColors: true, side: BackSide });
 
+/** The glow with its paint (Rotom's bolts: white inside a cyan rim), unlit and inside out like the plain one. */
+function paintedHalo(layers: string[]) {
+  const m = new MeshBasicMaterial({ vertexColors: true, side: BackSide });
+  const colors = Array.from({ length: LAYERS }, (_, i) => new Color(layers[i] ?? "#000000").convertSRGBToLinear());
+  m.onBeforeCompile = (s) => {
+    Object.assign(s.uniforms, { paintColor: { value: colors }, paintCount: { value: layers.length } });
+    s.vertexShader = s.vertexShader
+      .replace("#include <common>", `#include <common>\n${PAINT_ATTRS}`)
+      .replace("#include <begin_vertex>", `#include <begin_vertex>\n${PAINT_COPY}`);
+    s.fragmentShader = s.fragmentShader
+      .replace("#include <common>", `#include <common>\n${PAINT_VARYINGS}\nuniform vec3 paintColor[${LAYERS}];\nuniform int paintCount;`)
+      .replace("#include <color_fragment>", `#include <color_fragment>\n${PAINT}`);
+  };
+  m.customProgramCacheKey = () => "go-halo-paint";
+  return m;
+}
+
+/** The glow's geometry and material: painted if its recipe has paint. */
+function haloPart(d: Meshed) {
+  if (!d.halo) return { halo: null, haloMaterial };
+  const g = skinned(d.halo);
+  const paint = d.halo.paint;
+  if (!paint?.layers.length) return { halo: g, haloMaterial };
+  const groups = paintGroups({ ...d, positions: d.halo.positions, paint });
+  groups.attrs.forEach((a, i) => g.setAttribute(`paint${i}`, new BufferAttribute(a, 4)));
+  return { halo: g, haloMaterial: paintedHalo(groups.colors) };
+}
+
 /** The see-through parts: their own mesh, GO-shaded, drawn after the body without writing depth. */
 function glassPart(d: Meshed) {
   if (!d.glass) return { glass: null, glassMaterial: null };
@@ -314,7 +344,7 @@ function build(d: Meshed): Built {
     litMaterial,
     unlitMaterial: unlit && atlas ? new MeshBasicMaterial({ map: atlas, ...over }) : null,
     ...glassPart(d),
-    halo: d.halo ? skinned(d.halo) : null,
+    ...haloPart(d),
     bones: d.bones,
   };
 }
@@ -374,7 +404,7 @@ function rig(b: Built) {
   body.bind(skeleton);
   group.add(body);
   if (b.halo) {
-    const halo = new SkinnedMesh(b.halo, haloMaterial);
+    const halo = new SkinnedMesh(b.halo, b.haloMaterial);
     halo.bind(skeleton, body.bindMatrix);
     group.add(halo);
   }

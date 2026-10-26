@@ -22,8 +22,11 @@ export function meshSpecies(recipe, grid) {
   }
   let halo = null;
   if (recipe.glow) {
-    const g = buildMesh({ ...recipe.glow, bones: recipe.bones }, { grid: Math.round(grid * 0.75) });
-    halo = { positions: g.positions, normals: g.normals, colors: g.colors, skinIndex: g.skinIndex, skinWeight: g.skinWeight, indices: g.indices };
+    // the glow meshes coarser than the body, unless it asks for more (Rotom's thin bolts need it for their fills)
+    const g = buildMesh({ ...recipe.glow, bones: recipe.bones }, { grid: Math.round(grid * (recipe.glow.gridScale ?? 0.75)) });
+    // its paint too (Rotom's white bolt fills), drawn unlit like the glow itself
+    const paint = { layers: g.paint.layers.map((l) => ({ color: l.colorHex, soft: l.soft })), dist: g.paint.dist };
+    halo = { positions: g.positions, normals: g.normals, colors: g.colors, skinIndex: g.skinIndex, skinWeight: g.skinWeight, indices: g.indices, paint };
   }
   return {
     halo,
@@ -44,5 +47,6 @@ export function meshSpecies(recipe, grid) {
 export function transferables(m) {
   const list = [m.positions, m.normals, m.colors, m.skinIndex, m.skinWeight, m.indices, m.paint.dist];
   for (const x of [m.glass, m.halo]) if (x) list.push(x.positions, x.normals, x.colors, x.skinIndex, x.skinWeight, x.indices);
+  if (m.halo?.paint?.dist) list.push(m.halo.paint.dist);
   return list.map((a) => a.buffer);
 }

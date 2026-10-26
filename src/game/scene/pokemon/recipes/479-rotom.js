@@ -29,7 +29,7 @@ const BOLT_ROOT = [0.16, 0.5, -0.01];
 const BOLT_ABS = [[0.92, 0.865], [0.24, 0.77], [0.4, 0.62], [0.18, 0.56], [0.18, 0.49], [0.6, 0.57], [0.42, 0.7]];
 const BOLT = BOLT_ABS.map(([x, y]) => [x - BOLT_ROOT[0], y - BOLT_ROOT[1]]);
 const BOLT_TURN = [0, 0.25, 0]; // tips swept back (mirrored for the right bolt)
-const BOLT_DEPTH = 0.06; // 2 grid cells of the glow mesh (it's 1.7 wide); thinner and the plate breaks up
+const BOLT_DEPTH = 0.08; // over 2 grid cells of the glow mesh (it's 1.7 wide); thinner and the plate breaks up, and the fill needs room
 
 /** The polygon moved in by d (mitered corners), for the bolt's white fill. */
 function inset(pts, d) {
@@ -55,7 +55,7 @@ function inset(pts, d) {
     return [P.p[0] + P.e[0] * t, P.p[1] + P.e[1] * t];
   });
 }
-const BOLT_FILL = inset(BOLT, 0.022);
+const BOLT_FILL = inset(BOLT, 0.02);
 
 const BONES = {
   root: [0, 0, 0],
@@ -96,6 +96,8 @@ export const glow = {
   name: "Rotom (glow)",
   dex: 479,
   height: 1,
+  // a finer mesh than other glows (0.75 of the body's grid), so the white bolt fills come out clean
+  gridScale: 1.25,
   bones: BONES,
   pieces: [
     // the aura: the body grown by G, as one smooth silhouette, ending in thin points above the spike and under the nub
@@ -107,7 +109,7 @@ export const glow = {
     { name: "bolt", kind: "slab", outline: BOLT, depth: BOLT_DEPTH, round: 0.02, at: BOLT_ROOT, turn: BOLT_TURN, color: AURA, bone: "wingL", mirror: true },
   ],
   paint: [
-    // the white fill inside each bolt's cyan rim, on both faces (without paint support the bolts are plain cyan, still fine)
+    // the white fill inside each bolt's cyan rim, on both faces (the game draws the glow's paint unlit)
     { name: "boltFill", color: FILL, shape: { kind: "slab", outline: BOLT_FILL, depth: 0.2, at: BOLT_ROOT, turn: BOLT_TURN }, bones: ["wingL"], mirror: true },
   ],
 };
