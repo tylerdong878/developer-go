@@ -1,7 +1,8 @@
 "use client";
 
 import { type CSSProperties, useState, useSyncExternalStore } from "react";
-import { spawns } from "@/content";
+import { type Raid, raids, spawns } from "@/content";
+import { RAID_EGG } from "../colors";
 import { type Catch, HISTORY_MAX, levelFor, powerUp, progressStore, statsOf } from "../progress";
 import { hpOf, powerCap, powerCost } from "../power";
 import { type PokeType, SPECIES } from "../species";
@@ -49,11 +50,49 @@ const BAND: Partial<Record<PokeType, [string, string]>> = {
   fairy: ["#c46a9a", "#f2b0d0"],
 };
 
+/**
+ * GO's Location Card (Pokémon from some events and raids carry one): the
+ * place drawn behind the Pokémon on its page, with its name on a ribbon. Ours
+ * are the hackathons, a skyline at dusk in the raid's color.
+ */
+function LocationCard({ raid }: { raid: Raid }) {
+  const sky = RAID_EGG[raid.stars];
+  return (
+    <>
+      <svg viewBox="0 0 400 224" preserveAspectRatio="xMidYMax slice" className="absolute inset-0 size-full" aria-hidden>
+        <defs>
+          <linearGradient id="lc-sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor={sky} />
+            <stop offset="1" stopColor="#f6c27a" />
+          </linearGradient>
+        </defs>
+        <rect width="400" height="224" fill="url(#lc-sky)" />
+        <circle cx="318" cy="70" r="26" fill="#fff4d6" opacity="0.85" />
+        <path
+          d="M0 224V150h28v-22h22v30h18v-46h30v38h20v-60h34v52h16v-28h26v40h22v-70h30v62h20v-34h28v46h22v-24h32v54h24v-40h28v66Z"
+          fill="#24324a"
+          opacity="0.85"
+        />
+        <path d="M0 224v-30h400v30Z" fill="#1a2436" />
+        {[40, 112, 186, 252, 330].map((x) => (
+          <rect key={x} x={x} y={140} width="6" height="8" fill="#ffd27a" opacity="0.9" />
+        ))}
+      </svg>
+      <span className="absolute bottom-3 left-3 rounded-md bg-white/90 px-2 py-1 text-left shadow">
+        <span className="block text-[9px] font-black tracking-[0.14em] text-ink-soft uppercase">Location Card</span>
+        <span className="block text-xs font-bold text-ink">{raid.event}</span>
+        <span className="block max-w-48 truncate text-[10px] text-ink-soft">{raid.venue}</span>
+      </span>
+    </>
+  );
+}
+
 /** One Pokémon up close, GO's page: CP over its level arc, HP, its types, your Stardust and its Candy, and POWER UP. */
 function Detail({ c, onBack, onAppraise }: { c: Catch; onBack: () => void; onAppraise: () => void }) {
   const p = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
   const [bump, setBump] = useState(0);
   const stats = statsOf(c);
+  const card = c.card ? raids.find((r) => r.slug === c.card) : undefined;
   const types = SPECIES[c.dex]?.types ?? ["normal"];
   const [from, to] = BAND[types[0]] ?? ["#7f8c8a", "#b9c4bf"];
   const cap = powerCap(levelFor(p.xp));
@@ -72,7 +111,8 @@ function Detail({ c, onBack, onAppraise }: { c: Catch; onBack: () => void; onApp
   };
   return (
     <div className="card-in -mx-1 overflow-hidden rounded-3xl bg-surface text-center shadow-[0_2px_10px_rgba(48,85,93,0.12)]">
-      <div className="relative h-56" style={{ background: `linear-gradient(180deg, ${from}, ${to})` }}>
+      <div className="relative h-56 overflow-hidden" style={{ background: `linear-gradient(180deg, ${from}, ${to})` }}>
+        {card ? <LocationCard raid={card} /> : null}
         <svg viewBox="0 0 200 110" className="absolute inset-x-6 top-10" aria-hidden>
           <path d="M10 100a90 90 0 0 1 180 0" fill="none" stroke="#ffffff" strokeOpacity="0.55" strokeWidth="2" />
           <circle cx={100 + 90 * Math.cos(angle)} cy={100 - 90 * Math.sin(angle)} r="5" fill="#ffffff" />

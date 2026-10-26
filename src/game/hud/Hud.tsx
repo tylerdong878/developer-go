@@ -334,7 +334,8 @@ export function Hud() {
     if (w && outcome === "fled") gainXp(FLED_XP, "it fled");
     if (caught) {
       const rewards = catchRewards(!!foe.fact && !progressStore.get().caught[foe.dex], best, !progressStore.get().caught[foe.dex], firstThrow, curve);
-      recordCatch({ dex: foe.dex, name: foe.name, cp: foe.cp, throw: best, shiny: foe.shiny, level: foe.stats?.level, iv: foe.stats?.iv }, catchDust(foe.dex, !!foe.boost), catchCandy(foe.dex));
+      // a raid boss keeps the hackathon as its Location Card, like GO's event bosses
+      recordCatch({ dex: foe.dex, name: foe.name, cp: foe.cp, throw: best, shiny: foe.shiny, level: foe.stats?.level, iv: foe.stats?.iv, ...(foe.premier ? { card: foe.goal } : {}) }, catchDust(foe.dex, !!foe.boost), catchCandy(foe.dex));
       fieldEvent({ kind: "catch", dex: foe.dex, throw: best, curve, boosted: !!foe.boost });
       count("catches", { dex: foe.dex, cp: foe.cp });
       gainXp(
