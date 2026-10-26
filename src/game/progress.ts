@@ -2,6 +2,7 @@
 
 import { bostonDay, type FieldEvent, type FieldTask, progressWith, receive } from "./field";
 import { levelFor, rewardsFor } from "./levels";
+import { cpOf, guessStats, powerCap, powerCost, type Stats } from "./power";
 import { BOOK_MAX, GIFT_HOLD, GIFT_OPEN_DAY, type Postcard, SEND_XP } from "./gifts";
 import { BREAKTHROUGH_XP, catchBonus, mysteryItem, NO_STREAK, nextStreak, spinBonus, STAMPS, type Streak, stampWith } from "./daily";
 import { sfx } from "./sound";
@@ -219,6 +220,27 @@ export function completeRoute(id: string) {
   addItems(items);
   gainXp(xp, xp === 4000 ? "first route of the day" : "route complete");
   return { xp, items };
+}
+
+/** A catch's level and IVs (worked out for ones saved before they were kept). */
+export const statsOf = (c: Catch): Stats => (c.level && c.iv ? { level: c.level, iv: c.iv } : guessStats(c.dex, c.id, c.cp));
+
+/** GO's Power Up: half a level for its Stardust and Candy, up to your level plus 10. Returns whether it went up. */
+export function powerUp(id: number) {
+  const p = current();
+  const c = p.history.find((x) => x.id === id);
+  if (!c) return false;
+  const s = statsOf(c);
+  const cost = powerCost(s.level);
+  if (!cost || s.level >= powerCap(levelFor(p.xp)) || p.stardust < cost.dust || (p.candy[c.dex] ?? 0) < cost.candy) return false;
+  const next: Stats = { level: s.level + 0.5, iv: s.iv };
+  save({
+    ...p,
+    stardust: p.stardust - cost.dust,
+    candy: { ...p.candy, [c.dex]: (p.candy[c.dex] ?? 0) - cost.candy },
+    history: p.history.map((x) => (x.id === id ? { ...x, level: next.level, iv: next.iv, cp: cpOf(c.dex, next) } : x)),
+  });
+  return true;
 }
 
 export function chooseTeam(team: TeamId) {
