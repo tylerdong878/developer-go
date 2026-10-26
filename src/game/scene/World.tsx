@@ -3,8 +3,8 @@
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef, useState } from "react";
 import { type BufferGeometry, Color, DoubleSide, Fog, type HemisphereLight, MeshBasicMaterial, RingGeometry, Vector3 } from "three";
-import { areas, roads, type AreaKind } from "../base";
-import { circle } from "../geometry";
+import { areas, buildings, clearOfRoads, roads, type AreaKind } from "../base";
+import { circle, type Vec2 } from "../geometry";
 import { halloween } from "../events";
 import { autumn, type Palette, palettes } from "../palette";
 import { Halloween } from "./Halloween";
@@ -92,7 +92,7 @@ const PATTERNS = /* glsl */ `
 #endif
 #ifdef GROUND_SQUARES
   // big pavers with lighter borders, Pewter style
-  { vec2 q = vGround / 2.0; vec2 f = fract(q); vec2 e = min(f, 1.0 - f) * 2.0;
+  { vec2 q = vGround / GROUND_TILE; vec2 f = fract(q); vec2 e = min(f, 1.0 - f) * 2.0;
     float d = min(e.x, e.y); float aa = fwidth(d);
     float joint = 1.0 - smoothstep(0.035 - aa, 0.035 + aa, d);
     float border = 1.0 - smoothstep(0.28, 0.3, d);
@@ -106,11 +106,11 @@ const PATTERNS = /* glsl */ `
  * pavers). `mottle` is how much (lawns full, roads a little). Soft path edges
  * dither out (alphaHash), so the ground stays one opaque stack in order.
  */
-function groundMaterial(mottle: number, surface: Surface) {
+function groundMaterial(mottle: number, surface: Surface, tile = 2) {
   const material = new MeshBasicMaterial({ side: DoubleSide, depthTest: false, depthWrite: false, alphaHash: surface === "path" });
   const ribbon = surface !== "area" && surface !== "radial" && surface !== "squares" && surface !== "deck";
-  material.defines = { [`GROUND_${surface.toUpperCase()}`]: "", ...(ribbon ? { GROUND_RIBBON: "" } : {}) };
-  material.customProgramCacheKey = () => `ground-${surface}`;
+  material.defines = { [`GROUND_${surface.toUpperCase()}`]: "", GROUND_TILE: tile.toFixed(2), ...(ribbon ? { GROUND_RIBBON: "" } : {}) };
+  material.customProgramCacheKey = () => `ground-${surface}-${tile}`;
   const uMottle = { value: mottle };
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, { uMottle, uNight: skyLook.uNight, uCloudOffset: skyLook.uCloudOffset });
@@ -148,12 +148,69 @@ type Layer = { key: string; geometry: BufferGeometry; color: (p: Palette) => str
 
 const MOTTLE: Partial<Record<string, number>> = { land: 1, park: 1, grass: 0.8, lawn: 1, water: 0.25, plaza: 0.3, deck: 0.4, asphalt: 0.45, path: 0.5, zebra: 0.15, apron: 0.2 };
 
-const layer = (key: string, geometry: BufferGeometry, color: (p: Palette) => string, surface: Surface = "area"): Layer => ({
+const layer = (key: string, geometry: BufferGeometry, color: (p: Palette) => string, surface: Surface = "area", tile?: number): Layer => ({
   key,
   geometry,
   color,
-  material: groundMaterial(MOTTLE[key] ?? 0.3, surface),
+  material: groundMaterial(MOTTLE[key] ?? 0.3, surface, tile),
 });
+
+/**
+ * Forecourts (notes/research/town-polish.md 6): paving round the foot of every
+ * block, job building and civic building, and a paved walk out to the street
+ * from each front door, so nothing stands on bare lawn. Houses get just a
+ * narrow path from the door.
+ */
+const forecourts = (() => {
+  const polys: Vec2[][] = [];
+  const rounded = (cx: number, cz: number, hw: number, hd: number, r: number) => {
+    const pts: Vec2[] = [];
+    const corners: [number, number, number][] = [
+      [1, 1, 0],
+      [-1, 1, Math.PI / 2],
+      [-1, -1, Math.PI],
+      [1, -1, (3 * Math.PI) / 2],
+    ];
+    for (const [sx, sz, a0] of corners)
+      for (let k = 0; k <= 6; k++) {
+        const a = a0 + (k / 6) * (Math.PI / 2);
+        pts.push([cx + sx * (hw - r) + Math.cos(a) * r, cz + sz * (hd - r) + Math.sin(a) * r]);
+      }
+    return pts;
+  };
+  /** A walk from a door straight out until it meets a road (up to 14 m), w wide. */
+  const walk = ([x, z]: Vec2, dx: number, dz: number, w: number) => {
+    let len = 0;
+    for (let s = 0.5; s <= 14; s += 0.5)
+      if (!clearOfRoads([x + dx * s, z + dz * s], 0)) {
+        len = s;
+        break;
+      }
+    if (!len) return;
+    const [px, pz] = [-dz * (w / 2), dx * (w / 2)];
+    polys.push([
+      [x - dx * 0.3 + px, z - dz * 0.3 + pz],
+      [x + dx * len + px, z + dz * len + pz],
+      [x + dx * len - px, z + dz * len - pz],
+      [x - dx * 0.3 - px, z - dz * 0.3 - pz],
+    ]);
+  };
+  const DOOR = { pallet: -0.25, viridian: -0.22, vermilion: -0.24 } as const;
+  for (const b of buildings) {
+    const sideways = Math.round(b.turn / (Math.PI / 2)) % 2 !== 0;
+    const D = sideways ? b.w : b.d;
+    const W = sideways ? b.d : b.w;
+    const [fx, fz] = [Math.sin(b.turn), Math.cos(b.turn)];
+    if (b.model === "house") {
+      const xd = DOOR[b.style ?? "pallet"] * (b.flip ? -1 : 1) * W;
+      walk([b.x + Math.cos(b.turn) * xd + fx * (D / 2), b.z - Math.sin(b.turn) * xd + fz * (D / 2)], fx, fz, 1.4);
+      continue;
+    }
+    polys.push(rounded(b.x, b.z, b.w / 2 + 1.5, b.d / 2 + 1.5, 1.9));
+    walk([b.x + fx * (D / 2), b.z + fz * (D / 2)], fx, fz, 4);
+  }
+  return polys;
+})();
 
 const areaLayer = (kind: AreaKind, surface: Surface = "area") =>
   layer(
@@ -189,6 +246,7 @@ const LAYERS: Layer[] = (() => {
     areaLayer("park"),
     areaLayer("grass"),
     areaLayer("lawn"),
+    layer("forecourt", polygonGeometry(forecourts), (p) => p.apron, "squares", 1),
     // radial pavers round the roundabout's island
     layer("apron", new RingGeometry(10.6, 13.4, 96, 1).rotateX(-Math.PI / 2), (p) => p.apron, "radial"),
     layer("path", ribbonGeometry(roads.filter((r) => r.kind === "path"), 0.45), (p) => p.roads.path[0], "path"),
