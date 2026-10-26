@@ -126,8 +126,8 @@ const recipe = {
     ],
     mouth: [
       // upper lip: a wide gentle smile cheek to cheek; under its middle the mouth hangs a little open (pink tongue)
-      { kind: "open", at: [0, 0.632, 0.255], w: 0.13, h: 0.036, thick: 0.006, color: DARK, inner: "#8a3a3a", tongue: "#f08a80" },
-      { kind: "smile", at: [0, 0.662, 0.255], w: 0.23, h: 0.04, thick: 0.007, color: DARK },
+      { kind: "open", at: [0, 0.632, 0.255], w: 0.13, h: 0.036, thick: 0.01, color: DARK, inner: "#8a3a3a", tongue: "#f08a80" },
+      { kind: "smile", at: [0, 0.662, 0.255], w: 0.23, h: 0.04, thick: 0.011, color: DARK },
       // the short crease over each eye's inner top corner (HOME, art; faint in GO)
       { kind: "frown", at: [-0.1, 0.885, 0.172], w: 0.028, h: 0.007, thick: 0.004, turn: 0.5, color: DARK, mirror: true },
     ],

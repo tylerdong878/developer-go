@@ -110,7 +110,7 @@ const recipe = {
     ],
     mouth: [
       // closed: a long, slightly smiling line on the muzzle
-      { name: "mouth", kind: "smile", at: [0, 0.54, 0.202], w: 0.24, h: 0.01, thick: 0.0075, color: DARK },
+      { name: "mouth", kind: "smile", at: [0, 0.54, 0.202], w: 0.24, h: 0.01, thick: 0.012, color: DARK },
       // the four ridges across the lower two thirds of the coin, lit so they shade with it
       ...[[-0.06, 0.056], [-0.03, 0.074], [0, 0.08], [0.03, 0.074]].map(([v, w], i) => ({
         name: `ridge${i}`, kind: "line", at: place(COIN_AT, COIN_TURN, [0, v, 0.03]), dir: rot(COIN_TURN, [0, 0, 1]), w, h: 0.01, thick: 0.009, color: RIDGE, lit: true,

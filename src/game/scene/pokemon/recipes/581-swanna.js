@@ -33,6 +33,14 @@ const FAN = ["x", -PI / 2];
 // Flat frame for the feet: (a, b) with a = across (+x), b = forward (+z), thickness along y.
 const FOOT = ["x", PI / 2];
 
+// a folded wing seen from the side, [z, y]: from the shoulder back along the top, three primaries at the back, the lower edge forward
+const WING = [
+  [0.16, 0.37], [0.1, 0.44], [0.0, 0.47], [-0.12, 0.48], [-0.24, 0.48],
+  [-0.34, 0.52], [-0.31, 0.47], [-0.4, 0.5], [-0.36, 0.44], [-0.44, 0.46], [-0.38, 0.38],
+  [-0.3, 0.31], [-0.15, 0.285], [0.0, 0.295], [0.1, 0.315],
+];
+const WING_EDGE = "#d9e6ee";
+
 // tail feathers: long blades fanning back from under the folded wings
 const FEATHER = [[-0.025, 0], [0.025, 0], [0.03, 0.17], [0.018, 0.255], [0, 0.27], [-0.018, 0.255], [-0.03, 0.17]];
 const TAIL_AT = [0, 0.2, -0.27];
@@ -75,8 +83,9 @@ const recipe = {
     { name: "crest2", kind: "cone", a: [0, 0.86, 0.17], b: [0, 0.925, 0.2], ra: 0.02, rb: 0.006, color: WHITE, bone: "head", blend: 0.015 },
     // the beak: long, straight, yellow, pointing forward and down; hard against the face (the dark band hides the seam)
     { name: "beak", kind: "cone", a: [0, 0.808, 0.19], b: [0, 0.735, 0.39], ra: 0.026, rb: 0.005, squash: { axis: [1, 0, 0], k: 0.8 }, color: BEAK, bone: "head" },
-    // folded wings: big rounded sides that rise toward the back and taper into the tail
-    { name: "wing", kind: "chain", points: [[0.1, 0.33, 0.14, 0.09], [0.15, 0.42, 0.0, 0.15], [0.155, 0.4, -0.15, 0.16], [0.12, 0.3, -0.27, 0.11], [0.07, 0.22, -0.36, 0.05]], squash: { axis: [1, 0, 0], k: 0.72 }, color: WHITE, bone: "wingL", blend: 0.03, mirror: true },
+    // folded wings: the round sides under them, then a feathered plate on each, its three long primaries lifting at the back
+    { name: "wingBase", kind: "chain", points: [[0.1, 0.33, 0.12, 0.075], [0.13, 0.4, 0.0, 0.125], [0.135, 0.38, -0.15, 0.13], [0.1, 0.3, -0.26, 0.09]], squash: { axis: [1, 0, 0], k: 0.72 }, color: WHITE, bone: "wingL", blend: 0.03, mirror: true },
+    { name: "wing", kind: "slab", outline: WING, smooth: 2, depth: 0.05, round: 0.02, at: [0.19, 0, 0], turn: [0, -Math.PI / 2 + 0.1, 0], color: WHITE, bone: "wingL", blend: 0.012, mirror: true },
     // tail feathers fanning back and a little up
     ...TAIL.map((t, i) => ({ name: `tail${i}`, kind: "slab", outline: FEATHER, depth: 0.03, round: 0.012, at: TAIL_AT, turn: t, color: WHITE, bone: "tail", blend: 0.015 })),
     // dark gray legs and webbed feet
@@ -85,6 +94,8 @@ const recipe = {
     { name: "floor", kind: "half", at: [0, 0, 0], dir: [0, -1, 0], carve: true },
   ],
   paint: [
+    // a soft pale line along each wing's lower edge, so the wing reads apart from the body
+    { name: "wingEdge", color: WING_EDGE, shape: { kind: "slab", outline: [[0.12, 0.3], [0.0, 0.285], [-0.15, 0.275], [-0.3, 0.3], [-0.3, 0.325], [-0.15, 0.305], [0.0, 0.312], [0.12, 0.33]], depth: 0.08, at: [0.2, 0, 0], turn: [0, -Math.PI / 2 + 0.1, 0] }, bones: ["wingL"], mirror: true },
     // the blue breast lobes, front half only
     { name: "breastBlue", color: BLUE, shape: { kind: "slab", outline: LOBES, smooth: 2, depth: 0.3, at: [0, 0, 0.27] }, bones: ["body"] },
     // the dark band round the beak's base (it also hides the beak's hard seam)

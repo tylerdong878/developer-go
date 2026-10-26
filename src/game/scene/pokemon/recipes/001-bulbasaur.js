@@ -90,7 +90,7 @@ const recipe = {
       { at: [-0.2, 0.577, 0.42], w: 0.185, h: 0.15, closed: 0, thick: 0.13, sclera: DARK, turn: -0.24, mirror: true },
     ],
     mouth: [
-      { kind: "smile", at: [0, 0.37, 0.44], w: 0.34, h: 0.035, thick: 0.007, color: DARK },
+      { kind: "smile", at: [0, 0.37, 0.44], w: 0.34, h: 0.035, thick: 0.012, color: DARK },
       // short brow strokes above the inner corners
     ],
     spots: [

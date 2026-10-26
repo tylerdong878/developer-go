@@ -102,7 +102,7 @@ const recipe = {
   face: {
     // no eyes: the wide open mouth (flat top, round bottom) is the whole face, with four white fangs,
     // two hanging from its top corners and two smaller ones up from the bottom
-    mouth: { kind: "open", at: [0, 0.452, 0.141], w: 0.2, h: 0.1, thick: 0.006, color: MOUTH, inner: "#2a2230", tongue: null },
+    mouth: { kind: "open", at: [0, 0.452, 0.141], w: 0.2, h: 0.1, thick: 0.01, color: MOUTH, inner: "#2a2230", tongue: null },
     eyes: [
       { name: "fangTop", at: [-0.06, 0.5, 0.133], dir: [0.1, 0, 1], w: 0.036, h: 0.07, cut: [0, 0], sclera: FANG, mirror: true },
       { name: "fangLow", at: [-0.03, 0.418, 0.142], dir: [0.05, -0.1, 1], w: 0.028, h: 0.046, turn: Math.PI, cut: [0, 0], sclera: FANG, mirror: true },
