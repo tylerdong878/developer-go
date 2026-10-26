@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { gyms, spawns, stops, trainer } from "@/content";
 import { monthsAt } from "@/content/badges";
 import { BREAKTHROUGH_DEX, STAMPS, streakNow, type Streak } from "../daily";
-import { activeEvents, type GoEvent, upcomingEvents, whenIs } from "../events";
+import { type GoEvent, whenIs, withSpotlight } from "../events";
 import { bostonDay, type FieldTask } from "../field";
 import { DEFENDER } from "../objects";
 import { addItems, claimBreakthrough, claimField, claimTimed, gainXp, progressStore } from "../progress";
@@ -226,7 +226,9 @@ function FieldList({ onEncounter }: { onEncounter: (dex: number, key: string) =>
 function EventCard({ e, live }: { e: GoEvent; live: boolean }) {
   return (
     <div className="overflow-hidden rounded-2xl bg-surface shadow-[0_2px_10px_rgba(48,85,93,0.12)]">
-      <div className={`px-3.5 py-2 text-white ${e.id.startsWith("halloween") ? "bg-gradient-to-r from-[#7a3fc0] to-[#f87010]" : "bg-gradient-to-r from-[#24828b] to-[#2fd3c6]"}`}>
+      <div
+        className={`px-3.5 py-2 text-white ${e.id.startsWith("halloween") ? "bg-gradient-to-r from-[#7a3fc0] to-[#f87010]" : e.id.startsWith("spotlight") ? "bg-gradient-to-r from-[#f2a03c] to-[#f6c94a]" : "bg-gradient-to-r from-[#24828b] to-[#2fd3c6]"}`}
+      >
         <p className="font-display text-base font-black">{e.name}</p>
         <p className="text-xs font-semibold opacity-90">{live ? `Until ${whenIs(e.to)}` : `${whenIs(e.from)} to ${whenIs(e.to)}`}</p>
       </div>
@@ -259,8 +261,9 @@ function StreakRow({ label, s, note }: { label: string; s: Streak; note: string 
 
 function TodayTab({ onEncounter, now }: { onEncounter: (dex: number, key: string) => void; now: number }) {
   const { streaks } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
-  const live = activeEvents(now);
-  const next = upcomingEvents(now)[0];
+  const calendar = withSpotlight(now, nameOf);
+  const live = calendar.filter((e) => now >= e.from && now < e.to);
+  const next = calendar.filter((e) => now < e.from).sort((a, b) => a.from - b.from)[0];
   return (
     <div>
       <Head>Field Research</Head>
@@ -299,7 +302,9 @@ function TodayTab({ onEncounter, now }: { onEncounter: (dex: number, key: string
 
 function EventsTab({ now, onEncounter }: { now: number; onEncounter: (dex: number, key: string) => void }) {
   const { caught, timed } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
-  const soon = upcomingEvents(now);
+  const soon = withSpotlight(now, nameOf)
+    .filter((e) => now < e.from)
+    .sort((a, b) => a.from - b.from);
   const got = spawns.filter((s) => caught[s.pokemon.dex]).length;
   const running = timedNow(now);
   return (

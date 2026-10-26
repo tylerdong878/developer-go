@@ -32,6 +32,68 @@ export const EVENTS: GoEvent[] = [
   },
 ];
 
+/*
+ * GO's Spotlight Hour (notes/research/go-round-3.md 1 and 4): every Thursday
+ * from 6 to 7 pm local, one species is out on nearly every spawn point. GO's
+ * own picks where we know them (Gastly on Oct 29, 2026); otherwise one of the
+ * town's wild ones by the week.
+ */
+const SPOTLIGHT_PICKS = [25, 133, 54, 52, 58, 60, 129, 74, 63, 66, 16, 19];
+const GO_SPOTLIGHT: Record<string, number> = { "2026-10-29": 92 };
+const HOUR = 3_600_000;
+
+const BOSTON = typeof Intl === "undefined" ? null : new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", weekday: "short", hour: "numeric", hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit" });
+
+/** Boston's weekday (0 Sunday), hour and date for a moment. */
+function boston(at: number) {
+  const p = BOSTON?.formatToParts(at) ?? [];
+  const get = (t: string) => p.find((x) => x.type === t)?.value ?? "";
+  return { day: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(get("weekday")), hour: Number(get("hour")), date: `${get("year")}-${get("month")}-${get("day")}` };
+}
+
+export type Spotlight = { dex: number; from: number; to: number; date: string };
+
+/** The last answer, by the hour: the spawn tables ask for every point, every second. */
+let known: { hour: number; value: Spotlight | null } | null = null;
+
+/** The Spotlight Hour on now, or the next one (within the week). */
+export function spotlight(at: number): Spotlight | null {
+  const hour = Math.floor(at / HOUR);
+  if (known?.hour === hour) return known.value;
+  known = { hour, value: findSpotlight(at) };
+  return known.value;
+}
+
+function findSpotlight(at: number): Spotlight | null {
+  // start from the top of the current hour and walk forward an hour at a time
+  for (let t = Math.floor(at / HOUR) * HOUR, k = 0; k < 24 * 8; t += HOUR, k++) {
+    const b = boston(t);
+    if (b.day !== 4 || b.hour !== 18 || t + HOUR <= at) continue;
+    const week = Math.floor(t / (7 * 24 * HOUR));
+    return { dex: GO_SPOTLIGHT[b.date] ?? SPOTLIGHT_PICKS[week % SPOTLIGHT_PICKS.length], from: t, to: t + HOUR, date: b.date };
+  }
+  return null;
+}
+/** The species in the spotlight right now, if it's the hour. */
+export function spotlightNow(at: number) {
+  const s = spotlight(at);
+  return s && at >= s.from ? s.dex : null;
+}
+
+const spotlightEvent = (s: Spotlight, name: (dex: number) => string): GoEvent => ({
+  id: `spotlight-${s.date}`,
+  name: `${name(s.dex)} Spotlight Hour`,
+  from: s.from,
+  to: s.to,
+  blurb: `For an hour, ${name(s.dex)} is out on nearly every spawn point in town, like GO's Spotlight Hours every Thursday at 6 pm.`,
+});
+
+/** The calendar with this week's Spotlight Hour in it. */
+export function withSpotlight(at: number, name: (dex: number) => string) {
+  const s = spotlight(at);
+  return s ? [...EVENTS, spotlightEvent(s, name)] : EVENTS;
+}
+
 export const activeEvents = (at: number) => EVENTS.filter((e) => at >= e.from && at < e.to);
 
 /** A peek at Halloween before it starts: ?event=halloween (Part I) or ?event=halloween2 in the address. */

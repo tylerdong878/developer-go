@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { NO_STREAK, nextStreak, STAMPS, stampWith, streakNow } from "./daily";
-import { activeEvents, EVENTS, upcomingEvents } from "./events";
+import { activeEvents, EVENTS, spotlight, spotlightNow, upcomingEvents } from "./events";
 
 describe("daily streaks", () => {
   it("count days in a row, start over after day 7 or a missed day", () => {
@@ -22,6 +22,17 @@ describe("daily streaks", () => {
     for (const day of ["2026-10-03", "2026-10-09", "2026-10-10", "2026-10-15", "2026-10-20", "2026-10-24"]) stamps = stampWith(stamps, day)!;
     expect(stamps).toHaveLength(STAMPS);
     expect(stampWith(stamps, "2026-10-25")).toBeNull();
+  });
+});
+
+describe("Spotlight Hour", () => {
+  it("is Thursdays 6 to 7 pm in Boston, Gastly on GO's Oct 29", () => {
+    const s = spotlight(Date.UTC(2026, 9, 26, 12))!;
+    expect(new Date(s.from).toLocaleString("en-US", { timeZone: "America/New_York" })).toBe("10/29/2026, 6:00:00 PM");
+    expect(s.dex).toBe(92);
+    expect(spotlightNow(s.from + 30 * 60_000)).toBe(92);
+    expect(spotlightNow(s.from - 60_000)).toBeNull();
+    expect(spotlightNow(s.to)).toBeNull();
   });
 });
 

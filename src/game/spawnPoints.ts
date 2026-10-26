@@ -1,7 +1,7 @@
 import { spawns as facts, wild as roster } from "@/content";
 import { areas, landmarks, LAB, slots, walkable } from "./base";
 import { pointInPolygon, random, type Vec2 } from "./geometry";
-import { halloweenPart } from "./events";
+import { halloweenPart, spotlightNow } from "./events";
 import { boosted, NIGHT_OWLS } from "./species";
 import type { Weather } from "./weather";
 
@@ -172,6 +172,9 @@ export function tableFor(habitat: Habitat, env: Env): [number, number][] {
     add(41, spooky === 1 ? 4 : 1);
     add(92, spooky === 1 ? 2 : 4);
   }
+  // GO's Spotlight Hour: the featured one everywhere (not on the water, unless it swims)
+  const lit = spotlightNow(env.at);
+  if (lit && (habitat !== "water" || lit === 129 || lit === 54 || lit === 60)) add(lit, 40);
   // weather boosts and the night owls, like GO's
   for (const [d, w] of out) out.set(d, w * (env.weather && boosted(d, env.weather) ? 2 : 1) * (env.night && NIGHT_OWLS.has(d) ? 2 : 1));
   return [...out];
