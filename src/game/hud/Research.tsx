@@ -7,7 +7,8 @@ import { BREAKTHROUGH_DEX, STAMPS, streakNow, type Streak } from "../daily";
 import { activeEvents, type GoEvent, upcomingEvents, whenIs } from "../events";
 import { bostonDay, type FieldTask } from "../field";
 import { DEFENDER } from "../objects";
-import { addItems, claimBreakthrough, claimField, gainXp, progressStore } from "../progress";
+import { addItems, claimBreakthrough, claimField, claimTimed, gainXp, progressStore } from "../progress";
+import { timedNow } from "../timed";
 import { nameOf } from "../spawnPoints";
 import { ItemIcon } from "./icons";
 import { claimStep, researchState, researchStore, STEPS } from "../research";
@@ -296,12 +297,64 @@ function TodayTab({ onEncounter, now }: { onEncounter: (dex: number, key: string
   );
 }
 
-function EventsTab({ now }: { now: number }) {
-  const { caught } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+function EventsTab({ now, onEncounter }: { now: number; onEncounter: (dex: number, key: string) => void }) {
+  const { caught, timed } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
   const soon = upcomingEvents(now);
   const got = spawns.filter((s) => caught[s.pokemon.dex]).length;
+  const running = timedNow(now);
   return (
     <div>
+      {running.length ? <Head>Timed research</Head> : null}
+      {running.map((t) => {
+        const mine = timed[t.id] ?? { have: t.tasks.map(() => 0), claimed: false };
+        const done = mine.have.every((n, i) => n >= t.tasks[i].need);
+        return (
+          <div key={t.id} className="mb-2 rounded-2xl bg-surface p-3.5 shadow-[0_2px_10px_rgba(48,85,93,0.12)]">
+            <div className="flex items-center justify-between">
+              <p className="font-display text-base font-black">{t.name}</p>
+              <span className="text-xs font-semibold text-ink-soft">Until {whenIs(t.to)}</span>
+            </div>
+            <ul className="mt-2 space-y-2">
+              {t.tasks.map((task, i) => (
+                <li key={task.text}>
+                  <div className="flex justify-between text-sm font-semibold">
+                    <span>{task.text}</span>
+                    <span className="text-xs text-ink-soft tabular-nums">
+                      {Math.min(mine.have[i], task.need)}/{task.need}
+                    </span>
+                  </div>
+                  <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-ink/10">
+                    <span className="block h-full rounded-full bg-linear-to-r from-[#f7b03e] to-[#f08a3c]" style={{ width: `${(Math.min(mine.have[i], task.need) / task.need) * 100}%` }} />
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <span className="flex items-center gap-2 text-xs text-ink-soft">
+                {/* eslint-disable-next-line @next/next/no-img-element -- tiny local portrait */}
+                <img src={`/portraits/${t.reward.encounter}.webp`} alt="" width={30} height={30} className="size-7.5 object-contain" />
+                {nameOf(t.reward.encounter)} encounter and 3 Great Balls
+              </span>
+              {mine.claimed ? (
+                <span className="text-xs font-bold text-ink-soft">Claimed</span>
+              ) : (
+                <button
+                  type="button"
+                  disabled={!done}
+                  onClick={() => {
+                    if (!claimTimed(t.id)) return;
+                    sfx.claim();
+                    onEncounter(t.reward.encounter, `timed|${t.id}`);
+                  }}
+                  className="go-pill rounded-full px-4 py-1.5 text-xs disabled:opacity-40"
+                >
+                  Claim
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
       <Head>Upcoming events</Head>
       {soon.length ? (
         <div className="space-y-2.5">
@@ -374,7 +427,7 @@ export function ResearchPanel({ onClose, onEncounter }: { onClose: () => void; o
         ))}
       </div>
       {tab === "today" ? <TodayTab onEncounter={onEncounter} now={now} /> : null}
-      {tab === "events" ? <EventsTab now={now} /> : null}
+      {tab === "events" ? <EventsTab now={now} onEncounter={onEncounter} /> : null}
       {tab === "special" ? (
       <div className="rounded-3xl bg-surface p-4 shadow-[0_2px_10px_rgba(48,85,93,0.12)]">
         <p className="text-xs font-bold tracking-[0.14em] text-[#e8913a] uppercase">Tyler&apos;s Journey</p>

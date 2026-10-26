@@ -2,6 +2,7 @@
 
 import { bostonDay, type FieldEvent, type FieldTask, progressWith, receive } from "./field";
 import { levelFor, rewardsFor } from "./levels";
+import { TIMED, type TimedProgress, timedWith } from "./timed";
 import { cpOf, guessStats, powerCap, powerCost, type Stats } from "./power";
 import { BOOK_MAX, GIFT_HOLD, GIFT_OPEN_DAY, type Postcard, SEND_XP } from "./gifts";
 import { BREAKTHROUGH_XP, catchBonus, mysteryItem, NO_STREAK, nextStreak, spinBonus, STAMPS, type Streak, stampWith } from "./daily";
@@ -57,13 +58,15 @@ export type Progress = {
   candy: Record<number, number>;
   /** When the lit Incense burns out (epoch ms), or null. */
   incenseUntil: number | null;
+  /** Timed Research done so far, by event (timed.ts). */
+  timed: TimedProgress;
 };
 
 /** What a new trainer starts with: GO gives 50 Poké Balls (notes/research/go-round-4.md 1). */
 export const STARTER_ITEMS: Items = { ball: 50, great: 0, razz: 2, incense: 2 };
 
 const KEY = "developer-go:progress";
-const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: NO_BOND, field: [], streaks: { catch: NO_STREAK, spin: NO_STREAK }, stamps: [], team: null, routes: {}, routedOn: null, gifts: [], postcards: [], received: [], openedOn: { day: "", n: 0 }, xp: 0, items: STARTER_ITEMS, stardust: 0, candy: {}, incenseUntil: null };
+const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: NO_BOND, field: [], streaks: { catch: NO_STREAK, spin: NO_STREAK }, stamps: [], team: null, routes: {}, routedOn: null, gifts: [], postcards: [], received: [], openedOn: { day: "", n: 0 }, xp: 0, items: STARTER_ITEMS, stardust: 0, candy: {}, incenseUntil: null, timed: {} };
 
 function load(): Progress {
   try {
@@ -165,7 +168,20 @@ export function receiveField(stop: string) {
 export function fieldEvent(e: FieldEvent) {
   const p = current();
   const next = progressWith(p.field, e);
-  if (next.some((t, i) => t.have !== p.field[i].have)) save({ ...p, field: next });
+  const timed = timedWith(p.timed, e, Date.now());
+  if (timed || next.some((t, i) => t.have !== p.field[i].have)) save({ ...p, field: next, timed: timed ?? p.timed });
+}
+
+/** A Timed Research finished: its items go in now; its encounter is the caller's to start. */
+export function claimTimed(id: string) {
+  const p = current();
+  const t = TIMED.find((x) => x.id === id);
+  const cur = p.timed[id];
+  if (!t || !cur || cur.claimed || cur.have.some((n, i) => n < t.tasks[i].need)) return false;
+  save({ ...p, timed: { ...p.timed, [id]: { ...cur, claimed: true } } });
+  addItems(t.reward.items);
+  gainXp(1000, "timed research");
+  return true;
 }
 
 /** A finished task's reward is claimed, and the first claim of the day earns a Breakthrough stamp. */

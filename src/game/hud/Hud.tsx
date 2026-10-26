@@ -167,7 +167,8 @@ export function Hud() {
         return setScreen(goal === "place:mart" ? "bag" : "about");
       }
       const w = findWild(goal);
-      // a spooky surprise with a treat in it: the items, and it's gone
+      // a spooky surprise is opened when you walk up to it; one with a treat in it gives the items and goes
+      if (w?.surprise) fieldEvent({ kind: "surprise" });
       if (w?.surprise === "treat") {
         endWild(w.id, "caught");
         sfx.open();

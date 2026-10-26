@@ -1,4 +1,5 @@
 import { stops } from "@/content";
+import { halloweenPart } from "./events";
 import { hash } from "./spawnPoints";
 import { SPECIES } from "./species";
 
@@ -14,7 +15,8 @@ import { SPECIES } from "./species";
 /** Something that happened that a task might count. */
 export type FieldEvent =
   | { kind: "catch"; dex: number; throw: "Nice" | "Great" | "Excellent" | null; curve: boolean; boosted: boolean }
-  | { kind: "spin"; slug: string };
+  | { kind: "spin"; slug: string }
+  | { kind: "surprise" };
 
 export type Reward = { encounter: number } | { xp: number } | { items: { ball?: number; great?: number; razz?: number } };
 
@@ -36,6 +38,17 @@ const TASKS: TaskDef[] = [
   { id: "spin3", text: "Spin 3 PokéStops", need: 3, counts: (e) => e.kind === "spin" },
 ];
 
+/**
+ * Halloween's event Field Research: GO's 2026 texts aren't out, so these are
+ * in the style of 2025's ("Catch 10 Ghost- or Dark-type Pokémon" and so on),
+ * shorter for a visit, each with an event encounter. Half the stops give one.
+ */
+const SPOOKY: (TaskDef & { reward: number })[] = [
+  { id: "ghost2", text: "Catch 2 Ghost-type Pokémon", need: 2, counts: catchOf((e) => typeOf(e.dex).includes("ghost")), reward: 92 },
+  { id: "surprise2", text: "Open 2 spooky surprises", need: 2, counts: (e) => e.kind === "surprise", reward: 25 },
+  { id: "catch5", text: "Catch 5 Pokémon", need: 5, counts: catchOf(() => true), reward: 41 },
+];
+
 /** The encounters research hands out: the fact Pokémon you can't find in the wild first, then rare ones. */
 const ENCOUNTERS = [479, 865, 869, 137, 106];
 
@@ -50,6 +63,13 @@ const stopIndex = new Map(stops.map((s, i) => [s.slug, i]));
 export function taskFor(stop: string, day: string): FieldTask {
   const i = stopIndex.get(stop) ?? 0;
   const d = Number(day.replaceAll("-", ""));
+  // Halloween's tasks at half the stops (Trick or Treat's only runs in Part I)
+  const part = halloweenPart(Date.parse(`${day}T17:00:00Z`));
+  if (part && hash(i, d, 17) % 2 === 0) {
+    const pool = part === 1 ? SPOOKY : SPOOKY.filter((t) => t.id !== "surprise2");
+    const t = pool[hash(i, d, 19) % pool.length];
+    return { stop, day, task: t.id, text: t.text, need: t.need, have: 0, reward: { encounter: t.reward }, claimed: false };
+  }
   const def = TASKS[hash(i, d, 7) % TASKS.length];
   const r = hash(i, d, 11) % 10;
   const reward: Reward =
@@ -71,7 +91,7 @@ export function receive(tasks: FieldTask[], stop: string, day = bostonDay()): Fi
 /** Something happened: count it toward any task it fits. */
 export function progressWith(tasks: FieldTask[], e: FieldEvent): FieldTask[] {
   return tasks.map((t) => {
-    const def = TASKS.find((d) => d.id === t.task);
+    const def = TASKS.find((d) => d.id === t.task) ?? SPOOKY.find((d) => d.id === t.task);
     return def && !t.claimed && t.have < t.need && def.counts(e) ? { ...t, have: t.have + 1 } : t;
   });
 }
