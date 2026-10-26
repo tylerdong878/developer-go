@@ -51,11 +51,11 @@ const recipe = {
   face: {
     eyes: [
       // tiny black dots, close together, the face a little to the viewer's left
-      { at: [-0.19, 0.75, 0.31], w: 0.026, h: 0.03, sclera: DARK },
-      { at: [0.05, 0.745, 0.31], w: 0.026, h: 0.03, sclera: DARK },
+      { at: [-0.19, 0.75, 0.31], w: 0.04, h: 0.045, sclera: DARK },
+      { at: [0.05, 0.745, 0.31], w: 0.04, h: 0.045, sclera: DARK },
     ],
     // long thin line, much wider than the eye spacing, corners lifted a hair
-    mouth: { kind: "smile", at: [-0.06, 0.675, 0.33], w: 0.44, h: 0.018, thick: 0.011, color: LINE },
+    mouth: { kind: "smile", at: [-0.06, 0.675, 0.33], w: 0.48, h: 0.018, thick: 0.016, color: LINE },
   },
 };
 

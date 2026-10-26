@@ -21,7 +21,11 @@ const SEGS = [
   [0.175, 0.079, -0.575, 0.079],
   [0.255, 0.072, -0.635, 0.072],
   [0.34, 0.066, -0.665, 0.066],
-];
+].map(([x, y, z, r], i, all) => {
+  // fuller segments, 1.3x by the head down to 1.1x at the tail, lifted so the ones on the ground stay on it
+  const k = i < 4 ? 1.3 : 1.3 - (0.2 * (i - 3)) / (all.length - 4);
+  return [x, y - r < 0.02 ? y + r * (k - 1) : y, z * (i < 2 ? 1 : 1.08), r * k];
+});
 const BUMP_R = [0.044, 0.042, 0.038, 0.036, 0.034, 0.032, 0.03, 0.029];
 
 const nrm = (v) => {

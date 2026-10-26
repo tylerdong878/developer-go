@@ -398,7 +398,7 @@ export default person({
     const hatBase = c.at[1] + 0.1 * H;
     // the net: up from the right hand, back over the right shoulder, the hoop behind his head
     const hand = [-L.hand[0], L.hand[1], L.hand[2]];
-    const hoop = [-0.42 * H, c.at[1] + 0.05 * H, -0.95 * H];
+    const hoop = [-0.66 * H, c.at[1] - 0.1 * H, -0.72 * H];
     const d = hoop.map((v, i) => v - hand[i]), dl = Math.hypot(...d), u = d.map((v) => v / dl);
     const butt = hand.map((v, i) => v - u[i] * 0.25 * H);
     const neck = hoop.map((v, i) => v - u[i] * 0.33 * H);
