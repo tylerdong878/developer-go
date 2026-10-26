@@ -17,7 +17,7 @@ export type ItemId = "ball" | "great" | "razz";
 export type Items = Record<ItemId, number>;
 
 /** One catch, for the Pokémon screen: who, how strong, when, and how good the throw was. */
-export type Catch = { id: number; dex: number; name: string; cp: number; at: number; throw: string | null; shiny?: boolean };
+export type Catch = { id: number; dex: number; name: string; cp: number; at: number; throw: string | null; shiny?: boolean; level?: number; iv?: readonly [number, number, number] };
 
 /** The Pokémon screen keeps the most recent catches, like GO's storage. */
 export const HISTORY_MAX = 300;
@@ -51,13 +51,16 @@ export type Progress = {
   openedOn: { day: string; n: number };
   xp: number;
   items: Items;
+  /** GO's Stardust, and Candy by species (power.ts). */
+  stardust: number;
+  candy: Record<number, number>;
 };
 
 /** What a new trainer starts with: GO gives 50 Poké Balls (notes/research/go-round-4.md 1). */
 export const STARTER_ITEMS: Items = { ball: 50, great: 0, razz: 2 };
 
 const KEY = "developer-go:progress";
-const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: NO_BOND, field: [], streaks: { catch: NO_STREAK, spin: NO_STREAK }, stamps: [], team: null, routes: {}, routedOn: null, gifts: [], postcards: [], received: [], openedOn: { day: "", n: 0 }, xp: 0, items: STARTER_ITEMS };
+const empty: Progress = { caught: {}, history: [], spun: [], visited: [], hatched: [], bonus: {}, bond: NO_BOND, field: [], streaks: { catch: NO_STREAK, spin: NO_STREAK }, stamps: [], team: null, routes: {}, routedOn: null, gifts: [], postcards: [], received: [], openedOn: { day: "", n: 0 }, xp: 0, items: STARTER_ITEMS, stardust: 0, candy: {} };
 
 function load(): Progress {
   try {
@@ -98,7 +101,7 @@ export const progressStore = {
   server: () => empty,
 };
 
-export function recordCatch(c: Omit<Catch, "id" | "at">) {
+export function recordCatch(c: Omit<Catch, "id" | "at">, dust = 0, candy = 0) {
   const p = current();
   const at = Date.now();
   const entry: Catch = { ...c, id: at + Math.random(), at };
@@ -109,6 +112,9 @@ export function recordCatch(c: Omit<Catch, "id" | "at">) {
     caught: { ...p.caught, [c.dex]: (p.caught[c.dex] ?? 0) + 1 },
     history: [entry, ...p.history].slice(0, HISTORY_MAX),
     streaks: streak ? { ...p.streaks, catch: streak } : p.streaks,
+    // GO's first catch of the day pays 1,800 Stardust too (9,000 on day 7)
+    stardust: p.stardust + dust + (streak ? (streak.n === 7 ? 9000 : 1800) : 0),
+    candy: { ...p.candy, [c.dex]: (p.candy[c.dex] ?? 0) + candy },
   });
   if (streak) {
     const bonus = catchBonus(streak.n);

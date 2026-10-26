@@ -26,7 +26,6 @@ export const RAID_BOSS: Record<string, RaidBoss> = {
  */
 export const premierBalls = (raid: { result?: string }) => 6 + (raid.result ? 4 : 0);
 export const BONUS_RATE: Record<1 | 3 | 5, number> = { 1: 0.35, 3: 0.22, 5: 0.12 };
-export const bossCp = (boss: RaidBoss, roll: number) => Math.round(boss.cp[0] + roll * (boss.cp[1] - boss.cp[0]));
 
 /** GO's hatch, in seconds: the egg shakes and glows, a white flash, then the boss pops up. */
 export const HATCH = { shake: 1.6, flash: 0.45, rise: 0.5 };

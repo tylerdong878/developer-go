@@ -10,7 +10,7 @@ import { levelFor, progressStore, xpForLevel } from "../progress";
 import { TEAM_LEVEL, TEAMS } from "../teams";
 import { RAID_BOSS } from "../raidBosses";
 import { visitorMedals } from "../visitorMedals";
-import { ItemIcon, ObjectIcon } from "./icons";
+import { ItemIcon, ObjectIcon, StardustIcon } from "./icons";
 import { GiftBox } from "./Gifts";
 import { BOOK_MAX, GIFT_HOLD } from "../gifts";
 import { ITEM_INFO } from "./SpinDisc";
@@ -363,11 +363,15 @@ const BAG_MAX = 350;
 
 /** Your items, like GO's: each one with its picture, how many you have, and what it does. */
 export function BagPanel({ onClose, onOpen }: { onClose: () => void; onOpen?: (screen: "gifts" | "postcards") => void }) {
-  const { items, gifts, postcards } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const { items, gifts, postcards, stardust } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
   const ids = Object.keys(ITEM_INFO) as (keyof typeof ITEM_INFO)[];
   const total = ids.reduce((sum, id) => sum + items[id], 0);
   return (
     <Sheet title="Items" subtitle={`${total}/${BAG_MAX}`} onClose={onClose}>
+      <p className="mb-3 flex items-center justify-center gap-2 font-display text-lg font-semibold tabular-nums">
+        <StardustIcon size={26} />
+        {stardust.toLocaleString("en-US")} <span className="text-xs font-bold tracking-[0.14em] text-ink-soft uppercase">Stardust</span>
+      </p>
       <ul className="space-y-2">
         {ids.map((id) => (
           <li key={id} className={`flex items-center gap-4 rounded-2xl bg-ink/5 px-4 py-3 ${items[id] ? "" : "opacity-55"}`}>

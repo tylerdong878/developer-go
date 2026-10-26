@@ -7,17 +7,18 @@ import { slots } from "../base";
 import { game, ZOOM } from "../state";
 import { goTo } from "../travel";
 import { addItems, claimField, fieldEvent, gainXp, levelFor, progressStore, recordBonus, recordCatch, recordHatch, recordVisit, toast } from "../progress";
-import { BONUS_RATE, bossCp, HATCH_MS, premierBalls, RAID_BOSS } from "../raidBosses";
+import { BONUS_RATE, HATCH_MS, premierBalls, RAID_BOSS } from "../raidBosses";
 import { played } from "../bond";
 import { buddyStore } from "../buddy";
 import { count } from "../community";
-import { catchRewards, cpFor, FLED_XP } from "../cp";
+import { catchRewards, FLED_XP } from "../cp";
+import { catchCandy, catchDust, cpOf, rollFixed, rollWild } from "../power";
 import { sfx } from "../sound";
 import { earned, visitorMedals } from "../visitorMedals";
 import { endWild, findWild, holdWild } from "../wild";
 import { hash, nameOf } from "../spawnPoints";
 import { allObjects } from "@/content";
-import { BOOST_CP, boosted } from "../species";
+import { boosted } from "../species";
 import { RAID_SHINY_ODDS, rollShiny } from "../shiny";
 import { weatherStore } from "../weather";
 import { type CatchResult, Encounter, type Foe } from "./Encounter";
@@ -177,7 +178,10 @@ export function Hud() {
         const boost = boosted(looks, weather);
         // its CP and whether it's shiny for you are fixed per spawn, so running and coming back finds the same one, like GO
         const roll = (k: number) => hash(k, ...[...w.id].map((c) => c.charCodeAt(0))) / 4294967296;
-        const cp = Math.round(cpFor(w.species.dex, false, roll(1)) * (boost ? BOOST_CP : 1));
+        // GO's level and IVs: level 1 up to yours (five more if the weather boosts it), the same each time you meet this one
+        let k = 1;
+        const stats = rollWild(levelFor(progressStore.get().xp), !!boost, () => roll(k++));
+        const cp = cpOf(w.species.dex, stats);
         const mine = hash(...[...visitor()].map((c) => c.charCodeAt(0)), ...[...w.id].map((c) => c.charCodeAt(0))) / 4294967296;
         return setFoe({
           dex: w.species.dex,
@@ -186,6 +190,7 @@ export function Hud() {
           rare: !!w.daily || !!w.starter,
           fact: w.fact,
           cp,
+          stats,
           goal,
           boost: boost ? weather : undefined,
           shiny: rollShiny(w.species.dex, undefined, mine),
@@ -267,7 +272,9 @@ export function Hud() {
     const boss = RAID_BOSS[slug];
     if (raid?.kind !== "raid" || !boss || slug in progressStore.get().bonus) return;
     setCard(null);
-    setFoe({ dex: boss.dex, name: boss.name, rare: false, cp: bossCp(boss, Math.random()), goal: slug, premier: { balls: premierBalls(raid), rate: BONUS_RATE[raid.stars] }, shiny: rollShiny(boss.dex, raid.stars === 5 ? RAID_SHINY_ODDS : undefined) });
+    // a raid catch comes at level 20 with IVs of 10 to 15, like GO's
+    const stats = rollFixed(20, Math.random);
+    setFoe({ dex: boss.dex, name: boss.name, rare: false, cp: cpOf(boss.dex, stats), stats, goal: slug, premier: { balls: premierBalls(raid), rate: BONUS_RATE[raid.stars] }, shiny: rollShiny(boss.dex, raid.stars === 5 ? RAID_SHINY_ODDS : undefined) });
   }, []);
   const closeFact = useCallback(() => setFact(null), []);
   const factSpawn = fact ? bySlug.get(fact) : undefined;
@@ -276,7 +283,9 @@ export function Hud() {
   const researchEncounter = useCallback((dex: number, key: string) => {
     setScreen(null);
     const fact = allObjects.find((o) => o.kind === "spawn" && o.pokemon.dex === dex);
-    setFoe({ dex, name: nameOf(dex), rare: true, fact: fact?.slug, cp: cpFor(dex, false, Math.random()), goal: `research:${key}`, shiny: rollShiny(dex) });
+    // research rewards come at level 15, like GO's
+    const stats = rollFixed(15, Math.random);
+    setFoe({ dex, name: nameOf(dex), rare: true, fact: fact?.slug, cp: cpOf(dex, stats), stats, goal: `research:${key}`, shiny: rollShiny(dex) });
   }, []);
   const pickTab = useCallback((tab: "tyler" | "you") => setScreen(tab === "tyler" ? "about" : "profile"), []);
   // a highlight: close the list and dash there, and its card opens on arrival
@@ -319,7 +328,7 @@ export function Hud() {
     if (w && outcome === "fled") gainXp(FLED_XP, "it fled");
     if (caught) {
       const rewards = catchRewards(!!foe.fact && !progressStore.get().caught[foe.dex], best, !progressStore.get().caught[foe.dex], firstThrow, curve);
-      recordCatch({ dex: foe.dex, name: foe.name, cp: foe.cp, throw: best, shiny: foe.shiny });
+      recordCatch({ dex: foe.dex, name: foe.name, cp: foe.cp, throw: best, shiny: foe.shiny, level: foe.stats?.level, iv: foe.stats?.iv }, catchDust(foe.dex, !!foe.boost), catchCandy(foe.dex));
       fieldEvent({ kind: "catch", dex: foe.dex, throw: best, curve, boosted: !!foe.boost });
       count("catches", { dex: foe.dex, cp: foe.cp });
       gainXp(

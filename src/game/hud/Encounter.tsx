@@ -11,6 +11,8 @@ import {
 } from "react";
 import { addItems, progressStore, spendItem } from "../progress";
 import { catchRewards } from "../cp";
+import { catchCandy, catchDust, type Stats } from "../power";
+import { StardustIcon, CandyIcon } from "./icons";
 import { movementOf, SPECIES } from "../species";
 import { sfx } from "../sound";
 import { FoeView } from "./FoeView";
@@ -31,6 +33,8 @@ export type Foe = {
   /** One of the fact Pokémon: catching it shows the fact. */
   fact?: string;
   cp: number;
+  /** Its level and IVs (power.ts), kept with the catch for Power Up and appraisal. */
+  stats?: Stats;
   premier?: { balls: number; rate: number };
   /** The weather boosting it, if any: GO shows its icon by the CP. */
   boost?: Weather;
@@ -739,7 +743,16 @@ function Caught({ foe, rewards }: { foe: Foe; rewards: [string, number][] }) {
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-xs text-ink-soft">
+          {/* like GO's card: the Stardust and the Candy it paid */}
+          <div className="mt-3 flex justify-center gap-5 border-t border-ink/8 pt-3">
+            <span className="item-pop flex items-center gap-1.5 text-sm font-bold tabular-nums" style={{ animationDelay: `${260 + rewards.length * 120}ms` }}>
+              <StardustIcon size={20} />+{catchDust(foe.dex, !!foe.boost)}
+            </span>
+            <span className="item-pop flex items-center gap-1.5 text-sm font-bold tabular-nums" style={{ animationDelay: `${380 + rewards.length * 120}ms` }}>
+              <CandyIcon dex={foe.dex} size={20} />+{catchCandy(foe.dex)}
+            </span>
+          </div>
+          <p className="mt-2 text-xs text-ink-soft">
             {foe.name}, CP {foe.cp}
           </p>
         </div>

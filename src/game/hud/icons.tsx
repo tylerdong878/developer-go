@@ -137,6 +137,32 @@ export function ObjectIcon({ object, size = 36 }: { object: MapObject; size?: nu
 }
 
 /** GO's items, drawn small: a Poké Ball, a Great Ball, and a Razz Berry. */
+/** GO's Stardust: a pink-purple sparkle with two little ones. */
+export function StardustIcon({ size = 24 }: { size?: number }) {
+  const star = (x: number, y: number, r: number) => `M${x} ${y - r}C${x + r * 0.18} ${y - r * 0.18} ${x + r * 0.18} ${y - r * 0.18} ${x + r} ${y}C${x + r * 0.18} ${y + r * 0.18} ${x + r * 0.18} ${y + r * 0.18} ${x} ${y + r}C${x - r * 0.18} ${y + r * 0.18} ${x - r * 0.18} ${y + r * 0.18} ${x - r} ${y}C${x - r * 0.18} ${y - r * 0.18} ${x - r * 0.18} ${y - r * 0.18} ${x} ${y - r}Z`;
+  return (
+    <svg viewBox="0 0 32 32" width={size} height={size} aria-hidden>
+      <path d={star(14, 17, 12)} fill="#c86fe0" />
+      <path d={star(14, 17, 6)} fill="#f6d9ff" />
+      <path d={star(25, 8, 5)} fill="#e79cf5" />
+      <path d={star(26, 24, 3.5)} fill="#e79cf5" />
+    </svg>
+  );
+}
+
+/** A species' Candy: GO's wrapped sweet in two colors (ours from a hash of the species, not GO's exact pairs). */
+export function CandyIcon({ dex, size = 24 }: { dex: number; size?: number }) {
+  const hue = (dex * 47) % 360;
+  return (
+    <svg viewBox="0 0 32 32" width={size} height={size} aria-hidden>
+      <path d="M5 10 1 6l2 9Zm22 12 4 4-2-9Z" fill={`hsl(${hue} 55% 45%)`} />
+      <ellipse cx="16" cy="16" rx="11" ry="8" transform="rotate(-35 16 16)" fill={`hsl(${hue} 70% 62%)`} />
+      <path d="M9 22a11 8 -35 0 0 16 -12Z" transform="rotate(0 16 16)" fill={`hsl(${(hue + 150) % 360} 65% 85%)`} />
+      <ellipse cx="13" cy="12" rx="3" ry="1.5" transform="rotate(-35 13 12)" fill="#ffffff" opacity="0.6" />
+    </svg>
+  );
+}
+
 /** GO's Showcase trophy: a cup with two handles on a stepped base. */
 export function Trophy({ color = "#f2c14e", size = 28 }: { color?: string; size?: number }) {
   return (

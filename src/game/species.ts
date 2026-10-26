@@ -107,8 +107,6 @@ export const BOOSTS: Record<Weather, PokeType[]> = {
 /** Does this weather boost this species? */
 export const boosted = (dex: number, weather: Weather) => (SPECIES[dex]?.types ?? []).some((t) => BOOSTS[weather].includes(t));
 
-/** A boosted Pokémon is caught 5 levels higher in GO, which comes out about 1.25x the CP at our levels. */
-export const BOOST_CP = 1.25;
 
 /** GO spawns some species more at night (none only at night): from our roster, these (notes/research/spawns.md 5). */
 export const NIGHT_OWLS = new Set([41, 43, 52, 92]);
