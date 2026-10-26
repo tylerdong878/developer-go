@@ -1,15 +1,19 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   BoxGeometry,
+  BufferAttribute,
   type BufferGeometry,
   CanvasTexture,
   CircleGeometry,
   CylinderGeometry,
   ExtrudeGeometry,
+  type Group,
   type Material,
+  Matrix4,
+  Mesh,
   MeshBasicMaterial,
   MeshLambertMaterial,
   RingGeometry,
@@ -17,6 +21,7 @@ import {
   SphereGeometry,
   SRGBColorSpace,
 } from "three";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { buildings } from "../../base";
 import type { Building } from "../../lots";
 import { fade, town } from "../fade";
@@ -111,6 +116,29 @@ function materialSet(index: number) {
     }
     return entry.m;
   };
+  /** The kind a material was made as, for baking. */
+  const kindOf = (m: Material): Kind | null => [...made.values()].find((e) => e.m === m)?.kind ?? null;
+  /** One material per kind with the colors in the vertices, for the baked building (glass glows its own color). */
+  const shared = new Map<Kind, Material>();
+  const bakedMaterial = (kind: Kind) => {
+    let m = shared.get(kind);
+    if (!m) {
+      if (kind === "glow") m = new MeshBasicMaterial({ vertexColors: true, alphaHash: true });
+      else {
+        const lambert = new MeshLambertMaterial({ vertexColors: true, alphaHash: true, emissive: kind === "glass" ? "#ffffff" : "#000000", emissiveIntensity: 0 });
+        if (kind === "glass") {
+          lambert.customProgramCacheKey = () => "civic-glass";
+          lambert.onBeforeCompile = (shader) => {
+            shader.fragmentShader = shader.fragmentShader.replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\ntotalEmissiveRadiance *= vColor.rgb;");
+          };
+        }
+        m = lambert;
+      }
+      shared.set(kind, m);
+      made.set(`baked:${kind}`, { m, kind });
+    }
+    return m;
+  };
   const update = () => {
     const night = town.uNight.value;
     for (const { m, kind } of made.values()) {
@@ -118,7 +146,7 @@ function materialSet(index: number) {
       if (kind === "glass") (m as MeshLambertMaterial).emissiveIntensity = 0.2 + night * 0.9;
     }
   };
-  return { get, update };
+  return { get, update, kindOf, bakedMaterial };
 }
 
 const indexOf = (kind: Building["kind"]) => buildings.findIndex((b) => b.kind === kind);
@@ -129,6 +157,69 @@ type V3 = [number, number, number];
 
 function Piece({ geometry, material, at = [0, 0, 0], scale, turn, shadow = true }: { geometry: BufferGeometry; material: Material; at?: V3; scale?: V3 | number; turn?: V3; shadow?: boolean }) {
   return <mesh geometry={geometry} material={material} position={at} scale={scale} rotation={turn} castShadow={shadow} receiveShadow />;
+}
+
+/**
+ * Draws its parts as one mesh per material (notes/research/town-polish.md 11).
+ * The Center and the Mart are about fifty small pieces each; once they're
+ * built they're baked together in place with their colors in the vertices,
+ * one mesh per kind (paint, glass, glow), so about 95 draws become about 8.
+ * The plaques, which have their own textures, stay as they are, and the baked
+ * materials are in the building's set, so the fade and the night glow still work.
+ */
+function Baked({ at, turn, set, children }: { at: V3; turn: number; set: ReturnType<typeof materialSet>; children: ReactNode }) {
+  const ref = useRef<Group>(null);
+  useLayoutEffect(() => {
+    const g = ref.current;
+    if (!g) return;
+    g.updateMatrixWorld(true);
+    const inverse = g.matrixWorld.clone().invert();
+    const sets = new Map<string, { material: Material; shadow: boolean; parts: BufferGeometry[] }>();
+    const baked: Mesh[] = [];
+    g.traverse((o) => {
+      const mesh = o as Mesh;
+      if (!mesh.isMesh || Array.isArray(mesh.material)) return;
+      const kind = set.kindOf(mesh.material);
+      // the plaques (their own textures) and anything not from the set stay as they are
+      if (!kind) return;
+      const geo = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
+      for (const name of Object.keys(geo.attributes)) if (name !== "position" && name !== "normal") geo.deleteAttribute(name);
+      geo.applyMatrix4(new Matrix4().multiplyMatrices(inverse, mesh.matrixWorld));
+      const c = (mesh.material as MeshBasicMaterial).color;
+      const n = geo.getAttribute("position").count;
+      const rgb = new Float32Array(n * 3);
+      for (let k = 0; k < n; k++) rgb.set([c.r, c.g, c.b], k * 3);
+      geo.setAttribute("color", new BufferAttribute(rgb, 3));
+      const key = `${kind}:${mesh.castShadow}`;
+      const entry = sets.get(key) ?? { material: set.bakedMaterial(kind), shadow: mesh.castShadow, parts: [] };
+      entry.parts.push(geo);
+      sets.set(key, entry);
+      baked.push(mesh);
+    });
+    const added: Mesh[] = [];
+    for (const { material, shadow, parts } of sets.values()) {
+      const merged = mergeGeometries(parts);
+      if (!merged) continue;
+      const m = new Mesh(merged, material);
+      m.castShadow = shadow;
+      m.receiveShadow = true;
+      g.add(m);
+      added.push(m);
+    }
+    for (const m of baked) m.visible = false;
+    return () => {
+      for (const m of added) {
+        g.remove(m);
+        m.geometry.dispose();
+      }
+      for (const m of baked) m.visible = true;
+    };
+  }, [set]);
+  return (
+    <group ref={ref} position={at} rotation-y={turn}>
+      {children}
+    </group>
+  );
 }
 
 /** A plaque texture: a white field in a colored frame (octagon for the Center, stadium with bracket arcs for the Mart). */
@@ -268,7 +359,7 @@ export function PokemonCenter() {
   const RED = "#cc4a42";
   const front = D / 2;
   return (
-    <group position={[b.x, 0, b.z]} rotation-y={b.turn}>
+    <Baked at={[b.x, 0, b.z]} turn={b.turn} set={centerMats}>
       {/* red feet and the black plinth */}
       <Piece geometry={CENTER.foot} material={m("#d64a3e")} />
       {[-1, 1].flatMap((sx) =>
@@ -285,6 +376,10 @@ export function PokemonCenter() {
         <Piece key={x} geometry={box} material={m("#3a4548")} at={[x, 2.2, front + 0.03]} scale={[0.26, 3.2, 0.08]} />
       ))}
       <Piece geometry={box} material={m("#b9c7cd")} at={[0, 1.55, front + 0.02]} scale={[W - 1.4, 0.05, 0.05]} shadow={false} />
+      {/* LGPE splits the wall into panels: thin gray seams up between them */}
+      {[-3.2, 3.2].map((x) => (
+        <Piece key={x} geometry={box} material={m("#b9c7cd")} at={[x, 2.2, front + 0.02]} scale={[0.05, 3.2, 0.05]} shadow={false} />
+      ))}
       <Piece geometry={box} material={m("#a8d8ea", "glass")} at={[-3.35, 2.45, front + 0.04]} scale={[2.0, 1.7, 0.06]} />
       {[-1, 1].flatMap((sx) =>
         [-2.1, 2.1].map((z) => (
@@ -333,7 +428,7 @@ export function PokemonCenter() {
           <meshBasicMaterial map={plaque} transparent toneMapped={false} />
         </mesh>
       ) : null}
-    </group>
+    </Baked>
   );
 }
 
@@ -379,7 +474,7 @@ export function PokeMart() {
   const front = D / 2;
   const roof0 = WALL;
   return (
-    <group position={[b.x, 0, b.z]} rotation-y={b.turn}>
+    <Baked at={[b.x, 0, b.z]} turn={b.turn} set={martMats}>
       {/* white walls over a gray dado with its little square windows */}
       <Piece geometry={box} material={m("#eef1f0")} at={[0, WALL / 2, 0]} scale={[W - 0.4, WALL, D - 0.4]} />
       <Piece geometry={box} material={m("#bcbfbe")} at={[0, 0.65, 0]} scale={[W - 0.36, 1.3, D - 0.36]} />
@@ -388,6 +483,13 @@ export function PokeMart() {
           <Piece key={`${side}${k}`} geometry={box} material={m("#7fb3ea", "glass")} at={[side * (1.9 + k * 0.8), 0.7, front - 0.16]} scale={[0.43, 0.43, 0.06]} />
         )),
       )}
+      {/* a big window in each side wall, like LGPE's */}
+      {[-1, 1].map((sx) => (
+        <group key={sx} position={[sx * (W / 2 - 0.2), 2.4, 0]}>
+          <Piece geometry={box} material={m("#e4eaea")} at={[sx * 0.02, 0, 0]} scale={[0.06, 2.2, 2.2]} />
+          <Piece geometry={box} material={m("#c4f2fa", "glass")} at={[sx * 0.05, 0, 0]} scale={[0.06, 1.9, 1.9]} />
+        </group>
+      ))}
       {/* rounded blue corner pillars, full height */}
       {[-1, 1].flatMap((sx) =>
         [-1, 1].map((sz) => (
@@ -443,6 +545,6 @@ export function PokeMart() {
           <meshBasicMaterial map={plaque} transparent toneMapped={false} />
         </mesh>
       ) : null}
-    </group>
+    </Baked>
   );
 }
