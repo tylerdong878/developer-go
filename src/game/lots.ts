@@ -9,6 +9,8 @@ import { pointInPolygon, random, type Vec2 } from "./geometry";
  * rectangle test.
  */
 export type BuildingKind = "tower" | "office" | "brick" | "house" | "shop" | "center" | "mart";
+/** Kanto's house kinds (notes/research/gfx-buildings.md 7.6): Pallet's twins for Tyler and his rival, Viridian's plank houses and Vermilion's tile-roofed ones for everyone else. */
+export type HouseStyle = "pallet" | "viridian" | "vermilion";
 /** Built in code instead of loaded: houses, the Pokémon Center, and the Poké Mart. */
 export type HouseModel = "house" | "center" | "mart" | "block";
 /** The kit's block recipes (scene/Blocks.tsx): an LGPE Saffron block, a Paldea glass box, Lumiose stone, Back Bay brick. */
@@ -29,9 +31,10 @@ export type Building = {
   h: number;
   /** A tint over the model's colors (white leaves them as they are). */
   color: string;
-  /** Houses only: the roof color, and whether it's the mirror twin (upper floor on the other side). */
+  /** Houses only: the roof color, whether it's the mirror twin (upper floor on the other side), and which town's house. */
   roof?: string;
   flip?: boolean;
+  style?: HouseStyle;
   /** The gym this building belongs to, or "home". */
   slug?: string;
   /** Kit blocks only: which recipe, and how many storeys. */
@@ -68,7 +71,7 @@ export function block(x: number, z: number, w: number, d: number, turn: number, 
 }
 
 /** A Pokémon-town house: w and d are its walls, h is the wall height (the roof sits on top). */
-export function house(x: number, z: number, w: number, d: number, turn: number, rest: { color: string; roof: string; slug?: string; flip?: boolean }): Building {
+export function house(x: number, z: number, w: number, d: number, turn: number, rest: { color: string; roof: string; slug?: string; flip?: boolean; style?: HouseStyle }): Building {
   const sideways = Math.round(turn / (Math.PI / 2)) % 2 !== 0;
   return {
     kind: "house",
@@ -79,11 +82,13 @@ export function house(x: number, z: number, w: number, d: number, turn: number, 
     z,
     w: sideways ? d : w,
     d: sideways ? w : d,
-    h: 3,
+    // the wall height for Pallet's houses; for the others, about the roof top (so the fade knows when one's in the way)
+    h: rest.style === "vermilion" ? 7.6 : rest.style === "viridian" ? 5.6 : 3,
     color: rest.color,
     roof: rest.roof,
     flip: rest.flip,
     slug: rest.slug,
+    style: rest.style ?? "pallet",
   };
 }
 
@@ -322,7 +327,10 @@ export function placeBuildings(site: Site): Building[] {
     if (district === "homes") {
       const w = 6.5 + rand() * 2.5;
       const d = 5.5 + rand() * 1.5;
-      const b = house(p[0], p[1], w, d, toStreet(p[0], p[1], Math.max(w, d)), { color: pick(WALLS), roof: pick(ROOFS), flip: rand() < 0.5 });
+      // half Viridian, half Vermilion, by where it stands (so the layout's random numbers don't shift)
+      const n = Math.sin(p[0] * 12.9898 + p[1] * 78.233) * 43758.5453;
+      const style: HouseStyle = n - Math.floor(n) < 0.5 ? "viridian" : "vermilion";
+      const b = house(p[0], p[1], w, d, toStreet(p[0], p[1], Math.max(w, d)), { color: pick(WALLS), roof: pick(ROOFS), flip: rand() < 0.5, style });
       if (fits(b)) placed.push(b);
       continue;
     }
