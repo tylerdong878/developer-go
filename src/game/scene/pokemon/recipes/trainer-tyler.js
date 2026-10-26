@@ -117,7 +117,8 @@ function tyler(o) {
   P({ name: "hairFace", kind: "ellipsoid", at: [0.1 * H, chin + 0.3 * H, cran.at[2] + 0.5 * H], r: [0.37 * H, 0.57 * H, 0.5 * H], turn: [0, 0, 0.32], carve: true, mirror: true });
   // 2. head and ears, hard-unioned (a blend here would pull the uncarved hair's shape and color into the face)
   P({ name: "head", kind: "chain", points: [[...cran.at, cran.r], [...jaw.at, jaw.r]], color: C.skin, bone: "head" });
-  P({ name: "ear", kind: "ellipsoid", at: [0.42 * H, chin + 0.42 * H, -0.03 * H], r: [0.065 * H, 0.1 * H, 0.085 * H], turn: [0, 0.15, 0], color: C.skin, bone: "head", mirror: true });
+  // rounder and a touch lower, so the hair line doesn't leave a point on top (model-audit.md 3)
+  P({ name: "ear", kind: "ellipsoid", at: [0.42 * H, chin + 0.4 * H, -0.03 * H], r: [0.06 * H, 0.085 * H, 0.08 * H], turn: [0, 0.1, 0], color: C.skin, bone: "head", mirror: true });
 
   // 3. the jacket body: lower half a lathe (an elliptic section, flat hem), chest and shoulders on top
   const lowR = [[0, hem], [0.158, hem], [0.168, hem + 0.012], [0.168, hem + 0.04], [0.164, Y(0.64)], [0.152, Y(0.69)], [0.146, Y(0.73)], [0.1, Y(0.75)], [0, Y(0.752)]];
@@ -249,7 +250,7 @@ function tyler(o) {
     // his short sides are short hair, not skin: a band of a shade lighter than his hair under the hairline, from in
     // front of the ear round to the nape, so from the side and back his head reads as one dark shape (not shaved)
     paint.push({ name: "shortSides", color: C.short, shape: prof([...L, ...[...L].reverse().map(([z, y]) => [z, y - 0.13 * H])]), bones: ["head"] });
-    paint.push({ name: "earSkin", color: C.skin, shape: { kind: "ellipsoid", at: [0.42 * H, chin + 0.42 * H, -0.03 * H], r: [0.08 * H, 0.115 * H, 0.1 * H], turn: [0, 0.15, 0] }, bones: ["head"], mirror: true });
+    paint.push({ name: "earSkin", color: C.skin, shape: { kind: "ellipsoid", at: [0.42 * H, chin + 0.4 * H, -0.03 * H], r: [0.08 * H, 0.125 * H, 0.1 * H], turn: [0, 0.1, 0] }, bones: ["head"], mirror: true });
     paint.push({ name: "handSkin", color: C.skin, shape: { kind: "box", at: [0, 0.5, 0], size: [2, 1, 1] }, bones: ["handL", "handR"] });
   }
   // navy ribbing: the hem band and the cuffs (a box along the forearm: a round cone's end caps would run the navy up

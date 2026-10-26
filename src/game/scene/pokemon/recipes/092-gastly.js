@@ -65,8 +65,19 @@ const L_AT = [-PLATE_AT[0], PLATE_AT[1], PLATE_AT[2]];
 const L_TURN = [PLATE_TURN[0], -PLATE_TURN[1], 0];
 const onLeftPlate = (u, v) => place(L_AT, L_TURN, [-u, v, 0.028]);
 
-// the grin, seen straight on: top line level at y 0.265 (latitude -28), hanging to latitude -55 in the middle
-const GRIN_Y = 0.177;
+// the grin, seen straight on: top line level at y 0.29, hanging to y 0.09 in the middle (raised and opened a little
+// so it reads from GO's high camera, model-audit.md 4)
+const GRIN_Y = 0.19;
+const GRIN_W = 0.66;
+const GRIN_H = 0.2;
+// a half-ellipse hanging from a straight top line, in the paint slab's own x/y (centered on GRIN_Y)
+const grinOutline = (w, h) => Array.from({ length: 25 }, (_, k) => {
+  const t = (k / 24) * Math.PI;
+  return [(w / 2) * Math.cos(t), GRIN_H / 2 - h * Math.sin(t)];
+});
+const GRIN_AT = [0, GRIN_Y, 0.42];
+// the two fangs: little white triangles hanging from the top lip
+const fang = (x) => [[x - 0.0275, GRIN_H / 2 + 0.004], [x + 0.0275, GRIN_H / 2 + 0.004], [x, GRIN_H / 2 - 0.1]];
 
 const recipe = {
   name: "Gastly",
@@ -83,6 +94,11 @@ const recipe = {
     { name: "spike", kind: "cone", a: place(PLATE_AT, PLATE_TURN, [...SPIKE_A, 0.01]), b: place(PLATE_AT, PLATE_TURN, [...SPIKE_B, 0.0]), ra: 0.03, rb: 0.014, color: DARK, bone: "body", mirror: true },
   ],
   paint: [
+    // the grin as paint, sharp at any zoom (a decal broke into steps up close): the dark lip, the mouth inside it, the fangs
+    { name: "grinLip", color: LIP, shape: { kind: "slab", outline: grinOutline(GRIN_W + 0.024, GRIN_H + 0.012).map(([x, y], k, all) => (k === 0 || k === all.length - 1 ? [x, y + 0.012] : [x, y])), depth: 0.6, at: GRIN_AT, turn: [0, 0, 0] }, bones: ["body"] },
+    { name: "grin", color: MOUTH, shape: { kind: "slab", outline: grinOutline(GRIN_W, GRIN_H), depth: 0.6, at: GRIN_AT, turn: [0, 0, 0] }, bones: ["body"] },
+    { name: "fangL", color: WHITE, shape: { kind: "slab", outline: fang(-0.25), depth: 0.6, at: GRIN_AT, turn: [0, 0, 0] }, bones: ["body"] },
+    { name: "fangR", color: WHITE, shape: { kind: "slab", outline: fang(0.25), depth: 0.6, at: GRIN_AT, turn: [0, 0, 0] }, bones: ["body"] },
     // the straight black brow: a band from just inside the cut edge of each plate over its rounded rim (a decal line
     // there catches white bits of the rim); it spills a hair onto the ball above, which reads as the brow line
     {
@@ -93,16 +109,12 @@ const recipe = {
   face: {
     spots: [],
     mouths: [
-      // the wide grin: a dark half-ellipse band low on the face, projected straight from the front so the top lip is level
-      { name: "grin", kind: "open", at: [0, GRIN_Y, Math.sqrt(R * R - (C[1] - GRIN_Y) ** 2)], snap: false, dir: [0, 0, 1], w: 0.66, h: 0.175, thick: 0.012, color: LIP, inner: MOUTH, tongue: null },
       // thin dark-red lines under the inner ends of the eyes
       { name: "lid", kind: "line", at: onBall(-14, -14), w: 0.08, h: 0.01, thick: 0.007, turn: 1.1, color: LID, mirror: true },
     ],
     eyes: [
       // small upright pupil toward the inner end of each plate, right under the brow (u, v in the +x plate's terms)
       { name: "pupil", at: onLeftPlate(-0.07, -0.012), dir: normal(-EYE_LON, EYE_LAT), w: 0.036, h: 0.085, sclera: DARK, mirror: true },
-      // two small white fangs hanging from the top lip
-      { name: "fang", at: [-0.25, 0.265, Math.sqrt(R * R - 0.235 ** 2 - 0.25 ** 2)], snap: false, dir: [0, 0, 1], w: 0.055, h: 0.1, cut: [0, 0], sclera: WHITE, mirror: true },
     ],
   },
   // ---- the gas, for the game to add as its own transparent piece (not meshed). Units = this model (ball 1 tall).
