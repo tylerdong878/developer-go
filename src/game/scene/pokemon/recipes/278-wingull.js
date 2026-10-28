@@ -1,4 +1,4 @@
-// Wingull (#278). Gliding over the harbor: wings straight out as flat planks with a little dihedral, tail fanned,
+// Wingull (#278). Gliding over the harbor: long broad wings straight out with a little dihedral, tail fanned,
 // feet tucked. Shape checked against art-278, home-278, the GO renders (Serebii go-278, PokeMiners pm278) and the
 // Showdown 3D front/back (ani-wingull, ani-back-wingull). Numbers: notes/research/species-4.md (Wingull), corrections
 // in notes/research/model-facts-2.md.
@@ -40,9 +40,9 @@ const WING_FRAME = ["x", Math.PI / 2];
 // Fan frame: an outline (a, b) with a = across (+x), b = backward (-z), thickness along y.
 const FAN_FRAME = ["x", -Math.PI / 2];
 
-// Wing: a straight plank, constant chord 0.056, swept back 0.03 at the tip, ending in a swallowtail fork (two points of
-// near equal length, the notch 0.03 deep). (outward, forward) from the root.
-const WING = [[-0.01, 0.031], [0.2, 0.0175], [0.44, 0.004], [0.465, -0.001], [0.469, -0.01], [0.455, -0.021], [0.41, -0.033], [0.452, -0.05], [0.46, -0.06], [0.44, -0.064], [0.2, -0.0445], [-0.01, -0.031]];
+// Wing: long and broad like the art and HOME (chord 0.11 at the root, tapering to 0.08 by the band, model-audit.md 5),
+// ending in a swallowtail fork, two points with a V notch 0.055 deep between them. (outward, forward) from the root.
+const WING = [[-0.01, 0.05], [0.15, 0.042], [0.3, 0.034], [0.42, 0.028], [0.465, 0.02], [0.471, 0.011], [0.415, -0.002], [0.462, -0.022], [0.458, -0.034], [0.42, -0.044], [0.3, -0.048], [0.15, -0.052], [-0.01, -0.058]];
 const ROOT = P(0.045, 0.008, -0.035);
 const DIHEDRAL = 0.105; // 6 deg, tips up
 const WING_TURN = turn(WING_FRAME, ["z", DIHEDRAL]);

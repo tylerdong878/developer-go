@@ -47,7 +47,7 @@ const spiral = () => {
     const mid = ((phi - 45) * Math.PI) / 180, end = ((phi - 90) * Math.PI) / 180;
     const m = 0.854 * r;
     // decal frame on the +x face (dir +x): u = -z, v = +y, so turn = 90 deg - mid puts a frown's apex along mid
-    out.push({ kind: "frown", at: [0.09, c[1] + m * Math.sin(mid), c[0] + m * Math.cos(mid)], dir: [1, 0, 0], w: 1.414 * r, h: 0.293 * r, thick: 0.0075, turn: Math.PI / 2 - mid, color: CURL, lit: true, mirror: true });
+    out.push({ kind: "frown", at: [0.09, c[1] + m * Math.sin(mid), c[0] + m * Math.cos(mid)], dir: [1, 0, 0], w: 1.414 * r, h: 0.293 * r, thick: 0.011, turn: Math.PI / 2 - mid, color: CURL, lit: true, mirror: true });
     const next = rho[k + 1];
     if (next) c = [c[0] + (r - next) * Math.cos(end), c[1] + (r - next) * Math.sin(end)];
     phi -= 90;
@@ -69,8 +69,9 @@ const toes = () =>
 // rim band in the side plane, (z, y): front edge tucked under the plastron's edge, back edge just past the widest point
 const RIM_BAND = [[0.105, 0.505], [0.122, 0.42], [0.118, 0.34], [0.095, 0.285], [0.055, 0.268], [0.025, 0.3], [0.018, 0.4], [0.028, 0.485], [0.06, 0.522]];
 
-// a seam stroke on the plastron or a plate line on the carapace (lit decals: they shade with the shell)
-const stroke = (kind, at, w, h, turn = 0, color = SEAM, thick = 0.007) => ({ kind, at, w, h, thick, turn, color, lit: true });
+// a seam stroke on the plastron or a plate line on the carapace (lit decals: they shade with the shell), thick enough
+// to stay smooth up close (model-audit.md, smaller notes)
+const stroke = (kind, at, w, h, turn = 0, color = SEAM, thick = 0.011) => ({ kind, at, w, h, thick, turn, color, lit: true });
 
 const recipe = {
   name: "Squirtle",
@@ -127,9 +128,9 @@ const recipe = {
     ],
     mouth: [
       // a wide smile along the bottom of the snout, turning up at the ends
-      { kind: "smile", at: [0, 0.728, 0.23], w: 0.25, h: 0.035, thick: 0.007, color: DARK },
+      { kind: "smile", at: [0, 0.728, 0.23], w: 0.25, h: 0.035, thick: 0.011, color: DARK },
       // short brows over the eyes
-      { kind: "frown", at: [-0.105, 0.94, 0.165], w: 0.045, h: 0.01, thick: 0.006, turn: -0.15, color: DARK, mirror: true },
+      { kind: "frown", at: [-0.105, 0.94, 0.165], w: 0.045, h: 0.01, thick: 0.009, turn: -0.15, color: DARK, mirror: true },
       // plastron seams: the top band, the center column split in four, the bowed side seams
       stroke("smile", [0, 0.545, 0.18], 0.27, 0.025),
       stroke("line", [0, 0.375, 0.2], 0.33, 0.01, Math.PI / 2),
@@ -138,10 +139,10 @@ const recipe = {
       stroke("smile", [-0.125, 0.385, 0.165], 0.33, 0.03, -Math.PI / 2),
       stroke("smile", [0.125, 0.385, 0.165], 0.33, 0.03, Math.PI / 2),
       // faint plate lines on the carapace (Showdown back): a center seam, an arc across the upper back, a V below
-      stroke("line", [0, 0.47, -0.27], 0.26, 0.01, Math.PI / 2, PLATE, 0.006),
-      stroke("frown", [0, 0.56, -0.25], 0.26, 0.03, 0, PLATE, 0.006),
-      stroke("line", [-0.075, 0.33, -0.25], 0.17, 0.01, -0.75, PLATE, 0.006),
-      stroke("line", [0.075, 0.33, -0.25], 0.17, 0.01, 0.75, PLATE, 0.006),
+      stroke("line", [0, 0.47, -0.27], 0.26, 0.01, Math.PI / 2, PLATE, 0.009),
+      stroke("frown", [0, 0.56, -0.25], 0.26, 0.03, 0, PLATE, 0.009),
+      stroke("line", [-0.075, 0.33, -0.25], 0.17, 0.01, -0.75, PLATE, 0.009),
+      stroke("line", [0.075, 0.33, -0.25], 0.17, 0.01, 0.75, PLATE, 0.009),
       // the spiral line on both faces of the tail curl
       ...spiral(),
     ],

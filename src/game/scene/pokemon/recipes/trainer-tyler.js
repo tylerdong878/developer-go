@@ -231,9 +231,10 @@ function tyler(o) {
   paint.push({ name: "hood", color: C.jacket, shape: { kind: "chain", points: hoodPts.map((p, i) => [p[0], p[1], p[2], p[3] + (i === 0 || i === hoodPts.length - 1 ? 0.003 : 0.012)]) }, bones: ["chest"] });
   paint.push({ name: "hoodBack", color: C.jacket, shape: { kind: "ellipsoid", at: hoodBack.at, r: hoodBack.r.map((v) => v + 0.012), turn: hoodBack.turn }, bones: ["chest"] });
   const neckC = [0, Y(0.95), -0.03];
-  const lining = hoodPts.map((p) => {
+  // only round the back and sides (at the open front it broke into white flecks), and thick enough to read as one line
+  const lining = hoodPts.slice(2, -2).map((p) => {
     const d = unit([neckC[0] - p[0], 0, neckC[2] - p[2]]);
-    return [p[0] + d[0] * p[3] * 0.55, p[1] + p[3] * 0.62, p[2] + d[2] * p[3] * 0.55, p[3] * 0.62];
+    return [p[0] + d[0] * p[3] * 0.55, p[1] + p[3] * 0.62, p[2] + d[2] * p[3] * 0.55, p[3] * 0.62 + 0.004];
   });
   paint.push({ name: "lining", color: C.lining, shape: { kind: "chain", points: lining }, bones: ["chest"] });
   // clean hair edges on the sides and back: hair above the line of his short sides (in front of the ear, over it,
