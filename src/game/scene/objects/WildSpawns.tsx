@@ -140,6 +140,7 @@ export function WildSpawns({ grass }: { grass: string }) {
       caught: progressStore.get().caught,
       fresh: progressStore.get().history.length === 0,
       incense: progressStore.get().incenseUntil,
+      adventure: progressStore.get().incenseKind === "daily",
     });
   });
 

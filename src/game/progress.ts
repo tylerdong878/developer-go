@@ -68,8 +68,11 @@ export type Progress = {
   /** GO's Stardust, and Candy by species (power.ts). */
   stardust: number;
   candy: Record<number, number>;
-  /** When the lit Incense burns out (epoch ms), or null. */
+  /** When the lit Incense burns out (epoch ms), or null, and whether it's the free daily one. */
   incenseUntil: number | null;
+  incenseKind?: "daily" | null;
+  /** The Boston day the Daily Adventure Incense was last lit. */
+  adventureOn?: string | null;
   /** Timed Research done so far, by event (timed.ts). */
   timed: TimedProgress;
 };
@@ -277,7 +280,20 @@ export function powerUp(id: number) {
 export function lightIncense(at = Date.now()) {
   const p = current();
   if (p.items.incense <= 0 || (p.incenseUntil ?? 0) > at) return false;
-  save({ ...p, items: { ...p.items, incense: p.items.incense - 1 }, incenseUntil: at + 60 * 60 * 1000 });
+  save({ ...p, items: { ...p.items, incense: p.items.incense - 1 }, incenseUntil: at + 60 * 60 * 1000, incenseKind: null });
+  return true;
+}
+
+/**
+ * GO's Daily Adventure Incense (notes/research/go-round-5.md 4): the blue one,
+ * free once a day, 15 minutes, and it only draws Pokémon while you're moving.
+ */
+export const ADVENTURE_MS = 15 * 60 * 1000;
+export const adventureReady = (p: Progress, at = Date.now()) => p.adventureOn !== bostonDay(at) && (p.incenseUntil ?? 0) <= at;
+export function lightAdventure(at = Date.now()) {
+  const p = current();
+  if (!adventureReady(p, at)) return false;
+  save({ ...p, incenseUntil: at + ADVENTURE_MS, incenseKind: "daily", adventureOn: bostonDay(at) });
   return true;
 }
 

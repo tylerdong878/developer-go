@@ -6,7 +6,7 @@ import { ItemIcon } from "./icons";
 
 /** The lit Incense on the map's corner, counting down like GO's active item. */
 export function IncenseTimer() {
-  const { incenseUntil } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const { incenseUntil, incenseKind } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     if (!incenseUntil) return;
@@ -18,8 +18,8 @@ export function IncenseTimer() {
   const m = Math.floor(left / 60000);
   const s = Math.floor(left / 1000) % 60;
   return (
-    <div role="status" aria-label={`Incense, ${m} minutes left`} className="panel flex items-center gap-1 rounded-full py-1 pr-2.5 pl-1.5 text-xs font-bold tabular-nums">
-      <ItemIcon id="incense" size={22} />
+    <div role="status" aria-label={`${incenseKind === "daily" ? "Daily Adventure Incense" : "Incense"}, ${m} minutes left`} className="panel flex items-center gap-1 rounded-full py-1 pr-2.5 pl-1.5 text-xs font-bold tabular-nums">
+      <ItemIcon id={incenseKind === "daily" ? "adventure" : "incense"} size={22} />
       {m}:{String(s).padStart(2, "0")}
     </div>
   );

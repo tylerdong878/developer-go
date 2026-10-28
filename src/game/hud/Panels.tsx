@@ -6,7 +6,7 @@ import { describe } from "../objects";
 import { bondLevel, canFeed, feed, LEVELS } from "../bond";
 import { buddyStore } from "../buddy";
 import { MYSTIC } from "../colors";
-import { levelFor, lightIncense, progressStore, xpForLevel } from "../progress";
+import { adventureReady, levelFor, lightAdventure, lightIncense, progressStore, xpForLevel } from "../progress";
 import { sfx } from "../sound";
 import { TEAM_LEVEL, TEAMS } from "../teams";
 import { RAID_BOSS } from "../raidBosses";
@@ -389,9 +389,11 @@ const BAG_MAX = 350;
 
 /** Your items, like GO's: each one with its picture, how many you have, and what it does. */
 export function BagPanel({ onClose, onOpen }: { onClose: () => void; onOpen?: (screen: "gifts" | "postcards") => void }) {
-  const { items, gifts, postcards, stardust, incenseUntil } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const progress = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const { items, gifts, postcards, stardust, incenseUntil, incenseKind } = progress;
   const [now] = useState(Date.now);
   const burning = (incenseUntil ?? 0) > now;
+  const daily = adventureReady(progress, now);
   const ids = Object.keys(ITEM_INFO) as (keyof typeof ITEM_INFO)[];
   const total = ids.reduce((sum, id) => sum + items[id], 0);
   return (
@@ -401,6 +403,29 @@ export function BagPanel({ onClose, onOpen }: { onClose: () => void; onOpen?: (s
         {stardust.toLocaleString("en-US")} <span className="text-xs font-bold tracking-[0.14em] text-ink-soft uppercase">Stardust</span>
       </p>
       <ul className="space-y-2">
+        {/* GO's free one: once a day, its own row like GO's Key Items */}
+        <li className={`flex items-center gap-4 rounded-2xl bg-ink/5 px-4 py-3 ${daily ? "" : "opacity-55"}`}>
+          <span className="grid size-14 shrink-0 place-items-center rounded-full bg-surface">
+            <ItemIcon id="adventure" size={40} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display text-lg font-semibold">Daily Adventure Incense</span>
+            <span className="block text-sm leading-snug text-ink-soft">Free once a day: 15 minutes, and it only draws Pokémon to you while you walk.</span>
+            <button
+              type="button"
+              disabled={!daily}
+              onClick={() => {
+                if (lightAdventure()) {
+                  sfx.open();
+                  onClose();
+                }
+              }}
+              className="go-pill mt-2 rounded-full px-5 py-1.5 text-xs"
+            >
+              {burning && incenseKind === "daily" ? "Burning" : daily ? "Use" : burning ? "Incense lit" : "Used today"}
+            </button>
+          </span>
+        </li>
         {ids.map((id) => (
           <li key={id} className={`flex items-center gap-4 rounded-2xl bg-ink/5 px-4 py-3 ${items[id] ? "" : "opacity-55"}`}>
             <span className="grid size-14 shrink-0 place-items-center rounded-full bg-surface">

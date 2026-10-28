@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { game } from "../state";
 import { BOOSTS } from "../species";
 import { useWeather, type Weather, WEATHER_LABEL } from "../weather";
 
@@ -63,9 +64,43 @@ export function WeatherIcon({ weather, size = 26 }: { weather: Weather; size?: n
 const cap = (t: string) => t[0].toUpperCase() + t.slice(1);
 const list = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}` : xs[0]);
 
+/**
+ * GO's Oct 8, 2026 change (notes/research/go-features.md): one round icon,
+ * the compass while you turn or zoom the map, the weather the rest of the
+ * time. Tap the compass and the map turns back to north, like GO's.
+ */
+function useTurning(needle: React.RefObject<SVGGElement | null>) {
+  const [turning, setTurning] = useState(false);
+  useEffect(() => {
+    let raf = 0;
+    let { yaw, distance } = game.view;
+    let moved = -Infinity;
+    let shown = false;
+    const tick = (now: number) => {
+      raf = requestAnimationFrame(tick);
+      const v = game.view;
+      if (Math.abs(v.yaw - yaw) > 1e-3 || Math.abs(v.distance - distance) > 1e-2) moved = now;
+      yaw = v.yaw;
+      distance = v.distance;
+      const on = now - moved < 1500;
+      if (on !== shown) {
+        shown = on;
+        setTurning(on);
+      }
+      // north on screen, the way the minimap turns
+      needle.current?.setAttribute("transform", `rotate(${(-v.yaw * 180) / Math.PI} 16 16)`);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [needle]);
+  return turning;
+}
+
 export function WeatherBadge() {
   const weather = useWeather();
   const [open, setOpen] = useState(false);
+  const needle = useRef<SVGGElement>(null);
+  const turning = useTurning(needle);
   const label = `${WEATHER_LABEL[weather]} in Boston`;
   const boosts = `Boosts ${list(BOOSTS[weather].map(cap))} Pokémon`;
   return (
@@ -78,11 +113,24 @@ export function WeatherBadge() {
       ) : null}
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-label={`Weather: ${label}. ${boosts}.`}
+        onClick={() => {
+          // the compass turns the map back to north, the shortest way round
+          if (turning) game.view.yawTo = Math.round(game.view.yaw / (Math.PI * 2)) * Math.PI * 2;
+          else setOpen((o) => !o);
+        }}
+        aria-label={turning ? "Compass: turn the map back to north" : `Weather: ${label}. ${boosts}.`}
         className="panel grid size-11 place-items-center rounded-full transition hover:scale-105 active:scale-95"
       >
-        <WeatherIcon weather={weather} />
+        <span className={`col-start-1 row-start-1 transition-opacity duration-200 ${turning ? "opacity-0" : ""}`}>
+          <WeatherIcon weather={weather} />
+        </span>
+        <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true" className={`col-start-1 row-start-1 transition-opacity duration-200 ${turning ? "" : "opacity-0"}`}>
+          <g ref={needle}>
+            <path d="M16 4l4.5 12h-9Z" fill="#e3342f" />
+            <path d="M16 28l-4.5-12h9Z" fill="#9aa9b2" />
+            <circle cx="16" cy="16" r="2" fill="#ffffff" stroke="#3a5560" strokeWidth="1.2" />
+          </g>
+        </svg>
       </button>
     </div>
   );

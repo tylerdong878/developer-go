@@ -13,11 +13,14 @@ import { game } from "../state";
 
 const puff = new SphereGeometry(1, 10, 8);
 const pink = new MeshBasicMaterial({ color: "#f39ad8", transparent: true, opacity: 0.42, depthWrite: false });
+// the Daily Adventure Incense's own blue
+const blue = new MeshBasicMaterial({ color: "#8cc8f5", transparent: true, opacity: 0.42, depthWrite: false });
 const PUFFS = 12;
 
 export function IncenseCloud() {
-  const { incenseUntil } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
+  const { incenseUntil, incenseKind } = useSyncExternalStore(progressStore.subscribe, progressStore.get, progressStore.server);
   const ring = useRef<Group>(null);
+  const smoke = incenseKind === "daily" ? blue : pink;
   useFrame(({ clock }) => {
     const g = ring.current;
     if (!g) return;
@@ -37,7 +40,7 @@ export function IncenseCloud() {
     <group ref={ring} visible={false}>
       {Array.from({ length: PUFFS }, (_, k) => {
         const a = (k / PUFFS) * Math.PI * 2;
-        return <mesh key={k} geometry={puff} material={pink} position={[Math.sin(a) * 1.25, 0.35, Math.cos(a) * 1.25]} />;
+        return <mesh key={k} geometry={puff} material={smoke} position={[Math.sin(a) * 1.25, 0.35, Math.cos(a) * 1.25]} />;
       })}
     </group>
   );

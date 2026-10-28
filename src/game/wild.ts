@@ -186,10 +186,11 @@ export const INCENSE = { walking: 60_000, still: 300_000, meters: 22.5, life: 30
 let burnt: { at: number; x: number; z: number; n: number } = { at: 0, x: 0, z: 0, n: 0 };
 const drawn: Appearance[] = [];
 
-function incenseAppearances(x: number, z: number, at: number, env: Env, until: number | null): Appearance[] {
+function incenseAppearances(x: number, z: number, at: number, env: Env, until: number | null, moving: boolean): Appearance[] {
   if (until && at < until) {
     const moved = Math.hypot(x - burnt.x, z - burnt.z);
-    const due = at - burnt.at >= INCENSE.still || (at - burnt.at >= INCENSE.walking && moved > 3) || moved >= INCENSE.meters;
+    // the Daily Adventure Incense only draws them while you move
+    const due = (!moving && at - burnt.at >= INCENSE.still) || (at - burnt.at >= INCENSE.walking && moved > 3) || moved >= INCENSE.meters;
     if (due) {
       // a few steps away, somewhere he can walk to
       let spot: Vec2 = [x, z];
@@ -282,8 +283,9 @@ type Around = {
   caught?: Record<number, number>;
   /** A trainer with no catches yet, who gets GO's three starters round them. */
   fresh?: boolean;
-  /** When the lit Incense burns out, if one's lit. */
+  /** When the lit Incense burns out, if one's lit, and whether it's the daily one (moving only). */
   incense?: number | null;
+  adventure?: boolean;
 };
 
 function toWild(a: Appearance, scene: number, at: number): WildSpawn {
@@ -313,7 +315,7 @@ function toWild(a: Appearance, scene: number, at: number): WildSpawn {
  * puff (unless he's catching it or walking to it); ones he walks away from are
  * forgotten. Call it about once a second.
  */
-export function refreshWild(x: number, z: number, scene: number, { goal = null, weather = null, night = false, at = Date.now(), heading = 0, caught = {}, fresh = false, incense = null }: Around = {}) {
+export function refreshWild(x: number, z: number, scene: number, { goal = null, weather = null, night = false, at = Date.now(), heading = 0, caught = {}, fresh = false, incense = null, adventure = false }: Around = {}) {
   clock = scene;
   now = at;
   const env: Env = { weather, night, at };
@@ -324,7 +326,7 @@ export function refreshWild(x: number, z: number, scene: number, { goal = null, 
   }
   for (const a of lureAppearances(x, z, at, env)) if (!gone.has(a.key) && Math.hypot(a.x - x, a.z - z) <= RANGE) want.set(a.key, a);
   for (const a of surpriseAppearances(x, z, at)) if (!gone.has(a.key)) want.set(a.key, a);
-  for (const a of incenseAppearances(x, z, at, env, incense)) if (!gone.has(a.key)) want.set(a.key, a);
+  for (const a of incenseAppearances(x, z, at, env, incense, adventure)) if (!gone.has(a.key)) want.set(a.key, a);
   // a new trainer's three starters come first; the Daily Encounter waits until one's caught
   if (fresh && !starterDone) for (const a of starterAppearances(x, z, heading, at)) want.set(a.key, a);
   else {
