@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode, useState, useSyncExternalStore } from "react";
-import { bag, eventWild, gyms, type MapObject, medals, type MedalTier, raids, spawns, stops, trainer, wild } from "@/content";
+import { bag, dexNo, eventWild, gyms, type MapObject, medals, type MedalTier, raids, spawns, stops, trainer, wild } from "@/content";
 import { describe } from "../objects";
 import { bondLevel, canFeed, feed, LEVELS } from "../bond";
 import { buddyStore } from "../buddy";
@@ -183,6 +183,7 @@ export function PokedexPanel({ onClose, onOpen }: { onClose: () => void; onOpen:
               onClick={() => onOpen(s.slug)}
               className="flex w-full flex-col items-center rounded-2xl bg-ink/5 px-2 pt-2 pb-2.5 transition hover:bg-ink/10"
             >
+              <No dex={s.pokemon.dex} />
               <Sprite dex={s.pokemon.dex} caught={!!caught[s.pokemon.dex]} />
               <span className="text-sm font-semibold">{s.pokemon.name}</span>
               <span className="text-xs text-ink-soft">{s.title}</span>
@@ -194,6 +195,7 @@ export function PokedexPanel({ onClose, onOpen }: { onClose: () => void; onOpen:
       <ul className="grid grid-cols-4 gap-2 sm:grid-cols-6">
         {[...wild].sort((a, b) => a.dex - b.dex).map((w) => (
           <li key={w.dex} className="flex flex-col items-center rounded-2xl bg-ink/5 px-1 pt-1.5 pb-2">
+            <No dex={w.dex} />
             <Sprite dex={w.dex} caught={!!caught[w.dex]} small />
             <span className="text-xs font-semibold">
               {caught[w.dex] ? w.name : "???"}
@@ -207,6 +209,7 @@ export function PokedexPanel({ onClose, onOpen }: { onClose: () => void; onOpen:
       <ul className="grid grid-cols-4 gap-2 sm:grid-cols-6">
         {eventWild.map((w) => (
           <li key={w.dex} className="flex flex-col items-center rounded-2xl bg-ink/5 px-1 pt-1.5 pb-2">
+            <No dex={w.dex} />
             <Sprite dex={w.dex} caught={!!caught[w.dex]} small />
             <span className="text-xs font-semibold">
               {caught[w.dex] ? w.name : "???"}
@@ -231,6 +234,7 @@ export function PokedexPanel({ onClose, onOpen }: { onClose: () => void; onOpen:
                 onClick={() => onOpen(r.slug)}
                 className="flex w-full flex-col items-center rounded-2xl bg-ink/5 px-1 pt-1.5 pb-2 transition enabled:hover:bg-ink/10"
               >
+                <No dex={boss.dex} />
                 <Sprite dex={boss.dex} caught={got} small />
                 <span className="text-xs font-semibold">{got ? boss.name : "???"}</span>
                 <span className="text-[10px] text-ink-soft">{"★".repeat(r.stars)}</span>
@@ -241,6 +245,11 @@ export function PokedexPanel({ onClose, onOpen }: { onClose: () => void; onOpen:
       </ul>
     </Sheet>
   );
+}
+
+/** The entry's number, small in the corner like GO's. */
+function No({ dex }: { dex: number }) {
+  return <span className="self-start pl-1 text-[10px] font-bold text-ink-soft tabular-nums">{dexNo(dex)}</span>;
 }
 
 /** A Pokédex picture: full color once caught, a dark silhouette until then. */

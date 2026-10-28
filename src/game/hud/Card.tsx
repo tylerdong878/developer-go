@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode, useState, useSyncExternalStore } from "react";
-import { badgeTier, type Egg, type Gym, type MapObject, media, monthsAt, type Raid, type Role, skills, type SkillId, type Spawn, type Stop, tenure } from "@/content";
+import { badgeTier, dexNo, type Egg, type Gym, type MapObject, media, monthsAt, pokedex, type Raid, type Role, skills, type SkillId, type Spawn, type Stop, tenure } from "@/content";
 import { Shot } from "@/app/Shot";
 import { GOLD_INK, LURE, MYSTIC, RAID_EGG } from "../colors";
 import { Sheet } from "./Sheet";
@@ -253,11 +253,12 @@ function spawnCard(s: Spawn, onAbout: () => void): View {
       // eslint-disable-next-line @next/next/no-img-element -- tiny local sprite
       <img src={`/portraits/${s.pokemon.dex}.webp`} alt={s.pokemon.name} width={60} height={60} className="object-contain" />
     ),
-    kicker: `Wild ${s.pokemon.name}, No. ${String(s.pokemon.dex).padStart(4, "0")}`,
+    kicker: `Wild ${s.pokemon.name}, No. ${dexNo(s.pokemon.dex)}`,
     title: s.title,
     body: (
       <>
         <p className="text-base leading-relaxed">{s.body}</p>
+        <DexLine dex={s.pokemon.dex} />
         {s.opensAbout ? (
           <button
             type="button"
@@ -270,6 +271,18 @@ function spawnCard(s: Spawn, onAbout: () => void): View {
       </>
     ),
   };
+}
+
+/** The species' own Pokédex entry, credited to its game. */
+function DexLine({ dex }: { dex: number }) {
+  const entry = pokedex[dex];
+  if (!entry) return null;
+  return (
+    <figure className="rounded-2xl bg-ink/5 px-3.5 py-2.5">
+      <blockquote className="text-sm leading-snug text-ink-soft italic">“{entry.text}”</blockquote>
+      <figcaption className="mt-1 text-[11px] font-bold tracking-wide text-ink-soft uppercase">Pokédex, Pokémon {entry.game}</figcaption>
+    </figure>
+  );
 }
 
 function eggCard(e: Egg): View {

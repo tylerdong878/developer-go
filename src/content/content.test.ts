@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { allObjects as mapObjects, medals, signposts, trainer } from ".";
+import { allObjects as mapObjects, medals, pokedex, signposts, spawns, trainer } from ".";
 import type { LatLon, Where } from "./types";
 
 /** Every string anywhere inside a value. */
@@ -85,5 +85,14 @@ describe("content", () => {
     expect(banned.filter((term) => lower.some((s) => s.includes(term)))).toEqual(
       [],
     );
+  });
+});
+
+describe("the Pokédex lines", () => {
+  it("has one for every fact Pokémon, credited to a game", () => {
+    for (const s of spawns) {
+      expect(pokedex[s.pokemon.dex]?.text, s.pokemon.name).toMatch(/\.$/);
+      expect(pokedex[s.pokemon.dex]?.game, s.pokemon.name).toBeTruthy();
+    }
   });
 });

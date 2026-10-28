@@ -8,6 +8,8 @@ import type { MapObject } from "./types";
 export { eggs, gyms, raids, spawns, stops };
 export { bag } from "./bag";
 export { media } from "./media";
+export { dexNo, pokedex } from "./pokedex";
+export type { DexEntry } from "./pokedex";
 export type { Media } from "./media";
 export { badgeTier, monthsAt, tenure } from "./badges";
 export type { BadgeTier } from "./badges";
