@@ -26,7 +26,7 @@ export function buildDecals(mesh) {
   const C = mesh.compiled;
   const feats = mesh.face ?? [];
   const rows = Math.max(1, Math.ceil(feats.length / ATLAS.cols));
-  const sets = { lit: { pos: [], uv: [], bone: [], idx: [] }, unlit: { pos: [], uv: [], bone: [], idx: [] } };
+  const sets = { lit: { pos: [], uv: [], bone: [], idx: [], lid: [], axis: [] }, unlit: { pos: [], uv: [], bone: [], idx: [], lid: [], axis: [] } };
   const cells = [];
   const g = new Float64Array(3);
   const rgb = new Float64Array(3);
@@ -43,6 +43,8 @@ export function buildDecals(mesh) {
     for (let b = 1; b < w.length; b++) if (w[b] > w[bone]) bone = b;
     const set = f.lit ? sets.lit : sets.unlit;
     const base = set.pos.length / 3;
+    // open eyes blink: the game squashes the grid toward the eye's middle along its up (drawn-shut lids stay put)
+    const blinks = f.type === "eye" && (f.closed === undefined || f.closed === false) ? 1 : 0;
     // wide features (a big grin on a round face) get a finer grid so they follow the curve
     const N = R > 0.12 ? 22 : 12;
     for (let j = 0; j <= N; j++)
@@ -64,6 +66,8 @@ export function buildDecals(mesh) {
         set.pos.push(p[0] + n[0] * LIFT, p[1] + n[1] * LIFT, p[2] + n[2] * LIFT);
         set.uv.push((col + k / N) / ATLAS.cols, 1 - (row + 1 - j / N) / rows);
         set.bone.push(bone);
+        set.lid.push(f.C[0], f.C[1], f.C[2], blinks);
+        set.axis.push(f.v[0], f.v[1], f.v[2]);
       }
     for (let j = 0; j < N; j++)
       for (let k = 0; k < N; k++) {
@@ -73,7 +77,7 @@ export function buildDecals(mesh) {
   });
   const pack = (s) =>
     s.idx.length
-      ? { positions: new Float32Array(s.pos), uvs: new Float32Array(s.uv), bones: new Uint8Array(s.bone), indices: new Uint32Array(s.idx) }
+      ? { positions: new Float32Array(s.pos), uvs: new Float32Array(s.uv), bones: new Uint8Array(s.bone), indices: new Uint32Array(s.idx), lid: new Float32Array(s.lid), axis: new Float32Array(s.axis) }
       : null;
   return { lit: pack(sets.lit), unlit: pack(sets.unlit), cells, rows };
 }

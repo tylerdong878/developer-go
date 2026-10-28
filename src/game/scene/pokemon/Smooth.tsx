@@ -22,6 +22,7 @@ import {
   Vector3,
 } from "three";
 import { renderBudget } from "../../device";
+import { game } from "../../state";
 import { goPatch } from "./kit";
 import { RECIPES } from "./recipes";
 import { SHINY, shinyRecipe } from "./sdf/shiny.js";
@@ -41,7 +42,7 @@ import type { ModelProps } from "./types";
 type Key = number | string;
 type BoneDef = { name: string; at: [number, number, number]; parent: string | null };
 type Cell = { feature: Record<string, unknown>; col: number; row: number; R: number };
-type DecalSet = { positions: Float32Array; uvs: Float32Array; bones: Uint8Array; indices: Uint32Array } | null;
+type DecalSet = { positions: Float32Array; uvs: Float32Array; bones: Uint8Array; indices: Uint32Array; lid?: Float32Array; axis?: Float32Array } | null;
 type Meshed = {
   positions: Float32Array;
   normals: Float32Array;
@@ -193,6 +194,8 @@ function decalGeometry(set: DecalSet) {
   g.setAttribute("uv", new BufferAttribute(set.uvs, 2));
   g.setAttribute("skinIndex", new BufferAttribute(idx, 4));
   g.setAttribute("skinWeight", new BufferAttribute(wt, 4));
+  g.setAttribute("blinkAt", new BufferAttribute(set.lid ?? new Float32Array(n * 4), 4));
+  g.setAttribute("blinkAxis", new BufferAttribute(set.axis ?? new Float32Array(n * 3), 3));
   g.setIndex(new BufferAttribute(set.indices, 1));
   g.computeVertexNormals();
   g.computeBoundingSphere();
@@ -349,6 +352,36 @@ function build(d: Meshed): Built {
   };
 }
 
+/**
+ * One instance's face material: the species' own, plus a blink. Each open eye's
+ * grid squashes toward its middle along its up, so it shuts to a line and opens
+ * again (`blink` 1 open, 0 shut), all on the GPU.
+ */
+function blinking(base: Material, blink: { value: number }) {
+  const m = base.clone();
+  const before = base.onBeforeCompile;
+  m.onBeforeCompile = (s, r) => {
+    before.call(base, s, r);
+    s.uniforms.blink = blink;
+    s.vertexShader = s.vertexShader
+      .replace("#include <common>", "#include <common>\nattribute vec4 blinkAt;\nattribute vec3 blinkAxis;\nuniform float blink;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\ntransformed -= blinkAxis * dot(transformed - blinkAt.xyz, blinkAxis) * (1.0 - blink) * blinkAt.w;");
+  };
+  const key = base.customProgramCacheKey();
+  m.customProgramCacheKey = () => `${key}-blink`;
+  return m;
+}
+
+/** How open the eyes are at a moment: a quick blink every few seconds, now and then two in a row. */
+const BLINK = 0.14;
+function lidAt(t: number) {
+  const period = 4.3;
+  const into = t % period;
+  const shut = (q: number) => (q >= 0 && q < BLINK ? Math.sin((q / BLINK) * Math.PI) : 0);
+  const c = shut(into) + (Math.floor(t / period) % 4 === 1 ? shut(into - 0.3) : 0);
+  return 1 - 0.92 * Math.min(1, c);
+}
+
 const built = new Map<Key, Built | null>();
 const building = new Map<Key, Promise<Built | null>>();
 
@@ -414,18 +447,21 @@ function rig(b: Built) {
     glass.renderOrder = 3;
     group.add(glass);
   }
+  const blink = { value: 1 };
   for (const [geo, mat] of [
     [b.lit, b.litMaterial],
     [b.unlit, b.unlitMaterial],
   ] as const) {
     if (!geo || !mat) continue;
-    const decal = new SkinnedMesh(geo, mat);
+    const decal = new SkinnedMesh(geo, blinking(mat, blink));
     decal.bind(skeleton, body.bindMatrix);
     decal.renderOrder = 2;
     group.add(decal);
   }
   group.userData.bones = bones;
   group.userData.rest = bones.map((x) => x.position.clone());
+  group.userData.blink = blink;
+  group.userData.look = 0;
   return group;
 }
 
@@ -447,7 +483,7 @@ function wingAngle(kind: string | undefined, t: number) {
   return 0;
 }
 
-function animate(group: Group, t: number, asleep: boolean) {
+function animate(group: Group, t: number, asleep: boolean, look: number) {
   const wings = WINGS[group.userData.key as Key];
   const [wag, pace] = TAILS[group.userData.key as Key] ?? [1, 1];
   const bones = group.userData.bones as Bone[];
@@ -455,7 +491,7 @@ function animate(group: Group, t: number, asleep: boolean) {
     const n = bone.name;
     const side = /R$/.test(n) ? -1 : 1;
     if (n === "root") bone.scale.set(1, 1 + Math.sin(t * (asleep ? 1.3 : 2.4)) * (asleep ? 0.025 : 0.012), 1);
-    else if (n === "head" && !asleep) bone.rotation.set(Math.sin(t * 0.7) * 0.04, Math.sin(t * 0.5) * 0.12, Math.sin(t * 0.9) * 0.03);
+    else if (n === "head" && !asleep) bone.rotation.set(Math.sin(t * 0.7) * 0.04, Math.sin(t * 0.5) * 0.12 * (1 - Math.min(1, Math.abs(look) * 3)) + look, Math.sin(t * 0.9) * 0.03);
     else if (/^ear/.test(n)) bone.rotation.z = side * (Math.sin(t * 1.7 + side) * 0.06 + (t % 5.3 < 0.25 ? Math.sin((t % 5.3) * 25) * 0.25 : 0));
     else if (/^tail/.test(n)) bone.rotation.y = Math.sin(t * (asleep ? 1 : 3 * pace)) * (asleep ? 0.06 : 0.22) * wag;
     else if (/^wing/.test(n)) bone.rotation.z = side * wingAngle(wings, t);
@@ -517,6 +553,11 @@ function AuraCloud({ aura, seed }: { aura: Aura; seed: number }) {
 }
 
 /** One smooth model, 1 tall (people and Teddy too, with `idle={false}` so their own code walks them), feet at y 0, facing +z. Until its mesh is ready, the fallback (the old model) stands in. */
+/** How close the trainer comes before a Pokémon looks over (m), and scratch vectors for it. */
+const LOOK = 6;
+const here = new Vector3();
+const there = new Vector3();
+
 export function SmoothModel({
   dex: base,
   seed = 0,
@@ -535,9 +576,25 @@ export function SmoothModel({
     return o;
   }, [b, dex]);
   const holder = useRef<Group>(null);
-  useFrame(({ clock }) => {
-    const g = holder.current?.children[0] as Group | undefined;
-    if (idle && g?.userData.bones) animate(g, clock.elapsedTime + seed * 1.7, asleep);
+  useFrame(({ clock }, dt) => {
+    const h = holder.current;
+    const g = h?.children[0] as Group | undefined;
+    if (!h || !g?.userData.bones) return;
+    const t = clock.elapsedTime + seed * 1.7;
+    if (!asleep) g.userData.blink.value = lidAt(t + seed * 2.3);
+    if (!idle) return;
+    // within a few meters, the head turns (as far as a head turns) toward the trainer, and back when they go
+    let want = 0;
+    if (!asleep) {
+      h.getWorldPosition(here);
+      const d = here.distanceTo(game.player.trainer.position);
+      if (d < LOOK && d > 0.4) {
+        h.worldToLocal(there.copy(game.player.trainer.position));
+        want = Math.max(-0.75, Math.min(0.75, Math.atan2(there.x, there.z)));
+      }
+    }
+    g.userData.look += (want - g.userData.look) * Math.min(1, dt * 4);
+    animate(g, t, asleep, g.userData.look);
   });
   if (!object) return Fallback ? <Fallback seed={seed} asleep={asleep} /> : null;
   const plain = (RECIPES[baseOf(dex)] as { aura?: Aura }).aura;
