@@ -385,31 +385,78 @@ function lidAt(t: number) {
 const built = new Map<Key, Built | null>();
 const building = new Map<Key, Promise<Built | null>>();
 
+/*
+ * Nearest first (notes/research/perf.md 6): meshing is the slow part of a
+ * first visit, and every model asks for its species as it mounts, so the
+ * worker gets two at a time, the species with an instance nearest its camera
+ * first. What's on screen (or in the catch screen, right in front of its own
+ * camera) comes in before the far side of town.
+ */
+type Distance = { current: number };
+const JOBS = 2;
+let jobs = 0;
+const asking = new Map<Key, { from: Set<Distance>; done: (b: Built | null) => void }>();
+let pumping = false;
+
+function nearest() {
+  let best: Key | null = null;
+  let near = Infinity;
+  for (const [key, { from }] of asking) {
+    let d = Infinity;
+    for (const r of from) d = Math.min(d, r.current);
+    if (best === null || d < near) {
+      best = key;
+      near = d;
+    }
+  }
+  return best;
+}
+
+/** Hands the worker the next species once the models asking have had a frame to say where they are. */
+function pump() {
+  if (pumping) return;
+  pumping = true;
+  window.setTimeout(() => {
+    pumping = false;
+    for (let next = nearest(); jobs < JOBS && next !== null; next = nearest()) {
+      const { done } = asking.get(next)!;
+      asking.delete(next);
+      jobs++;
+      const dex = next;
+      mesh(dex, renderBudget().light ? 48 : 64).then((m) => {
+        const b = m ? build(m) : null;
+        built.set(dex, b);
+        done(b);
+        jobs--;
+        pump();
+      });
+    }
+  }, 32);
+}
+
 /** The species' smooth model, meshed on first use and shared by every instance. */
-function load(dex: Key) {
+function load(dex: Key, from?: Distance) {
   let p = building.get(dex);
   if (!p) {
-    const grid = renderBudget().light ? 48 : 64;
-    p = mesh(dex, grid).then((m) => {
-      const b = m ? build(m) : null;
-      built.set(dex, b);
-      return b;
-    });
+    p = new Promise<Built | null>((done) => asking.set(dex, { from: new Set(), done }));
     building.set(dex, p);
+    pump();
   }
+  if (from) asking.get(dex)?.from.add(from);
   return p;
 }
 
-function useBuilt(dex: Key) {
+function useBuilt(dex: Key, from: Distance) {
   const [b, setB] = useState<Built | null | undefined>(() => built.get(dex));
   useEffect(() => {
     if (b !== undefined) return;
     let live = true;
-    load(dex).then((x) => live && setB(x));
+    load(dex, from).then((x) => live && setB(x));
     return () => {
       live = false;
+      asking.get(dex)?.from.delete(from);
     };
-  }, [dex, b]);
+  }, [dex, b, from]);
   return b;
 }
 
@@ -555,6 +602,9 @@ function AuraCloud({ aura, seed }: { aura: Aura; seed: number }) {
 /** One smooth model, 1 tall (people and Teddy too, with `idle={false}` so their own code walks them), feet at y 0, facing +z. Until its mesh is ready, the fallback (the old model) stands in. */
 /** How close the trainer comes before a Pokémon looks over (m), and scratch vectors for it. */
 const LOOK = 6;
+/** Past this far from the camera a model rests; past HALF it moves every other frame (m). */
+const FREEZE = 55;
+const HALF = 30;
 const here = new Vector3();
 const there = new Vector3();
 
@@ -567,7 +617,9 @@ export function SmoothModel({
   fallback: Fallback,
 }: ModelProps & { dex: Key; idle?: boolean; fallback?: ComponentType<ModelProps> }) {
   const dex: Key = shiny && SHINY[base as number] ? `shiny:${base}` : base;
-  const b = useBuilt(dex);
+  // how far it is from its camera, for the mesh queue and for resting far ones
+  const away = useRef(Infinity);
+  const b = useBuilt(dex, away);
   const object = useMemo(() => {
     if (!b) return null;
     const o = rig(b);
@@ -576,17 +628,21 @@ export function SmoothModel({
     return o;
   }, [b, dex]);
   const holder = useRef<Group>(null);
-  useFrame(({ clock }, dt) => {
+  useFrame(({ clock, camera }, dt) => {
     const h = holder.current;
-    const g = h?.children[0] as Group | undefined;
-    if (!h || !g?.userData.bones) return;
+    if (!h) return;
+    away.current = h.getWorldPosition(here).distanceTo(camera.position);
+    const g = h.children[0] as Group | undefined;
+    if (!g?.userData.bones) return;
+    // far ones rest (nobody sees a tail wag across town), mid-range ones move every other frame
+    if (away.current > FREEZE) return;
+    if (away.current > HALF && (g.userData.tick = (g.userData.tick ?? 0) + 1) % 2) return;
     const t = clock.elapsedTime + seed * 1.7;
     if (!asleep) g.userData.blink.value = lidAt(t + seed * 2.3);
     if (!idle) return;
     // within a few meters, the head turns (as far as a head turns) toward the trainer, and back when they go
     let want = 0;
     if (!asleep) {
-      h.getWorldPosition(here);
       const d = here.distanceTo(game.player.trainer.position);
       if (d < LOOK && d > 0.4) {
         h.worldToLocal(there.copy(game.player.trainer.position));
@@ -596,7 +652,8 @@ export function SmoothModel({
     g.userData.look += (want - g.userData.look) * Math.min(1, dt * 4);
     animate(g, t, asleep, g.userData.look);
   });
-  if (!object) return Fallback ? <Fallback seed={seed} asleep={asleep} /> : null;
+  // the holder is there from the start, so the queue knows where the stand-in is too
+  if (!object) return <group ref={holder}>{Fallback ? <Fallback seed={seed} asleep={asleep} /> : null}</group>;
   const plain = (RECIPES[baseOf(dex)] as { aura?: Aura }).aura;
   const aura = plain && shinyOf(dex) !== null ? ((shinyRecipe(shinyOf(dex)!, { aura: plain }) as { aura: Aura } | null)?.aura ?? plain) : plain;
   return (
