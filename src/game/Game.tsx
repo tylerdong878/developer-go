@@ -25,9 +25,13 @@ import { game } from "./state";
 import { startedStore } from "./ready";
 import { useReducedMotion } from "./useReducedMotion";
 import { usePhase } from "./useTimeOfDay";
+import { PerfOverlay, PerfProbe } from "./scene/PerfOverlay";
 
 // one sun, colored shadows: patched into three before anything compiles
 patchLook();
+
+const noSubscribe = () => () => {};
+const wantsPerf = () => new URLSearchParams(window.location.search).has("perf");
 
 export default function Game() {
   const phase = usePhase();
@@ -39,6 +43,8 @@ export default function Game() {
   const budget = useMemo(() => renderBudget(saving), [saving]);
   useEffect(watchBattery, []);
   useControls(stage);
+  // ?perf in the address shows what the map costs
+  const perf = useSyncExternalStore(noSubscribe, wantsPerf, () => false);
   // nothing moves (or spawns) until the visitor starts
   const started = useSyncExternalStore(startedStore.subscribe, startedStore.get, startedStore.server);
   useEffect(() => {
@@ -64,6 +70,7 @@ export default function Game() {
           }}
         >
           <WarmUp />
+          {perf ? <PerfProbe /> : null}
           <Throttle />
           <AdaptiveDpr range={budget.dpr} />
           <Controller />
@@ -85,6 +92,7 @@ export default function Game() {
         </Canvas>
       </div>
       <Hud />
+      {perf ? <PerfOverlay /> : null}
     </>
   );
 }

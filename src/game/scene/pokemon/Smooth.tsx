@@ -434,6 +434,9 @@ function pump() {
   }, 32);
 }
 
+/** What the worker's doing, for the ?perf overlay. */
+export const meshQueue = () => ({ waiting: asking.size, jobs });
+
 /** The species' smooth model, meshed on first use and shared by every instance. */
 function load(dex: Key, from?: Distance) {
   let p = building.get(dex);
