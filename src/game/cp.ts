@@ -1,4 +1,13 @@
 // A Pokémon's CP now comes from GO's own formula (power.ts).
+import { SPECIES } from "./species";
+
+/**
+ * GO's odds (notes/research/encounter.md 7): P = 1 - (1 - min(1, BCR / 2·CPM))^M,
+ * with the species' base capture rate, a level 15 CP multiplier, and M the
+ * ball x berry x throw x curveball multipliers.
+ */
+const CPM = 0.5174;
+export const catchChance = (dex: number, m: number) => 1 - (1 - Math.min(1, (SPECIES[dex]?.capture ?? 0.3) / (2 * CPM))) ** m;
 
 export type ThrowKind = "Nice" | "Great" | "Excellent" | null;
 

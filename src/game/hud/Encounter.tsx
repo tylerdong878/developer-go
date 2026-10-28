@@ -10,7 +10,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { addItems, progressStore, spendItem } from "../progress";
-import { catchRewards } from "../cp";
+import { catchChance, catchRewards } from "../cp";
 import { catchCandy, catchDust, type Stats } from "../power";
 import { StardustIcon, CandyIcon } from "./icons";
 import { movementOf, SPECIES } from "../species";
@@ -51,14 +51,8 @@ export type Thrown = Throw;
 const RING_CYCLE = 1.7; // seconds for the inner ring to shrink from full to nearly nothing
 const RING_MIN = 0.12;
 
-/**
- * GO's odds (notes/research/encounter.md 7): P = 1 - (1 - min(1, BCR / 2·CPM))^M,
- * with the species' base capture rate, a level 15 CP multiplier, and M the
- * ball x berry x throw x curveball multipliers.
- */
-const CPM = 0.5174;
+/** GO's curveball multiplier, on top of the odds in cp.ts. */
 const CURVE = 1.7;
-const catchChance = (dex: number, m: number) => 1 - (1 - Math.min(1, (SPECIES[dex]?.capture ?? 0.3) / (2 * CPM))) ** m;
 /** GO's ring color: the plain-throw chance, red at 0, yellow at a half, green at 1. */
 const ringColorFor = (p: number) => (p < 0.5 ? `rgb(255, ${Math.round(510 * p)}, 0)` : `rgb(${Math.round(510 * (1 - p))}, 255, 0)`);
 

@@ -375,9 +375,9 @@ export const popStore = {
   server: () => noPops,
 };
 
-/** Floats a line up the screen with no XP. */
-export function toast(why: string) {
-  popUp(0, why);
+/** Floats a line up the screen with no XP (for longer, if it's a sentence). */
+export function toast(why: string, ms = 1800) {
+  popUp(0, why, ms);
 }
 
 /** Adds XP and floats a "+100 XP" up the screen, like GO. */
@@ -387,12 +387,12 @@ export function gainXp(amount: number, why: string) {
   popUp(amount, why);
 }
 
-function popUp(amount: number, why: string) {
+function popUp(amount: number, why: string, ms = 1800) {
   const pop = { id: nextPop++, amount, why };
   pops = [...pops, pop];
   popListeners.forEach((l) => l());
   setTimeout(() => {
     pops = pops.filter((p) => p.id !== pop.id);
     popListeners.forEach((l) => l());
-  }, 1800);
+  }, ms);
 }

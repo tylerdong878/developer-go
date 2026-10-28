@@ -12,13 +12,12 @@ import { played } from "../bond";
 import { buddyStore } from "../buddy";
 import { count } from "../community";
 import { catchRewards, FLED_XP } from "../cp";
-import { catchCandy, catchDust, cpOf, rollFixed, rollWild } from "../power";
+import { catchCandy, catchDust, cpOf, rollFixed } from "../power";
 import { sfx } from "../sound";
 import { earned, visitorMedals } from "../visitorMedals";
 import { endWild, findWild, holdWild } from "../wild";
-import { hash, nameOf } from "../spawnPoints";
+import { nameOf } from "../spawnPoints";
 import { allObjects } from "@/content";
-import { boosted } from "../species";
 import { RAID_SHINY_ODDS, rollShiny } from "../shiny";
 import { weatherStore } from "../weather";
 import { type CatchResult, Encounter, type Foe } from "./Encounter";
@@ -38,6 +37,8 @@ import { Prompt } from "./Prompt";
 import { ResearchButton, ResearchPanel } from "./Research";
 import { Minimap } from "./Minimap";
 import { MuteButton } from "./MuteButton";
+import { GadgetButton, useExplorerGadget } from "./Gadget";
+import { rollSpawn } from "../wildRoll";
 import { WeatherBadge } from "./WeatherBadge";
 import { SettingsPanel } from "./Settings";
 import { PokemonPanel } from "./Storage";
@@ -46,19 +47,7 @@ import { BagPanel, BuddyPanel, HighlightsPanel, PokedexPanel, ProfilePanel, Tedd
 import { clearScreenRequest, screenRequest } from "./request";
 import { setCover } from "../renderMode";
 
-/** A random id for this browser, so a shiny is yours alone but stays shiny if you come back to it. */
-function visitor() {
-  try {
-    let id = localStorage.getItem("developer-go:visitor");
-    if (!id) {
-      id = Math.random().toString(36).slice(2);
-      localStorage.setItem("developer-go:visitor", id);
-    }
-    return id;
-  } catch {
-    return "guest";
-  }
-}
+
 
 /** Swings the camera round to put a map object ahead of the trainer. */
 function face(slug: string) {
@@ -178,17 +167,8 @@ export function Hud() {
       if (w) {
         // it stays on the map until the catch is over
         holdWild(w.id);
-        // boosted by the weather: stronger, like GO's five extra levels
-        const weather = weatherStore.get();
-        const looks = w.looks?.dex ?? w.species.dex;
-        const boost = boosted(looks, weather);
-        // its CP and whether it's shiny for you are fixed per spawn, so running and coming back finds the same one, like GO
-        const roll = (k: number) => hash(k, ...[...w.id].map((c) => c.charCodeAt(0))) / 4294967296;
-        // GO's level and IVs: level 1 up to yours (five more if the weather boosts it), the same each time you meet this one
-        let k = 1;
-        const stats = rollWild(levelFor(progressStore.get().xp), !!boost, () => roll(k++));
-        const cp = cpOf(w.species.dex, stats);
-        const mine = hash(...[...visitor()].map((c) => c.charCodeAt(0)), ...[...w.id].map((c) => c.charCodeAt(0))) / 4294967296;
+        // its level, IVs, CP and shininess, fixed per spawn like GO's (stronger if the weather boosts it)
+        const { stats, cp, boost, shiny } = rollSpawn(w, levelFor(progressStore.get().xp), weatherStore.get());
         return setFoe({
           dex: w.species.dex,
           name: w.species.name,
@@ -198,8 +178,8 @@ export function Hud() {
           cp,
           stats,
           goal,
-          boost: boost ? weather : undefined,
-          shiny: rollShiny(w.species.dex, undefined, mine),
+          boost,
+          shiny,
           disguise: w.looks,
         });
       }
@@ -357,6 +337,9 @@ export function Hud() {
     }
   };
 
+  // GO's Explorer Gadget catches for you while you read
+  useExplorerGadget(foe === null && (card !== null || screen === "about" || screen === "highlights"));
+
   if (!started) return null;
   return (
     <div className="pointer-events-none absolute inset-0 z-20">
@@ -378,6 +361,7 @@ export function Hud() {
         <WeatherBadge />
         <IncenseTimer />
         <MuteButton />
+        <GadgetButton />
       </div>
       <div className="pointer-events-none absolute inset-x-0 bottom-24 flex justify-center px-4">
         <Prompt hidden={card !== null || screen !== null || menu || nearby || foe !== null || buddy} />
