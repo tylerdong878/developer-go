@@ -198,11 +198,23 @@ function aws(W: number, D: number): Hero {
     blank([2.4, 0.8, 1.1], [4.4, 0.4, D / 2 + 0.9], "#c9c2b6"),
     blank([5.6, 4.2, 0.25], [0, 6.7, D / 2 + 0.12], "#f4f6f8", [0.6, 0.6, 0.1]),
   ];
+  // the lobby behind its glass, lit warm (and glowing after dark), in mullioned panes either side of the door
+  const lobby = W - 4.6;
+  boxes.push(glow([lobby, 3.3, 0.08], [0, 1.95, D / 2 + 0.05], "#ffe2b4", [0.05, 0.05, 0.03]));
+  const panes = Math.max(2, Math.round(lobby / 1.5));
+  for (let i = 0; i <= panes; i++) boxes.push(bit([0.12, 3.4, 0.14], [-lobby / 2 + (i * lobby) / panes, 1.95, D / 2 + 0.1], "#2b3446", [0.03, 0.03, 0.03]));
+  boxes.push(bit([lobby + 0.2, 0.16, 0.16], [0, 3.62, D / 2 + 0.1], "#2b3446", [0.03, 0.03, 0.03]));
   // four glass trays, shifting against each other, a warm wood soffit under each (111 Harbor Way)
   for (let k = 0; k < 4; k++) {
     const s = k % 2 ? -1 : 1;
     boxes.push({ at: [s * 0.8, 11.5 + 6.2 * k, s * 0.6], size: [W, 6.2, D], round: [1.4, 0.3, 1.4], facade: [1.5, 2.9, 0, STYLE.curtain], color: "#34425e", glass: "#7fb2e6", trim: "#34425e" });
     boxes.push(glow([W + 0.3, 0.35, D + 0.3], [s * 0.8, 8.4 + 6.2 * k, s * 0.6], "#e0874a", [1.4, 0.08, 1.4]));
+    // where the next tray steps back, the strip of roof it leaves is a terrace: glass rails along its two open edges
+    if (k < 3) {
+      const top = 14.6 + 6.2 * k;
+      boxes.push(bit([0.08, 0.9, D - 2.4], [s * (0.8 + W / 2 - 0.12), top + 0.45, s * 0.6], "#e8f6ff", [0.03, 0.03, 0.03]));
+      boxes.push(bit([W - 2.4, 0.9, 0.08], [s * 0.8, top + 0.45, s * (0.6 + D / 2 - 0.12)], "#e8f6ff", [0.03, 0.03, 0.03]));
+    }
   }
   boxes.push(blank([W + 0.6, 1, D + 0.6], [0, 33.7, 0], "#f4f6f8", [1.6, 0.08, 1.6]));
   boxes.push(...glassRail(W - 0.4, D - 0.4, 34.2));

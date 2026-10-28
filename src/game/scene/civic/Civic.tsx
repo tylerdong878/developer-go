@@ -3,6 +3,7 @@
 import { useFrame } from "@react-three/fiber";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
+  AdditiveBlending,
   BoxGeometry,
   BufferAttribute,
   type BufferGeometry,
@@ -98,7 +99,27 @@ const disc = new CircleGeometry(1, 48);
 
 // ---------- materials ----------
 
-type Kind = "paint" | "glow" | "glass";
+type Kind = "paint" | "glow" | "glass" | "halo";
+
+/** How strong the soft glow behind an emblem is (town-polish.md 11). */
+const HALO = 0.35;
+let haloMap: CanvasTexture | null = null;
+/** A soft white spot, bright in the middle and gone at the edge, made once. */
+function haloTexture() {
+  if (haloMap) return haloMap;
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const g = c.getContext("2d")!;
+  const r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  r.addColorStop(0, "rgba(255,255,255,1)");
+  r.addColorStop(0.55, "rgba(255,255,255,0.55)");
+  r.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = r;
+  g.fillRect(0, 0, 128, 128);
+  haloMap = new CanvasTexture(c);
+  haloMap.colorSpace = SRGBColorSpace;
+  return haloMap;
+}
 
 /** One building's materials, so its parts fade and glow together. */
 function materialSet(index: number) {
@@ -108,9 +129,11 @@ function materialSet(index: number) {
     let entry = made.get(key);
     if (!entry) {
       const m =
-        kind === "glow"
-          ? new MeshBasicMaterial({ color, alphaHash: true })
-          : new MeshLambertMaterial({ color, alphaHash: true, emissive: kind === "glass" ? color : "#000000", emissiveIntensity: 0 });
+        kind === "halo"
+          ? new MeshBasicMaterial({ color, map: haloTexture(), transparent: true, depthWrite: false, blending: AdditiveBlending, opacity: HALO })
+          : kind === "glow"
+            ? new MeshBasicMaterial({ color, alphaHash: true })
+            : new MeshLambertMaterial({ color, alphaHash: true, emissive: kind === "glass" ? color : "#000000", emissiveIntensity: 0 });
       entry = { m, kind };
       made.set(key, entry);
     }
@@ -142,7 +165,7 @@ function materialSet(index: number) {
   const update = () => {
     const night = town.uNight.value;
     for (const { m, kind } of made.values()) {
-      m.opacity = fade[index];
+      m.opacity = kind === "halo" ? fade[index] * HALO : fade[index];
       if (kind === "glass") (m as MeshLambertMaterial).emissiveIntensity = 0.2 + night * 0.9;
     }
   };
@@ -180,8 +203,8 @@ function Baked({ at, turn, set, children }: { at: V3; turn: number; set: ReturnT
       const mesh = o as Mesh;
       if (!mesh.isMesh || Array.isArray(mesh.material)) return;
       const kind = set.kindOf(mesh.material);
-      // the plaques (their own textures) and anything not from the set stay as they are
-      if (!kind) return;
+      // the plaques (their own textures), the soft halos and anything not from the set stay as they are
+      if (!kind || kind === "halo") return;
       const geo = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
       for (const name of Object.keys(geo.attributes)) if (name !== "position" && name !== "normal") geo.deleteAttribute(name);
       geo.applyMatrix4(new Matrix4().multiplyMatrices(inverse, mesh.matrixWorld));
@@ -341,6 +364,8 @@ const EMBLEM_RING = CENTER.ring(0.19, 0.33);
 function Emblem({ at, size, ink, get }: { at: V3; size: number; ink: string; get: (color: string, kind?: Kind) => Material }) {
   return (
     <group position={at} scale={size}>
+      {/* a soft glow round it, behind the disc */}
+      <Piece geometry={disc} material={get("#ffffff", "halo")} at={[0, 0, -0.012]} scale={1.55} shadow={false} />
       <Piece geometry={disc} material={get("#ffffff", "glow")} shadow={false} />
       <Piece geometry={box} material={get(ink, "glow")} at={[0, 0, 0.01]} scale={[2, 0.17, 0.001]} shadow={false} />
       <Piece geometry={EMBLEM_RING} material={get(ink, "glow")} at={[0, 0, 0.02]} shadow={false} />
