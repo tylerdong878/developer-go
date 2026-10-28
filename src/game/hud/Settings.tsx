@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
+import { saverChoice, saverOn, saverStore, type Saver, setSaver } from "../device";
 import { musicStore, setMusic } from "../music";
 import { muteStore, setMuted, setVibrate, vibrateStore } from "../sound";
 import { followClock, followingClock, setTimeOfDay, usePhase, useTimeOfDay } from "../useTimeOfDay";
@@ -25,6 +26,38 @@ function Toggle({ label, on, onChange }: { label: string; on: boolean; onChange:
   );
 }
 
+/** GO's battery saver, with an Auto that turns on for a device that would struggle. */
+function SaverRow() {
+  useSyncExternalStore(saverStore.subscribe, saverStore.get, saverStore.server);
+  const pick = saverChoice();
+  const on = saverOn();
+  return (
+    <div className="rounded-2xl bg-ink/5 px-4 py-3.5">
+      <div className="flex items-center justify-between gap-3">
+        <span className="font-semibold">Battery saver</span>
+        <div role="radiogroup" aria-label="Battery saver" className="flex rounded-full bg-ink/8 p-0.5 text-sm font-bold">
+          {(["auto", "on", "off"] as Saver[]).map((s) => (
+            <button
+              key={s}
+              type="button"
+              role="radio"
+              aria-checked={pick === s}
+              onClick={() => setSaver(s)}
+              className={`rounded-full px-3 py-1 capitalize transition ${pick === s ? "bg-white shadow" : "text-ink-soft hover:text-ink"}`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p className="mt-1.5 text-xs text-ink-soft">
+        {on ? "On: 30 fps, fewer pixels and lighter shadows, like GO's." : "Off: full frame rate."}
+        {pick === "auto" ? " Auto turns it on for a slow device or a low battery." : ""}
+      </p>
+    </div>
+  );
+}
+
 /** GO keeps its switches out of the way, in Settings. So does the base. */
 export function SettingsPanel({ onClose }: { onClose: () => void }) {
   const muted = useSyncExternalStore(muteStore.subscribe, muteStore.get, muteStore.server);
@@ -42,6 +75,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
         <Toggle label="Vibration" on={vibrate} onChange={setVibrate} />
         <Toggle label="Match my clock (sunrise, dusk, night)" on={clock} onChange={(on) => (on ? followClock() : setTimeOfDay(time))} />
         <Toggle label="Night" on={time === "night"} onChange={(on) => setTimeOfDay(on ? "night" : "day")} />
+        <SaverRow />
       </div>
       <Link href="/text" className="mt-5 block rounded-2xl bg-ink/5 px-4 py-3.5 font-semibold transition hover:bg-ink/8">
         Read it as a plain page instead

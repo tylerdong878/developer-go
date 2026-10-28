@@ -4,6 +4,8 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import { markReady, startedStore } from "../ready";
 import { coverStore, currentMode, modeFor, setMode, SLOW_FPS } from "../renderMode";
+import { saverOn, saverStore, slowDevice } from "../device";
+import { toast } from "../progress";
 
 /*
  * Keeping it smooth (notes/research/gfx-pipeline.md 6-7). WarmUp compiles
@@ -48,7 +50,7 @@ export function Throttle() {
     let timer = 0;
     let last: string | null = null;
     const apply = () => {
-      const next = modeFor(coverStore.get(), !startedStore.get(), document.hasFocus(), document.hidden);
+      const next = modeFor(coverStore.get(), !startedStore.get(), document.hasFocus(), document.hidden, saverOn());
       if (next === last) return;
       last = next;
       setMode(next);
@@ -63,12 +65,14 @@ export function Throttle() {
     apply();
     const offCover = coverStore.subscribe(apply);
     const offStart = startedStore.subscribe(apply);
+    const offSaver = saverStore.subscribe(apply);
     window.addEventListener("focus", apply);
     window.addEventListener("blur", apply);
     document.addEventListener("visibilitychange", apply);
     return () => {
       offCover();
       offStart();
+      offSaver();
       window.removeEventListener("focus", apply);
       window.removeEventListener("blur", apply);
       document.removeEventListener("visibilitychange", apply);
@@ -81,7 +85,7 @@ export function Throttle() {
 
 export function AdaptiveDpr({ range }: { range: readonly [number, number] }) {
   const setDpr = useThree((s) => s.setDpr);
-  const watch = useRef({ dpr: 0, slow: 0, fast: 0, avg: 1 / 60 });
+  const watch = useRef({ dpr: 0, slow: 0, fast: 0, avg: 1 / 60, stuck: 0, seen: 0 });
   useFrame((_, dt) => {
     const w = watch.current;
     // slowed on purpose (a card's open): those frame times say nothing about the device
@@ -101,6 +105,10 @@ export function AdaptiveDpr({ range }: { range: readonly [number, number] }) {
       w.fast = 0;
     }
     const max = Math.min(window.devicePixelRatio || 1, range[1]);
+    // still slow at the fewest pixels for three seconds, once the first few have settled: the battery saver's auto turns on
+    w.seen += dt;
+    w.stuck = w.seen > 5 && w.dpr <= range[0] && w.avg > 1 / 40 ? w.stuck + dt : 0;
+    if (w.stuck > 3 && slowDevice()) toast("Battery saver on, to keep it smooth. It's in Settings", 4000);
     if (w.slow > 1.5 && w.dpr > range[0]) {
       w.dpr = Math.max(range[0], w.dpr - 0.25);
       w.slow = 0;

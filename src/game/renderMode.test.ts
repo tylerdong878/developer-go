@@ -16,5 +16,8 @@ describe("render mode", () => {
     expect(modeFor("side", false, true, false)).toBe("slow");
     expect(modeFor("none", true, true, false)).toBe("slow");
     expect(modeFor("none", false, false, false)).toBe("slow");
+    // the battery saver holds the open map at 30 fps too
+    expect(modeFor("none", false, true, false, true)).toBe("slow");
+    expect(modeFor("encounter", false, true, false, true)).toBe("off");
   });
 });

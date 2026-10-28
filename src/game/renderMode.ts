@@ -6,7 +6,8 @@
  *   where none of it shows;
  * - slows to 30 fps ("slow") behind a side card, the menu, Nearby, the start
  *   screen, or when the window isn't focused;
- * - runs full speed ("full") the rest of the time.
+ * - runs full speed ("full") the rest of the time, or 30 fps with the
+ *   battery saver on (device.ts).
  * The HUD reports what's covering the map; the scene's Throttle reads this.
  */
 export type RenderMode = "full" | "slow" | "off";
@@ -31,10 +32,10 @@ export function setCover(next: Cover) {
   listeners.forEach((l) => l());
 }
 
-/** The mode for what's covering it, whether the intro is up, and whether the window has focus. */
-export function modeFor(c: Cover, intro: boolean, focused: boolean, hidden: boolean): RenderMode {
+/** The mode for what's covering it, whether the intro is up, whether the window has focus, and the battery saver. */
+export function modeFor(c: Cover, intro: boolean, focused: boolean, hidden: boolean, saver = false): RenderMode {
   if (hidden || c === "encounter" || c === "full") return "off";
-  if (c === "side" || intro || !focused) return "slow";
+  if (c === "side" || intro || !focused || saver) return "slow";
   return "full";
 }
 

@@ -1,11 +1,11 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { useControls } from "./controls";
 import { Hud } from "./hud/Hud";
 import { palettes } from "./palette";
-import { renderBudget } from "./device";
+import { renderBudget, saverStore, watchBattery } from "./device";
 import { Balls } from "./scene/Balls";
 import { Controller } from "./scene/Controller";
 import { Objects } from "./scene/objects/Objects";
@@ -33,7 +33,11 @@ export default function Game() {
   const phase = usePhase();
   const still = useReducedMotion();
   const stage = useRef<HTMLDivElement>(null);
-  const [budget] = useState(renderBudget);
+  // the battery saver can change while you play: what can follow it does
+  const saver = useSyncExternalStore(saverStore.subscribe, saverStore.get, saverStore.server);
+  const saving = saver.endsWith(":true");
+  const budget = useMemo(() => renderBudget(saving), [saving]);
+  useEffect(watchBattery, []);
   useControls(stage);
   // nothing moves (or spawns) until the visitor starts
   const started = useSyncExternalStore(startedStore.subscribe, startedStore.get, startedStore.server);
