@@ -260,7 +260,7 @@ const BASEBOARD = "#7a5c4e";
 function housePieces(): Record<string, Piece[]> {
   const out: Record<string, Piece[]> = {
     base: [], walls: [], timber: [], skirt: [], skirtEdge: [], gable: [], roof: [], door: [], frame: [], glass: [], white: [], bed: [], flower: [],
-    planks: [], plankGable: [], tiles: [],
+    planks: [], plankGable: [], tiles: [], hedge: [],
   };
   buildings.forEach((b, i) => {
     if (b.model !== "house") return;
@@ -271,6 +271,11 @@ function housePieces(): Record<string, Piece[]> {
     const f = b.flip ? -1 : 1;
     const at = placeOf(b);
     const add = (part: string, m: Matrix4, color: string) => out[part].push({ b: i, m: at.clone().multiply(m), color });
+    // a clipped hedge along the street side of the yard, with a gap at the walk to the door (town-polish.md 10)
+    const door = -f * W * (b.style === "viridian" ? 0.22 : b.style === "vermilion" ? 0.24 : 0.25);
+    const yard = W / 2 + 0.3;
+    for (const [x0, x1] of [[-yard, door - 1], [door + 1, yard]])
+      if (x1 - x0 > 0.6) add("hedge", euler((x0 + x1) / 2, 0.35, D / 2 + 1.5, x1 - x0, 0.7, 0.6), "#4f9a45");
     if (b.style === "viridian") return viridian(add, W, D, f, i);
     if (b.style === "vermilion") return vermilion(add, W, D, f, i);
     const roof = b.roof ?? "#b24c49";
@@ -354,6 +359,8 @@ const HOUSE_PARTS: Record<string, BufferGeometry> = {
   planks: soft,
   plankGable: gableGeometry(),
   tiles: box,
+  // the yard hedge: well rounded, like a clipped bush
+  hedge: new RoundedBoxGeometry(1, 1, 1, 2, 0.3),
 };
 
 /** An instanced layer: one geometry and material, one instance per piece. */
