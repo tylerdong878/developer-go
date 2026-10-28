@@ -33,11 +33,14 @@ import articuno from "./144-articuno.js";
 import dratini from "./147-dratini.js";
 import torchic from "./255-torchic.js";
 import wingull from "./278-wingull.js";
+import duskull from "./355-duskull.js";
 import rotom from "./479-rotom.js";
 import cresselia from "./488-cresselia.js";
 import swanna from "./581-swanna.js";
+import litwick from "./607-litwick.js";
 import sirfetchd from "./865-sirfetchd.js";
 import alcremie from "./869-alcremie.js";
+import greavard from "./971-greavard.js";
 import swannaBoat from "./boat-swanna.js";
 import chanseyNurse from "./chansey-nurse.js";
 import npcAceTrainer from "./npc-ace-trainer.js";
@@ -92,11 +95,14 @@ export const RECIPES: Record<number | string, object> = {
   147: dratini,
   255: torchic,
   278: wingull,
+  355: duskull,
   479: rotom,
   488: cresselia,
   581: swanna,
+  607: litwick,
   865: sirfetchd,
   869: alcremie,
+  971: greavard,
   "boat-swanna": swannaBoat,
   "chansey-nurse": chanseyNurse,
   "npc-ace-trainer": npcAceTrainer,

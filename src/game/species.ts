@@ -63,10 +63,14 @@ export const SPECIES: Record<number, Facts> = {
   144: { types: ["ice", "flying"], capture: 0.03, flee: 0.1 },
   147: { types: ["dragon"], capture: 0.4, flee: 0.09 },
   255: { types: ["fire"], capture: 0.2, flee: 0.1 },
+  355: { types: ["ghost"], capture: 0.4, flee: 0.1 },
   479: { types: ["electric", "ghost"], capture: 0.3, flee: 0.1 },
   488: { types: ["psychic"], capture: 0.02, flee: 0.04 },
+  607: { types: ["ghost", "fire"], capture: 0.4, flee: 0.09 },
   865: { types: ["fighting"], capture: 0.1, flee: 0.07 },
   869: { types: ["fairy"], capture: 0.2, flee: 0.07 },
+  // Greavard came to GO after the rates were stripped: GO's usual for a first stage that evolves once
+  971: { types: ["ghost"], capture: 0.3, flee: 0.1 },
 };
 
 /**
@@ -82,6 +86,7 @@ const MOVES: Record<number, Movement> = {
   488: "hover",
   144: "fly",
   278: "fly",
+  355: "hover",
   581: "fly",
   41: "electric",
   81: "electric",

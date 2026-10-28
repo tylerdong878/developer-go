@@ -6,10 +6,10 @@ import { SPECIES } from "./species";
 /*
  * GO's Timed Research (notes/research/go-round-3.md 1, 4): free research that
  * comes with an event, sits in the Events tab, and goes when the event does.
- * Halloween 2026 Part I's real tasks aren't out yet (Oct 26), so these are
- * ours, short ones in GO's style; the reward is GO's own: a Pikachu encounter
- * (without the hat, which we haven't modeled), with Great Balls in place of
- * GO's Rare Candy.
+ * The tasks are ours, short ones in GO's style. Part I's reward is GO's own, a
+ * Pikachu (without the hat, which we haven't modeled); Part II's is a Sinistea
+ * in GO, which isn't modeled either, so it's Greavard, whose shiny is new this
+ * year (notes/research/go-round-6.md). Great Balls stand in for the Rare Candy.
  */
 
 export type TimedTask = { text: string; need: number; counts: (e: FieldEvent) => boolean };
@@ -17,6 +17,7 @@ export type Timed = { id: string; name: string; to: number; tasks: TimedTask[]; 
 
 const ghost = (e: FieldEvent) => e.kind === "catch" && (SPECIES[e.dex]?.types ?? []).includes("ghost");
 const part1 = EVENTS.find((e) => e.id === "halloween-1")!;
+const part2 = EVENTS.find((e) => e.id === "halloween-2")!;
 
 export const TIMED: Timed[] = [
   {
@@ -30,6 +31,18 @@ export const TIMED: Timed[] = [
     ],
     reward: { encounter: 25, items: { great: 3 } },
     on: (at) => halloweenPart(at) === 1,
+  },
+  {
+    id: "halloween-2026-2",
+    name: "Halloween 2026: Part II",
+    to: part2.to,
+    tasks: [
+      { text: "Catch 4 Ghost-type Pokémon", need: 4, counts: ghost },
+      { text: "Spin 3 PokéStops", need: 3, counts: (e) => e.kind === "spin" },
+      { text: "Make 3 Nice Throws", need: 3, counts: (e) => e.kind === "catch" && e.throw !== null },
+    ],
+    reward: { encounter: 971, items: { great: 3 } },
+    on: (at) => halloweenPart(at) === 2,
   },
 ];
 

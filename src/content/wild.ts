@@ -28,3 +28,10 @@ export const wild: WildSpecies[] = [
   { dex: 7, name: "Squirtle", weight: 2 },
   { dex: 147, name: "Dratini", weight: 1 },
 ];
+
+/** Pokémon that only come out with an event, like GO's Halloween spawns (events.ts). */
+export const eventWild: WildSpecies[] = [
+  { dex: 355, name: "Duskull", weight: 0 },
+  { dex: 607, name: "Litwick", weight: 0 },
+  { dex: 971, name: "Greavard", weight: 0 },
+];

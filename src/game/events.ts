@@ -21,14 +21,14 @@ export const EVENTS: GoEvent[] = [
     name: "Halloween 2026: Part I",
     from: Date.UTC(2026, 9, 27, 14),
     to: Date.UTC(2026, 10, 1, 15),
-    blurb: "PokéStops turn orange with pumpkins round them, leaves fall, and Zubat and Gastly are out a lot more.",
+    blurb: "PokéStops turn orange with pumpkins round them, leaves fall, and Zubat and Duskull are out a lot more. Tap the spooky surprises in the grass.",
   },
   {
     id: "halloween-2",
     name: "Halloween 2026: Part II",
     from: Date.UTC(2026, 10, 1, 15),
     to: Date.UTC(2026, 10, 6, 1),
-    blurb: "The orange stops and pumpkins stay, and Gastly takes over the night.",
+    blurb: "The orange stops and pumpkins stay, and Litwick and Greavard come out. Shiny Greavard is new in GO this year.",
   },
 ];
 

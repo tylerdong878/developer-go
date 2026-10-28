@@ -1,4 +1,4 @@
-import { spawns as facts, wild as roster } from "@/content";
+import { eventWild, spawns as facts, wild as roster } from "@/content";
 import { areas, landmarks, LAB, slots, walkable } from "./base";
 import { pointInPolygon, random, type Vec2 } from "./geometry";
 import { halloweenPart, spotlightNow } from "./events";
@@ -127,6 +127,8 @@ export const BASE: Record<number, number> = {
   16: 40, 19: 36, 13: 27, 41: 26, 129: 22, 10: 17, 133: 17, 54: 16, 60: 15, 74: 11, 43: 10, 56: 10, 58: 10,
   52: 9, 92: 9, 81: 8, 1: 8, 100: 8, 7: 8, 66: 7, 63: 6, 39: 6, 147: 5, 4: 5, 25: 5, 255: 5, 95: 3, 106: 1.4,
   143: 1.3, 137: 1.1,
+  // Halloween's own, about as common as Gastly
+  355: 9, 607: 9, 971: 9,
 };
 
 /** Everywhere but the water. */
@@ -166,12 +168,11 @@ export function tableFor(habitat: Habitat, env: Env): [number, number][] {
   if (habitat !== "water") EVERYWHERE.forEach((d) => add(d, 1));
   else [16, 41].forEach((d) => add(d, 1));
   OWN[habitat].forEach((d) => add(d, 2));
-  // GO's Halloween: Zubat out everywhere in Part I, Gastly on every kind of ground, and more of it in Part II
+  // GO's Halloween 2026 (notes/research/go-round-6.md): Zubat and Duskull out everywhere in Part I, Litwick and
+  // Greavard in Part II. Gastly isn't one of 2026's (only its Spotlight Hour), and GO's others aren't modeled here.
   const spooky = halloweenPart(env.at);
-  if (spooky) {
-    add(41, spooky === 1 ? 4 : 1);
-    add(92, spooky === 1 ? 2 : 4);
-  }
+  if (spooky === 1 && habitat !== "water") [41, 355].forEach((d) => add(d, d === 41 ? 4 : 3));
+  if (spooky === 2 && habitat !== "water") [607, 971].forEach((d) => add(d, 3));
   // GO's Spotlight Hour: the featured one everywhere (not on the water, unless it swims)
   const lit = spotlightNow(env.at);
   if (lit && (habitat !== "water" || lit === 129 || lit === 54 || lit === 60)) add(lit, 40);
@@ -180,7 +181,7 @@ export function tableFor(habitat: Habitat, env: Env): [number, number][] {
   return [...out];
 }
 
-const NAMES = new Map<number, string>([...roster.map((w) => [w.dex, w.name] as const), ...facts.map((f) => [f.pokemon.dex, f.pokemon.name] as const)]);
+const NAMES = new Map<number, string>([...[...roster, ...eventWild].map((w) => [w.dex, w.name] as const), ...facts.map((f) => [f.pokemon.dex, f.pokemon.name] as const)]);
 export const nameOf = (dex: number) => NAMES.get(dex) ?? `#${dex}`;
 
 /** One appearance at a point: shared by everyone who looks. */

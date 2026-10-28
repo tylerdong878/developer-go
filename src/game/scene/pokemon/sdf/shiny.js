@@ -42,9 +42,12 @@ export const SHINY = {
   147: {"map":{"#a4c2f4":"#e4b2e6","#241a30":"#2c0c2a","#5e2f68":"#7a2a6a"}},
   255: {"map":{"#f5911f":"#f5e070","#f8d84a":"#f5a03a","#f6e48a":"#ecbfae","#f3e48c":"#d4b8a6"}},
   278: {"map":{"#8fd3f2":"#bef4a8"}},
+  355: {"map":{"#5e5d5b":"#a85a58","#4b4a49":"#8e4a49"}},
   479: {"map":{"#ee7a3e":"#ee4468","#1f6fd8":"#56c4e6","#9fdde6":"#f2c9a8","#eef6f7":"#fbf3ee"}},
   488: {"map":{"#8fbdee":"#9767a6","#cb7aac":"#6cbcd3","#9c4a7e":"#3f8fa6","#e690be":"#8dd4e6","#5b2242":"#1f4f5e","#c0508e":"#3fa6c4","#e286bf":"#a2dcb0","#fff3fa":"#fdfbd6","#f9cde8":"#d4f8d4","#ee99cb":"#9fe6b4"}},
+  607: {"map":{"#6f6bd2":"#5f8fd8","#7fa6ea":"#7fd0ee","#cbd7fb":"#d4f2fb","#c4c2ee":"#b9def0","#f3c632":"#86c83c","#a77a12":"#4f8a1e"}},
   581: {"map":{"#8ec4ea":"#927bd5","#505660":"#485278","#4a5056":"#434d6f","#fbdc4f":"#f9ec48"}},
+  971: {"map":{"#9aabc6":"#d7b44a","#8495b2":"#bd9a36","#d6deeb":"#f3efe2","#7f8aa0":"#8a7444"}},
   865: {"map":{"#f3f2ef":"#f5d762","#f6cd3f":"#cfae22","#e3b733":"#b89b1b","#f2c23a":"#c4a41f"},"parts":{"pieces":{"cuff":"#f3f2ef","swordFeather0":"#f3f2ef","swordFeather1":"#f3f2ef","swordFeather2":"#f3f2ef","swordFeather3":"#f3f2ef","swordFeather4":"#f3f2ef"}}},
 };
 

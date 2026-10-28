@@ -11,7 +11,7 @@ export { media } from "./media";
 export type { Media } from "./media";
 export { badgeTier, monthsAt, tenure } from "./badges";
 export type { BadgeTier } from "./badges";
-export { wild } from "./wild";
+export { eventWild, wild } from "./wild";
 export type { WildSpecies } from "./wild";
 export type { BagItem } from "./bag";
 export { medals } from "./medals";

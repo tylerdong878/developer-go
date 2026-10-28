@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode, useState, useSyncExternalStore } from "react";
-import { bag, gyms, type MapObject, medals, type MedalTier, raids, spawns, stops, trainer, wild } from "@/content";
+import { bag, eventWild, gyms, type MapObject, medals, type MedalTier, raids, spawns, stops, trainer, wild } from "@/content";
 import { describe } from "../objects";
 import { bondLevel, canFeed, feed, LEVELS } from "../bond";
 import { buddyStore } from "../buddy";
@@ -200,6 +200,19 @@ export function PokedexPanel({ onClose, onOpen }: { onClose: () => void; onOpen:
               {shiny.has(w.dex) ? <span className="ml-0.5 text-[#2bb5a8]" title="Caught shiny">✧</span> : null}
             </span>
             {caught[w.dex] ? <span className="text-[10px] text-ink-soft">×{caught[w.dex]}</span> : null}
+          </li>
+        ))}
+      </ul>
+      <Label>Events</Label>
+      <ul className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+        {eventWild.map((w) => (
+          <li key={w.dex} className="flex flex-col items-center rounded-2xl bg-ink/5 px-1 pt-1.5 pb-2">
+            <Sprite dex={w.dex} caught={!!caught[w.dex]} small />
+            <span className="text-xs font-semibold">
+              {caught[w.dex] ? w.name : "???"}
+              {shiny.has(w.dex) ? <span className="ml-0.5 text-[#2bb5a8]" title="Caught shiny">✧</span> : null}
+            </span>
+            <span className="text-[10px] text-ink-soft">{caught[w.dex] ? `×${caught[w.dex]}` : "Halloween"}</span>
           </li>
         ))}
       </ul>

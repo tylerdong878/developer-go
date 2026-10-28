@@ -152,7 +152,8 @@ function dailyAppearance(x: number, z: number, heading: number, at: number, caug
  * same for everyone.
  */
 export const SURPRISE = { window: 90, every: 6, max: 4 };
-const SPOOKY = [41, 41, 41, 92, 92, 92, 25];
+// Part I's own: Zubat, Duskull, and now and then Pikachu (GO's is in a hat)
+const SPOOKY = [41, 41, 41, 355, 355, 355, 25];
 
 function surpriseAppearances(x: number, z: number, at: number): Appearance[] {
   if (halloweenPart(at) !== 1) return [];

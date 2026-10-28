@@ -39,14 +39,19 @@ const TASKS: TaskDef[] = [
 ];
 
 /**
- * Halloween's event Field Research: GO's 2026 texts aren't out, so these are
- * in the style of 2025's ("Catch 10 Ghost- or Dark-type Pokémon" and so on),
- * shorter for a visit, each with an event encounter. Half the stops give one.
+ * Halloween's event Field Research, GO's 2026 tasks made short for a visit
+ * (notes/research/go-round-6.md): Part I's "Catch 13 Ghost-type Pokémon" and
+ * "Make 6 Nice Throws" give Zubat and Duskull here. Part II's tasks aren't
+ * out yet, so ours give its own two, Litwick and Greavard. Half the stops give one.
  */
-const SPOOKY: (TaskDef & { reward: number })[] = [
-  { id: "ghost2", text: "Catch 2 Ghost-type Pokémon", need: 2, counts: catchOf((e) => typeOf(e.dex).includes("ghost")), reward: 92 },
-  { id: "surprise2", text: "Open 2 spooky surprises", need: 2, counts: (e) => e.kind === "surprise", reward: 25 },
-  { id: "catch5", text: "Catch 5 Pokémon", need: 5, counts: catchOf(() => true), reward: 41 },
+type Spooky = TaskDef & { reward: number; part: 1 | 2 };
+const ghost = catchOf((e) => typeOf(e.dex).includes("ghost"));
+const SPOOKY: Spooky[] = [
+  { id: "ghost2", text: "Catch 2 Ghost-type Pokémon", need: 2, counts: ghost, reward: 41, part: 1 },
+  { id: "nice3", text: "Make 3 Nice Throws", need: 3, counts: catchOf((e) => e.throw !== null), reward: 355, part: 1 },
+  { id: "surprise2", text: "Open 2 spooky surprises", need: 2, counts: (e) => e.kind === "surprise", reward: 25, part: 1 },
+  { id: "ghost3", text: "Catch 3 Ghost-type Pokémon", need: 3, counts: ghost, reward: 971, part: 2 },
+  { id: "catch5", text: "Catch 5 Pokémon", need: 5, counts: catchOf(() => true), reward: 607, part: 2 },
 ];
 
 /** The encounters research hands out: the fact Pokémon you can't find in the wild first, then rare ones. */
@@ -66,7 +71,7 @@ export function taskFor(stop: string, day: string): FieldTask {
   // Halloween's tasks at half the stops (Trick or Treat's only runs in Part I)
   const part = halloweenPart(Date.parse(`${day}T17:00:00Z`));
   if (part && hash(i, d, 17) % 2 === 0) {
-    const pool = part === 1 ? SPOOKY : SPOOKY.filter((t) => t.id !== "surprise2");
+    const pool = SPOOKY.filter((t) => t.part === part);
     const t = pool[hash(i, d, 19) % pool.length];
     return { stop, day, task: t.id, text: t.text, need: t.need, have: 0, reward: { encounter: t.reward }, claimed: false };
   }
