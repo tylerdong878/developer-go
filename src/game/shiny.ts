@@ -9,6 +9,7 @@ import { SHINY } from "./scene/pokemon/sdf/shiny.js";
  */
 export const SHINY_ODDS = 1 / 64;
 export const RAID_SHINY_ODDS = 1 / 20;
+export const COMMUNITY_SHINY_ODDS = 1 / 10;
 
 export const hasShiny = (dex: number) => !!SHINY[dex];
 

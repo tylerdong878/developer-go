@@ -1,4 +1,5 @@
 import { STATS } from "./stats";
+import { communityDay } from "./events";
 
 /*
  * GO's numbers behind a Pokémon (notes/research/go-round-5.md 1 and 2): its
@@ -58,7 +59,8 @@ export function rollFixed(level: number, rand: () => number): Stats {
 export function catchDust(dex: number, boosted: boolean) {
   return Math.round((100 + base(dex)[3]) * (boosted ? 1.25 : 1));
 }
-export const catchCandy = (dex: number) => 3 + base(dex)[4];
+/** GO's catch Candy: 3, more for middle stages, and double on Community Day. */
+export const catchCandy = (dex: number, at = Date.now()) => (3 + base(dex)[4]) * (communityDay(at) ? 2 : 1);
 
 /** GO's Power Up costs for one half level, at the level it's at now (Candy XL from 40 isn't in this game). */
 const COSTS: [below: number, dust: number, candy: number][] = [

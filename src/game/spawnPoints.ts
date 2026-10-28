@@ -1,7 +1,7 @@
 import { eventWild, spawns as facts, wild as roster } from "@/content";
 import { areas, landmarks, LAB, slots, walkable } from "./base";
 import { pointInPolygon, random, type Vec2 } from "./geometry";
-import { halloweenPart, spotlightNow } from "./events";
+import { communityDay, halloweenPart, spotlightNow } from "./events";
 import { boosted, NIGHT_OWLS } from "./species";
 import type { Weather } from "./weather";
 
@@ -129,6 +129,8 @@ export const BASE: Record<number, number> = {
   143: 1.3, 137: 1.1,
   // Halloween's own, about as common as Gastly
   355: 9, 607: 9, 971: 9,
+  // November's Community Day
+  624: 9,
 };
 
 /** Everywhere but the water. */
@@ -173,6 +175,9 @@ export function tableFor(habitat: Habitat, env: Env): [number, number][] {
   const spooky = halloweenPart(env.at);
   if (spooky === 1 && habitat !== "water") [41, 355].forEach((d) => add(d, d === 41 ? 4 : 3));
   if (spooky === 2 && habitat !== "water") [607, 971].forEach((d) => add(d, 3));
+  // GO's Community Day: three hours of the featured one nearly everywhere but the water
+  const day = communityDay(env.at);
+  if (day && habitat !== "water") add(day, 50);
   // GO's Spotlight Hour: the featured one everywhere (not on the water, unless it swims)
   const lit = spotlightNow(env.at);
   if (lit && (habitat !== "water" || lit === 129 || lit === 54 || lit === 60)) add(lit, 40);

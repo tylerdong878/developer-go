@@ -227,7 +227,7 @@ function EventCard({ e, live }: { e: GoEvent; live: boolean }) {
   return (
     <div className="overflow-hidden rounded-2xl bg-surface shadow-[0_2px_10px_rgba(48,85,93,0.12)]">
       <div
-        className={`px-3.5 py-2 text-white ${e.id.startsWith("halloween") ? "bg-gradient-to-r from-[#7a3fc0] to-[#f87010]" : e.id.startsWith("spotlight") ? "bg-gradient-to-r from-[#f2a03c] to-[#f6c94a]" : "bg-gradient-to-r from-[#24828b] to-[#2fd3c6]"}`}
+        className={`px-3.5 py-2 text-white ${e.id.startsWith("halloween") ? "bg-gradient-to-r from-[#7a3fc0] to-[#f87010]" : e.id.startsWith("spotlight") ? "bg-gradient-to-r from-[#f2a03c] to-[#f6c94a]" : e.id.startsWith("community") ? "bg-gradient-to-r from-[#2e9e57] to-[#7ccf5a]" : "bg-gradient-to-r from-[#24828b] to-[#2fd3c6]"}`}
       >
         <p className="font-display text-base font-black">{e.name}</p>
         <p className="text-xs font-semibold opacity-90">{live ? `Until ${whenIs(e.to)}` : `${whenIs(e.from)} to ${whenIs(e.to)}`}</p>

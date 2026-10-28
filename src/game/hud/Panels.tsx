@@ -218,7 +218,7 @@ export function PokedexPanel({ onClose, onOpen }: { onClose: () => void; onOpen:
               {caught[w.dex] ? w.name : "???"}
               {shiny.has(w.dex) ? <span className="ml-0.5 text-[#2bb5a8]" title="Caught shiny">✧</span> : null}
             </span>
-            <span className="text-[10px] text-ink-soft">{caught[w.dex] ? `×${caught[w.dex]}` : "Halloween"}</span>
+            <span className="text-[10px] text-ink-soft">{caught[w.dex] ? `×${caught[w.dex]}` : (w.event ?? "Event")}</span>
           </li>
         ))}
       </ul>

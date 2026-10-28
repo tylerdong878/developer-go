@@ -24,6 +24,14 @@ export const EVENTS: GoEvent[] = [
     blurb: "PokéStops turn orange with pumpkins round them, leaves fall, and Zubat and Duskull are out a lot more. Tap the spooky surprises in the grass.",
   },
   {
+    // GO's Nov 21, 2026 Community Day, 2 to 5 pm (notes/research/go-round-6.md); EST from Nov 1, so 19:00 UTC
+    id: "community-day-2026-11",
+    name: "Community Day: Pawniard",
+    from: Date.UTC(2026, 10, 21, 19),
+    to: Date.UTC(2026, 10, 21, 22),
+    blurb: "GO's November Community Day: Pawniard is out all over town from 2 to 5 pm, shiny far more often, with double Candy for every catch and Incense that lasts three hours.",
+  },
+  {
     id: "halloween-2",
     name: "Halloween 2026: Part II",
     from: Date.UTC(2026, 10, 1, 15),
@@ -95,6 +103,13 @@ export function withSpotlight(at: number, name: (dex: number) => string) {
 }
 
 export const activeEvents = (at: number) => EVENTS.filter((e) => at >= e.from && at < e.to);
+
+/** GO's Community Day on now: its species, or null. */
+const COMMUNITY: Record<string, number> = { "community-day-2026-11": 624 };
+export function communityDay(at: number) {
+  const e = EVENTS.find((x) => COMMUNITY[x.id] && at >= x.from && at < x.to);
+  return e ? COMMUNITY[e.id] : null;
+}
 
 /** A peek at Halloween before it starts: ?event=halloween (Part I) or ?event=halloween2 in the address. */
 const preview = typeof location === "undefined" ? null : new URLSearchParams(location.search).get("event");

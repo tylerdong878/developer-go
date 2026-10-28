@@ -1,5 +1,6 @@
 "use client";
 
+import { communityDay } from "./events";
 import { bostonDay, type FieldEvent, type FieldTask, progressWith, receive } from "./field";
 import { levelFor, rewardsFor } from "./levels";
 import { TIMED, type TimedProgress, timedWith } from "./timed";
@@ -280,7 +281,9 @@ export function powerUp(id: number) {
 export function lightIncense(at = Date.now()) {
   const p = current();
   if (p.items.incense <= 0 || (p.incenseUntil ?? 0) > at) return false;
-  save({ ...p, items: { ...p.items, incense: p.items.incense - 1 }, incenseUntil: at + 60 * 60 * 1000, incenseKind: null });
+  // GO's Community Day Incense lasts three hours
+  const hours = communityDay(at) ? 3 : 1;
+  save({ ...p, items: { ...p.items, incense: p.items.incense - 1 }, incenseUntil: at + hours * 60 * 60 * 1000, incenseKind: null });
   return true;
 }
 

@@ -38,6 +38,7 @@ import rotom from "./479-rotom.js";
 import cresselia from "./488-cresselia.js";
 import swanna from "./581-swanna.js";
 import litwick from "./607-litwick.js";
+import pawniard from "./624-pawniard.js";
 import sirfetchd from "./865-sirfetchd.js";
 import alcremie from "./869-alcremie.js";
 import greavard from "./971-greavard.js";
@@ -100,6 +101,7 @@ export const RECIPES: Record<number | string, object> = {
   488: cresselia,
   581: swanna,
   607: litwick,
+  624: pawniard,
   865: sirfetchd,
   869: alcremie,
   971: greavard,

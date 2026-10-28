@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NO_STREAK, nextStreak, STAMPS, stampWith, streakNow } from "./daily";
-import { activeEvents, EVENTS, spotlight, spotlightNow, upcomingEvents } from "./events";
+import { activeEvents, communityDay, EVENTS, spotlight, spotlightNow, upcomingEvents } from "./events";
+import { tableFor } from "./spawnPoints";
 
 describe("daily streaks", () => {
   it("count days in a row, start over after day 7 or a missed day", () => {
@@ -33,6 +34,19 @@ describe("Spotlight Hour", () => {
     expect(spotlightNow(s.from + 30 * 60_000)).toBe(92);
     expect(spotlightNow(s.from - 60_000)).toBeNull();
     expect(spotlightNow(s.to)).toBeNull();
+  });
+});
+
+describe("Community Day", () => {
+  it("is GO's Pawniard day, Nov 21 2 to 5 pm in Boston, with Pawniard nearly everywhere", () => {
+    const cd = EVENTS.find((e) => e.id === "community-day-2026-11")!;
+    expect(new Date(cd.from).toLocaleString("en-US", { timeZone: "America/New_York" })).toBe("11/21/2026, 2:00:00 PM");
+    expect(new Date(cd.to).toLocaleString("en-US", { timeZone: "America/New_York" })).toBe("11/21/2026, 5:00:00 PM");
+    expect(communityDay(cd.from + 3_600_000)).toBe(624);
+    expect(communityDay(cd.to)).toBeNull();
+    const table = tableFor("park", { weather: null, night: false, at: cd.from + 60_000 });
+    const total = table.reduce((n, [, w]) => n + w, 0);
+    expect(table.find(([d]) => d === 624)![1] / total).toBeGreaterThan(0.5);
   });
 });
 

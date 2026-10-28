@@ -1,5 +1,6 @@
 import { cpOf, rollWild } from "./power";
-import { rollShiny } from "./shiny";
+import { communityDay } from "./events";
+import { COMMUNITY_SHINY_ODDS, rollShiny } from "./shiny";
 import { hash } from "./spawnPoints";
 import { boosted } from "./species";
 import type { Weather } from "./weather";
@@ -34,5 +35,7 @@ export function rollSpawn(w: WildSpawn, level: number, weather: Weather | null) 
   let k = 1;
   const stats = rollWild(level, !!boost, () => roll(k++));
   const mine = hash(...codes(visitor()), ...codes(w.id)) / 4294967296;
-  return { stats, cp: cpOf(w.species.dex, stats), boost, shiny: rollShiny(w.species.dex, undefined, mine) };
+  // the Community Day species is shiny far more often during its hours
+  const odds = communityDay(Date.now()) === w.species.dex ? COMMUNITY_SHINY_ODDS : undefined;
+  return { stats, cp: cpOf(w.species.dex, stats), boost, shiny: rollShiny(w.species.dex, odds, mine) };
 }

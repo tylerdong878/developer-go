@@ -3,7 +3,7 @@
  * spawns. Weight is how common each one is. The fact Pokémon in spawns.ts
  * are separate: rare ones at fixed spots, each with something about me.
  */
-export type WildSpecies = { dex: number; name: string; weight: number };
+export type WildSpecies = { dex: number; name: string; weight: number; /** the event that brings it, for the Pokédex */ event?: string };
 
 export const wild: WildSpecies[] = [
   { dex: 16, name: "Pidgey", weight: 10 },
@@ -31,7 +31,8 @@ export const wild: WildSpecies[] = [
 
 /** Pokémon that only come out with an event, like GO's Halloween spawns (events.ts). */
 export const eventWild: WildSpecies[] = [
-  { dex: 355, name: "Duskull", weight: 0 },
-  { dex: 607, name: "Litwick", weight: 0 },
-  { dex: 971, name: "Greavard", weight: 0 },
+  { dex: 355, name: "Duskull", weight: 0, event: "Halloween" },
+  { dex: 607, name: "Litwick", weight: 0, event: "Halloween" },
+  { dex: 624, name: "Pawniard", weight: 0, event: "Community Day" },
+  { dex: 971, name: "Greavard", weight: 0, event: "Halloween" },
 ];
