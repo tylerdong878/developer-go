@@ -16,7 +16,8 @@ export function visitorMedals(p: Progress): VisitorMedal[] {
     { id: "first-catch", title: "First Catch", detail: "Catch a Pokémon", have: Math.min(catches, 1), need: 1 },
     { id: "collector", title: "Collector", detail: "Catch 10 Pokémon", have: Math.min(catches, 10), need: 10 },
     { id: "fact-finder", title: "Fact Finder", detail: "Catch 5 of the Pokémon that know a fact", have: Math.min(facts, 5), need: 5 },
-    { id: "backpacker", title: "Backpacker", detail: "Spin 5 PokéStops", have: Math.min(p.spun.length, 5), need: 5 },
+    // GO's Sightseer counts different PokéStops, like p.spun (its Backpacker counts every spin); the id stays for old visits
+    { id: "backpacker", title: "Sightseer", detail: "Spin 5 different PokéStops", have: Math.min(p.spun.length, 5), need: 5 },
     { id: "gym-tour", title: "Gym Tour", detail: "Visit every gym (all my jobs)", have: gymsSeen, need: gyms.length },
     { id: "raid-party", title: "Raid Party", detail: "Visit every raid (all my hackathons)", have: raidsSeen, need: raids.length },
     { id: "shiny-hunter", title: "Shiny Hunter", detail: "Catch a shiny Pokémon", have: Math.min(shinies, 1), need: 1 },

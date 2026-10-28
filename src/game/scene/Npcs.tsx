@@ -26,7 +26,7 @@ import { SmoothModel } from "./pokemon/Smooth";
  * a Youngster in shorts, a Bug Catcher with his net, a Fisherman with a rod,
  * an Ace Trainer, a Black Belt. Like trainers in the games, each one spots
  * you once: a "!" pops, they walk up, and say their line (which points you at
- * part of the portfolio). After that they just stop and wave. Nurse Joy and
+ * part of the portfolio). After that they stop and say their after-battle line. Nurse Joy and
  * the Mart clerk stand at their doors and greet you, no "!", like town staff.
  */
 
@@ -46,7 +46,8 @@ type Look = {
   model: string;
 };
 
-type Npc = { route: Vec2[]; loop: boolean; line: string; look: Look; speed: number; staff?: { at: Vec2; turn: number } };
+/** `after`: what they say once you've met (Gen 1's after-battle lines); staff say it as you walk off. */
+type Npc = { route: Vec2[]; loop: boolean; line: string; after: string; look: Look; speed: number; staff?: { at: Vec2; turn: number } };
 
 const ball = new SphereGeometry(1, 16, 12);
 const dome = new SphereGeometry(1, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2);
@@ -230,7 +231,9 @@ const NPCS: Npc[] = [
   {
     route: [[3.5, -22], [3.5, -92]],
     loop: false,
-    line: "Gyms downtown are Tyler's jobs. I'm taking on the tall glass tower. That's AWS!",
+    // no Gen 1 line is the Ace Trainer's for sure, so a confident beat of our own (lore-audit.md 10)
+    line: "You look strong! Gyms downtown are Tyler's jobs. The tall glass tower is AWS!",
+    after: "I'm still training for that glass tower. Have you been inside?",
     look: LOOKS.ace,
     speed: 2.6,
   },
@@ -238,6 +241,7 @@ const NPCS: Npc[] = [
     route: [[76.5, -60], [76.5, 60]],
     loop: false,
     line: "Be patient! The PokéStops by the harbor are his quant projects. Spin one and see what bites.",
+    after: "With a better rod, I could catch better Pokémon!",
     look: LOOKS.fisherman,
     speed: 2.2,
   },
@@ -245,6 +249,7 @@ const NPCS: Npc[] = [
     route: [[-60, 37], [30, 37]],
     loop: false,
     line: "Hoargh! Raids are his hackathons. The five-star ones are where he won!",
+    after: "The prime fighters across the land train here.",
     look: LOOKS.blackBelt,
     speed: 2.8,
   },
@@ -252,6 +257,7 @@ const NPCS: Npc[] = [
     route: ellipse(-95, -2, 34, 24, 24),
     loop: true,
     line: "Hey, wait up! Some of the Pokémon round here know stuff about Tyler. Catch a Snorlax!",
+    after: "Ssh! You'll scare the bugs away!",
     look: LOOKS.bugCatcher,
     speed: 2.3,
   },
@@ -259,6 +265,7 @@ const NPCS: Npc[] = [
     route: circle(0, 0, 13.2, 24),
     loop: true,
     line: "Hi! I like shorts! Also, tap the map in the corner to go anywhere.",
+    after: "Are you storing your Pokémon on PC? Each Box can hold 20 Pokémon!",
     look: LOOKS.youngster,
     speed: 1.8,
   },
@@ -273,6 +280,7 @@ const STAFF: Npc[] = [
     route: [],
     loop: false,
     line: "Welcome to our Pokémon Center! Come on in to meet Tyler.",
+    after: "We hope to see you again!",
     look: LOOKS.joy,
     speed: 0,
     staff: { at: [centerDoor[0] + 2.6, centerDoor[1] - 1], turn: 0 },
@@ -281,6 +289,7 @@ const STAFF: Npc[] = [
     route: [],
     loop: false,
     line: "Hi there! May I help you? Your items are inside.",
+    after: "Please come again!",
     look: LOOKS.clerk,
     speed: 0,
     staff: { at: [martDoor[0] - 2.6, martDoor[1] - 0.6], turn: 0 },
@@ -441,6 +450,10 @@ const STAND_IN = new Map<Look, () => ReactNode>(
 function Person({ npc, seed }: { npc: Npc; seed: number }) {
   const root = useRef<Group>(null);
   const bubble = useRef<Sprite>(null);
+  const afterBubble = useRef<Sprite>(null);
+  // walked off after meeting them (staff: after coming close), so the next words are the after line
+  const away = useRef(false);
+  const shownAfter = useRef(0);
   const mark = useRef<Sprite>(null);
   const walked = useRef(seed * 37);
   const offset = useRef<[number, number]>([0, 0]);
@@ -449,14 +462,19 @@ function Person({ npc, seed }: { npc: Npc; seed: number }) {
   const shown = useRef(0);
   const phase = useRef(0);
   const [plate, setPlate] = useState<{ texture: CanvasTexture; aspect: number } | null>(null);
+  const [afterPlate, setAfterPlate] = useState<{ texture: CanvasTexture; aspect: number } | null>(null);
   const { look } = npc;
   const height = heightOf(look);
 
   useEffect(() => {
-    const id = window.setTimeout(() => setPlate(bubbleTexture(npc.line)), 400 + seed * 120);
+    const id = window.setTimeout(() => {
+      setPlate(bubbleTexture(npc.line));
+      setAfterPlate(bubbleTexture(npc.after));
+    }, 400 + seed * 120);
     return () => window.clearTimeout(id);
-  }, [npc.line, seed]);
+  }, [npc.line, npc.after, seed]);
   useEffect(() => () => plate?.texture.dispose(), [plate]);
+  useEffect(() => () => afterPlate?.texture.dispose(), [afterPlate]);
 
   useFrame(({ clock }, frame) => {
     const g = root.current;
@@ -474,8 +492,13 @@ function Person({ npc, seed }: { npc: Npc; seed: number }) {
 
     let talking = false;
     let moving = false;
+    // staff greet you up close and say goodbye as you walk off
+    let after = false;
     if (npc.staff) {
       talking = d < 7;
+      if (talking) away.current = true;
+      else if (away.current && d < 12) after = talking = true;
+      else away.current = false;
     } else if (!met.current && d < SPOT) {
       // spotted: a "!", then they walk up to you, then they talk
       if (alertFor.current === 0) alertFor.current = 0.7;
@@ -491,6 +514,7 @@ function Person({ npc, seed }: { npc: Npc; seed: number }) {
       }
     } else if (met.current && d < LEAVE - 4) {
       talking = true;
+      after = away.current;
     } else {
       // back to the route if they stepped off it, then carry on walking it
       const o = Math.hypot(offset.current[0], offset.current[1]);
@@ -502,7 +526,10 @@ function Person({ npc, seed }: { npc: Npc; seed: number }) {
         walked.current += npc.speed * dt;
       }
       moving = !npc.staff;
-      if (d > LEAVE) alertFor.current = 0;
+      if (d > LEAVE) {
+        alertFor.current = 0;
+        if (met.current) away.current = true;
+      }
     }
 
     g.position.set(x, 0, z);
@@ -532,11 +559,16 @@ function Person({ npc, seed }: { npc: Npc; seed: number }) {
       armR.rotation.z = talking ? -2.6 - Math.sin(clock.elapsedTime * 9) * 0.35 : 0;
     }
 
-    shown.current += ((talking ? 1 : 0) - shown.current) * Math.min(1, dt * 8);
-    if (bubble.current) {
-      bubble.current.visible = shown.current > 0.02;
-      bubble.current.material.opacity = shown.current;
-      bubble.current.position.y = height + 1.15 + shown.current * 0.3;
+    shown.current += ((talking && !after ? 1 : 0) - shown.current) * Math.min(1, dt * 8);
+    shownAfter.current += ((talking && after ? 1 : 0) - shownAfter.current) * Math.min(1, dt * 8);
+    for (const [s, k] of [
+      [bubble.current, shown.current],
+      [afterBubble.current, shownAfter.current],
+    ] as const) {
+      if (!s) continue;
+      s.visible = k > 0.02;
+      s.material.opacity = k;
+      s.position.y = height + 1.15 + k * 0.3;
     }
     if (mark.current) {
       const k = !met.current && alertFor.current > 0 ? Math.min(1, (0.7 - alertFor.current) * 8 + 0.2) : 0;
@@ -558,6 +590,11 @@ function Person({ npc, seed }: { npc: Npc; seed: number }) {
       {plate ? (
         <sprite ref={bubble} scale={[1.7 * plate.aspect, 1.7, 1]} visible={false} renderOrder={6}>
           <spriteMaterial map={plate.texture} transparent depthWrite={false} opacity={0} />
+        </sprite>
+      ) : null}
+      {afterPlate ? (
+        <sprite ref={afterBubble} scale={[1.7 * afterPlate.aspect, 1.7, 1]} visible={false} renderOrder={6}>
+          <spriteMaterial map={afterPlate.texture} transparent depthWrite={false} opacity={0} />
         </sprite>
       ) : null}
     </group>

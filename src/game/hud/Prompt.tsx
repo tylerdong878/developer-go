@@ -26,6 +26,8 @@ function SurpriseIcon() {
 function label(goal: string) {
   const w = findWild(goal);
   if (w?.surprise) return { verb: "Open", name: "spooky surprise", icon: <SurpriseIcon /> };
+  // Gen 1's Route 12 (pret Route12.asm): "A sleeping Pokémon blocks the way!", and the flute wakes it
+  if (w?.fact === "snorlax") return { note: "A sleeping Pokémon blocks the way!", verb: "Play the", name: "Poké Flute", icon: <WildIcon dex={143} /> };
   if (w) return { verb: "Catch", name: w.looks?.name ?? w.species.name, icon: <WildIcon dex={w.looks?.dex ?? w.species.dex} /> };
   if (goal === "place:center") return { verb: "Enter", name: "the Pokémon Center", icon: <BallIcon top="#e3342f" /> };
   if (goal === "place:mart") return { verb: "Enter", name: "the Poké Mart", icon: <BallIcon top="#2f6fd6" /> };
@@ -87,7 +89,8 @@ export function Prompt({ hidden }: { hidden: boolean }) {
           E
         </kbd>
       )}
-      <span>
+      <span className="text-left leading-tight">
+        {"note" in what ? <span className="block text-[11px] font-bold text-ink-soft">{what.note}</span> : null}
         {what.verb} <span className="text-mystic-500">{what.name}</span>
       </span>
     </button>

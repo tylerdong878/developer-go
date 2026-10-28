@@ -90,7 +90,16 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (result: CatchRes
   const [label, setLabel] = useState<Throw>(null);
   const [curved, setCurved] = useState(false);
   const [critical, setCritical] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  // Snorlax wakes in a temper, like Gen 1's ("Snorlax woke up! It attacked in a grumpy rage!")
+  const sleeper = foe.fact === "snorlax";
+  const [message, setMessage] = useState<string | null>(sleeper ? "Snorlax woke up! It attacked in a grumpy rage!" : null);
+  useEffect(() => {
+    if (!sleeper) return;
+    const id = window.setTimeout(() => setMessage((m) => (m?.startsWith("Snorlax woke") ? null : m)), 2600);
+    return () => window.clearTimeout(id);
+  }, [sleeper]);
+  // and if it gets away it goes the way Route 16's does
+  const fledLine = sleeper ? "With a big yawn, Snorlax returned to the mountains!" : `Oh no! ${foe.name} fled.`;
   /** The rings only show while you hold the ball, and while it flies. */
   const [holding, setHolding] = useState(false);
   /** Circled the ball enough to spin it: -1 or 1 for the way it turns, 0 not spinning. */
@@ -316,7 +325,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (result: CatchRes
         if (spent() || (!round && !foe.rare && Math.random() < (SPECIES[foe.dex]?.flee ?? 0.1))) {
           window.setTimeout(() => {
             go("fled");
-            setMessage(`Oh no! ${foe.name} fled.`);
+            setMessage(fledLine);
           }, 400);
           place(target.x, ground, 0.45, 0, 0);
           return;
@@ -388,7 +397,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (result: CatchRes
   const fallAway = (at: { x: number; y: number }) => {
     if (spent()) {
       go("fled");
-      setMessage(`Oh no! ${foe.name} fled.`);
+      setMessage(fledLine);
       return;
     }
     const t0 = performance.now();
@@ -408,7 +417,7 @@ export function Encounter({ foe, onDone }: { foe: Foe; onDone: (result: CatchRes
       if (k < 1) requestAnimationFrame(step);
       else if (spent()) {
         go("fled");
-        setMessage(`Oh no! ${foe.name} fled.`);
+        setMessage(fledLine);
       } else nextBall();
     };
     requestAnimationFrame(step);
