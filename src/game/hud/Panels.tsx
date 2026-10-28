@@ -16,6 +16,7 @@ import { GiftBox } from "./Gifts";
 import { BOOK_MAX, GIFT_HOLD } from "../gifts";
 import { ITEM_INFO } from "./SpinDisc";
 import { Sheet } from "./Sheet";
+import { AddTyler, ShareCardButton } from "./TrainerCard";
 
 const n = (v: number) => v.toLocaleString("en-US");
 const since = new Date(`${trainer.go.since}T12:00:00`).toLocaleDateString("en-US", {
@@ -139,6 +140,8 @@ export function TrainerPanel({ onClose, onTab }: { onClose: () => void; onTab?: 
           </a>
         ))}
       </div>
+
+      <AddTyler />
 
       {GROUPS.map(([group, label]) => (
         <section key={group}>
@@ -572,6 +575,7 @@ export function ProfilePanel({ onClose, onTab }: { onClose: () => void; onTab?: 
         {n(progress.xp)} / {n(to)} XP, saved in this browser
       </p>
       <Tiles rows={stats} />
+      <ShareCardButton progress={progress} />
 
       <Label>Your medals</Label>
       <ul className="divide-y divide-ink/6">
